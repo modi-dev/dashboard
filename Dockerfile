@@ -1,7 +1,7 @@
 FROM onb-docker.nexus-ci.corp.dev.vtb/rhel8/nginx-118:1-28
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY dist /dist
-COPY infra-info /infra-info
+COPY --chown=1001:0 /dist /app
+COPY --chown=1001:0 /infra-info /infra-info
 EXPOSE 8080
 USER nginx
 CMD ["nginx", "-g", "daemon off;"]

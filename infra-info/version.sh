@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # каталог с html страницей
-html_dir="../dist"
+html_dir="../app"
 html_file="index.html"
 
 if [ -e $html_dir ]

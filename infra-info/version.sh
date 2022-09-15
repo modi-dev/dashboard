@@ -3,6 +3,7 @@
 # каталог с html страницей
 html_dir="/app"
 html_file="index.html"
+oc_dir="/infra-info"
 
 rm $html_dir/$html_file
 
@@ -22,7 +23,7 @@ namespace=$(oc project | grep -oP '"(.*?)" ')
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-html=$(oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
+html=$(${oc_dir}/oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
 ## добавляем время и HTML разметку и заголовок таблицы
 html="<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>PORTS</th><th>STATUS</th></tr></thead>${html}</table></html>"
 

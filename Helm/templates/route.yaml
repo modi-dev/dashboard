@@ -1,0 +1,24 @@
+{{- if .Values.route.enabled -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: {{ .Release.Name }}
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    haproxy.router.openshift.io/rewrite-target: /
+spec:
+  host: {{ .Values.route.host }}
+  path: {{ .Values.route.path }}
+  port:
+    targetPort: {{ .Values.main.port }}-tcp
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Release.Name }}
+    weight: 100
+  wildcardPolicy: None
+  {{- end }}

@@ -1,0 +1,43 @@
+global:
+  # Openshift namespace в который производится деплой
+  namespace: ds1-genr01-onbc-onb-development
+  # Репозиторий из которого загружаются образы
+  registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot/smeo
+
+route:
+  enabled: true
+  name:
+
+# Настройки основного приложения
+main:
+  # Количество реплик подов
+  replicaCount: 1
+  # Образ в репозитории
+  image: ""
+  # Тег образа
+  tag: ""
+  # Политика кеширования образов на нодах
+  pullPolicy: Always
+  # Порт, на котором принимает запросы приложение
+  port: 8080
+  # Ресурсы, выделяемые на под
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi
+  # Параметры проб для main
+  Probe:
+    enabled: true
+    livenessProbe:
+      path: "/actuator/health/liveness"
+      failureThreshold: 5
+      initialDelaySeconds: 20
+      periodSeconds: 30
+    readinessProbe:
+      path: "/actuator/health/readiness"
+      failureThreshold: 10
+      initialDelaySeconds: 30
+      periodSeconds: 20

@@ -2,7 +2,11 @@ global:
   # Openshift namespace в который производится деплой
   namespace: ds1-genr01-onbc-onb-development
   # Репозиторий из которого загружаются образы
-  registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot/smeo
+  registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot
+  # Код проекта для мониторинга
+  projectCode: SMEO
+  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
+  stand: dev
 
 route:
   enabled: true

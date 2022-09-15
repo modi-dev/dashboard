@@ -5,7 +5,7 @@ html_dir="/app"
 html_file="index.html"
 oc_dir="/infra-info"
 
-rm $html_dir/$html_file
+> $html_dir/$html_file
 
 # собираем HTML
 ## выбираем стиль 
@@ -19,7 +19,7 @@ echo "<style>
 </style>"  >> $html_dir/$html_file
 
 ## получаем текущий namespace в OC и текущую даты
-namespace=$(oc project | grep -oP '"(.*?)" ')
+namespace=$(${oc_dir}/oc project | grep -oP '"(.*?)" ')
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт

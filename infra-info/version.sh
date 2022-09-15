@@ -4,7 +4,7 @@
 html_dir="/app"
 html_file="index.html"
 
-rm $html_dir/html_file
+rm $html_dir/$html_file
 
 # собираем HTML
 ## выбираем стиль 

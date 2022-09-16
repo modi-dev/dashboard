@@ -37,11 +37,11 @@ main:
     enabled: true
     livenessProbe:
       exec:
-        command: /infra-info/version.sh
-      timeoutSeconds: 20
-      periodSeconds: 60
-    readinessProbe:
-      exec:
-        command: /infra-info/version.sh
+        command: /app/version.sh
       timeoutSeconds: 20
       periodSeconds: 120
+    readinessProbe:
+      exec:
+        command: /app/version.sh
+      timeoutSeconds: 20
+      periodSeconds: 180

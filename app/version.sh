@@ -3,7 +3,7 @@
 # каталог с html страницей
 html_dir="/app"
 html_file="index.html"
-oc_dir="/infra-info"
+oc_dir="/app"
 
 > $html_dir/$html_file
 

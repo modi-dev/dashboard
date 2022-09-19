@@ -26,11 +26,10 @@ spec:
             periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
           readinessProbe:
-            exec:
-              command:
-                - {{ .Values.main.Probe.livenessProbe.exec.command }}
-            periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
+            httpGet:
+              path: /
+              port: {{ .Values.main.port }}
+              scheme: HTTP
           {{- end }}
           env:
             - name: TZ

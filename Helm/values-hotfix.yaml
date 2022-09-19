@@ -3,7 +3,3 @@ global:
   namespace: rs1-genr01-onbc-onb-hotfix
   # Репозиторий из которого загружаются образы
   registry: nexus-cd.region.vtb.ru/onb-docker-uat-g
-  # Код проекта для мониторинга
-  projectCode: SMEO
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: hotfix

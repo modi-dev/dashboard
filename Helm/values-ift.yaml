@@ -3,8 +3,3 @@ global:
   namespace: ss1-genr01-onbc-onb-ift
   # Репозиторий из которого загружаются образы
   registry: nexus-cd.region.vtb.ru/onb-docker-test-g
-
-  # Код проекта для мониторинга
-  projectCode: SMEO
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: ift

@@ -3,8 +3,3 @@ global:
   namespace: ds1-genr01-onbc-onbc-st
   # Репозиторий из которого загружаются образы
   registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot
-
-  # Код проекта для мониторинга
-  projectCode: SMEO
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: st

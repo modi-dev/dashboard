@@ -3,6 +3,7 @@ global:
   namespace: ds1-genr01-onbc-onb-development
   # Репозиторий из которого загружаются образы
   registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot/smeo
+  # Код проекта для мониторинга
 
 route:
   enabled: true
@@ -31,7 +32,6 @@ main:
   # Имя Service Account'а (builder, default, deployer, deploy-sa, prometheus)
   serviceAccount: prometheus
   serviceAccountName: prometheus
-  
   # Параметры проб для main
   Probe:
     enabled: true

@@ -39,9 +39,11 @@ main:
       exec:
         command: /app/version.sh
       timeoutSeconds: 20
-      periodSeconds: 120
+      periodSeconds: 60
     readinessProbe:
-      exec:
-        command: /app/version.sh
+      httpGet:
+        path: /
+        port: 8080
+        scheme: HTTP
       timeoutSeconds: 20
-      periodSeconds: 180
+      periodSeconds: 30

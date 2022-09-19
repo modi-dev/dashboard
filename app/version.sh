@@ -17,11 +17,11 @@ html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
 ## получаем текущий namespace в OC и текущую даты
-namespace=$(oc project | grep -oP '"(.*?)" ')
+namespace=$(${oc_dir}/oc project | grep -oP '"(.*?)" ')
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-table=$(oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
+table=$(${oc_dir}/oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
 ## добавляем время и HTML разметку и заголовок таблицы
 html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>PORTS</th><th>STATUS</th></tr></thead>${table}</table></html>"
 

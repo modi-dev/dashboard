@@ -17,7 +17,7 @@ html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
 ## получаем текущий namespace в OC и текущую даты
-namespace=$(${oc_dir}/oc project | grep -oP '"(.*?)" ')
+namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
@@ -28,4 +28,3 @@ html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><
 # выгружаем html
 > $html_dir/$html_file
 echo $html >> $html_dir/$html_file
-

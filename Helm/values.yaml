@@ -42,7 +42,7 @@ main:
       periodSeconds: 60
     readinessProbe:
       httpGet:
-        path: /
+        path: "/actuator/health/readiness.html"
         port: 8080
         scheme: HTTP
       timeoutSeconds: 20

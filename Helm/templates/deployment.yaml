@@ -27,8 +27,8 @@ spec:
             timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
           readinessProbe:
             httpGet:
-              path: /
-              port: {{ .Values.main.port }}
+              path: {{ .Values.main.Probe.readinessProbe.httpGet.path }}
+              port: {{ .Values.main.Probe.readinessProbe.httpGet.port }}
               scheme: HTTP
           {{- end }}
           env:

@@ -3,20 +3,7 @@ global:
   namespace: rs1-genr01-onbc-onb-hotfix
   # Репозиторий из которого загружаются образы
   registry: nexus-cd.region.vtb.ru/onb-docker-uat-g
-
-route:
-  enabled: true
-  name:
-
-# Настройки основного приложения
-main:
-  # Количество реплик подов
-  replicaCount: 1
-  # Образ в репозитории
-  image: ""
-  # Тег образа
-  tag: ""
-  # Политика кеширования образов на нодах
-  pullPolicy: Always
-  # Порт, на котором принимает запросы приложение
-  port: 8080
+  # Код проекта для мониторинга
+  projectCode: SMEO
+  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
+  stand: hotfix

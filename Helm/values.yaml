@@ -39,11 +39,11 @@ main:
       exec:
         command: /app/version.sh
       timeoutSeconds: 20
-      periodSeconds: 60
+      periodSeconds: 120
     readinessProbe:
       httpGet:
         path: "/actuator/health/readiness.html"
         port: 8080
         scheme: HTTP
-      timeoutSeconds: 20
-      periodSeconds: 30
+      timeoutSeconds: 60
+      periodSeconds: 100

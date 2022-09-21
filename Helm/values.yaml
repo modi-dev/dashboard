@@ -33,13 +33,15 @@ main:
   serviceAccount: prometheus
   serviceAccountName: prometheus
   # Параметры проб для main
+  # Параметры проб для main
   Probe:
     enabled: true
     livenessProbe:
       exec:
         command: /app/version.sh
-      timeoutSeconds: 20
+      timeoutSeconds: 60
       periodSeconds: 120
+      failureThreshold: 5
     readinessProbe:
       httpGet:
         path: "/actuator/health/readiness.html"
@@ -47,3 +49,4 @@ main:
         scheme: HTTP
       timeoutSeconds: 60
       periodSeconds: 100
+      failureThreshold: 5

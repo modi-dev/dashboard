@@ -31,9 +31,9 @@ spec:
               path: {{ .Values.main.Probe.readinessProbe.httpGet.path }}
               port: {{ .Values.main.Probe.readinessProbe.httpGet.port }}
               scheme: HTTP
-            periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.main.Probe.livenessProbe.failureThreshold }}
+            periodSeconds: {{ .Values.main.Probe.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.main.Probe.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.main.Probe.readinessProbe.failureThreshold }}
           {{- end }}
           env:
             - name: TZ

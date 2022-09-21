@@ -25,11 +25,15 @@ spec:
                 - {{ .Values.main.Probe.livenessProbe.exec.command }}
             periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.main.Probe.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
               path: {{ .Values.main.Probe.readinessProbe.httpGet.path }}
               port: {{ .Values.main.Probe.readinessProbe.httpGet.port }}
               scheme: HTTP
+            periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.main.Probe.livenessProbe.failureThreshold }}
           {{- end }}
           env:
             - name: TZ

@@ -21,9 +21,9 @@ namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-table=$(${oc_dir}/oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.metadata.creationTimestamp}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
+table=$(${oc_dir}/oc get pods -o jsonpath="{range .items[*]}{'<tr>'}{'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{.spec.containers[0].image}{'</td>'}{'<td>'}{.metadata.creationTimestamp}{'</td>'}{'<td align="left">'}{range .spec.containers[*]}{.name}{'</br>'}{'req.cpu: '}{.resources.requests.cpu}{'|____|'}{'lim.cpu: '}{.resources.limits.cpu}{'</br>'}{'req.mem: '}{.resources.requests.memory}{'|____|'}{'lim.mem: '}{.resources.limits.memory}{'</br>'}{end}{'</td>'}{'<td>'}{.spec.containers[0].ports[0].containerPort}{'</td>'}{'<td>'}{.status.phase}{'</td>'}{'</tr>'}{end}")
 ## добавляем время и HTML разметку и заголовок таблицы
-html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>CREATION DATE</th><th>PORTS</th><th>STATUS</th></tr></thead>${table}</table></html>"
+html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>CREATION DATE</th><th>LIMITS</th><th>PORTS</th><th>STATUS</th></tr></thead>${table}</table></html>"
 
 # выгружаем html
 > $html_dir/$html_file

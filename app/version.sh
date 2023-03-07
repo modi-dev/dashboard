@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # каталог с html страницей
-html_dir="./app"
+html_dir="/app"
 html_file="index.html"
-oc_dir="./app"
+oc_dir="/app"
 
 # собираем HTML
 ## выбираем стиль 

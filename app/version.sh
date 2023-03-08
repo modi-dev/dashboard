@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # каталог с html страницей
-html_dir="/app"
+html_dir="./app"
 html_file="index.html"
-oc_dir="/app"
+oc_dir="./app"
 
 # собираем HTML
 ## выбираем стиль 
@@ -17,12 +17,12 @@ html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
 ## получаем текущий namespace в OC и текущую даты
-namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
+namespace=$(oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-table=$(${oc_dir}/oc get pods -o jsonpath="
+table=$(oc get pods -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
     {'<tr>'}
         {'<td align="left">'}
@@ -38,15 +38,16 @@ table=$(${oc_dir}/oc get pods -o jsonpath="
             {.metadata.creationTimestamp}{'</br>'}
         {'</td>'}
         {'<td align="left">'}
-            {range .spec.containers[?(@.name=='main')]}
-                {'<b>'}{@.name}{'</b>'}{'</br>'}
+            {range .spec.containers[*]}
+                {'<b>'}{@.name}{'</b>'}{' port: '}
+                {range .ports[0]}
+                    {.containerPort}
+                {end}
+                {'</br>'}
                 {'req.cpu: '}{.resources.requests.cpu}{'</br>'}
-                {'req.mem: '}{.resources.requests.memory}{'</br>'}{'</br>'}
+                {'req.mem: '}{.resources.requests.memory}{'</br>'}
                 {'lim.cpu: '}{.resources.limits.cpu}{'</br>'}
                 {'lim.mem: '}{.resources.limits.memory}{'</br>'}{'</br>'}
-                {range .ports[0]}
-                    {'port: '}{.containerPort}
-                {end}
             {end}
         {'</td>'}
     {'</tr>'}

@@ -52,8 +52,8 @@ table=$(${oc_dir}/oc get pods -o jsonpath="
     {'</tr>'}
 {end}
 ")
-## добавляем время, HTML разметку и заголовок таблицы
 
+## добавляем время, HTML разметку и заголовок таблицы
 html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>STATUS</th><th>CREATION DATE</th><th>LIMITS & PORTS</th></tr></thead>${table}</table></html>"
 
 # выгружаем html

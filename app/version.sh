@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# каталог с html страницей
-html_dir="./app"
+# каталог с html страницей и клиентом openshift
+html_dir="/app"
 html_file="index.html"
-oc_dir="./app"
+oc_dir="/app"
 
 # собираем HTML
 ## выбираем стиль 
@@ -17,12 +17,11 @@ html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
 ## получаем текущий namespace в OC и текущую даты
-namespace=$(oc get pods -o jsonpath="{.items[0].metadata.namespace}")
-
+namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-table=$(oc get pods -o jsonpath="
+table=$(${oc_dir}/oc get pods -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
     {'<tr>'}
         {'<td align="left">'}
@@ -53,7 +52,7 @@ table=$(oc get pods -o jsonpath="
     {'</tr>'}
 {end}
 ")
-## добавляем время и HTML разметку и заголовок таблицы
+## добавляем время, HTML разметку и заголовок таблицы
 
 html="${html}<html><body><p>update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>STATUS</th><th>CREATION DATE</th><th>LIMITS & PORTS</th></tr></thead>${table}</table></html>"
 

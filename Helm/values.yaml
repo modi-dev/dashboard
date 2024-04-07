@@ -29,9 +29,9 @@ main:
     limits:
       cpu: 150m
       memory: 100Mi
-  # Имя Service Account'а (builder, default, deployer, deploy-sa, prometheus) Нужно прикрепить secret nexus-ci к deploy-sa в openshift
-  serviceAccount: deploy-sa
-  serviceAccountName: deploy-sa
+  # Имя Service Account'а (builder, default, deployer, deploy-sa, prometheus)
+  serviceAccount: prometheus
+  serviceAccountName: prometheus
   # Параметры проб для main
   # Параметры проб для main
   Probe:

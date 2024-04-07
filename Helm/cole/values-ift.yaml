@@ -4,7 +4,7 @@ route:
 #common values for all ift stands
 global:
   # Openshift namespace в который производится деплой
-  namespace: ik5-cole01-cole-cole-ift
+  namespace: ik7-cole01-cole-cole-ift
   # Репозиторий из которого загружаются образы
   registry: nexus-cd.region.vtb.ru/cole-docker-test-g
   # Код проекта для мониторинга

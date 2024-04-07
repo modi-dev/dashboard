@@ -1,24 +1,41 @@
-{{- if .Values.route.enabled -}}
+{{- if .Capabilities.APIVersions.Has "route.openshift.io/v1" }}
+  {{- if not (and (.Values.main.istio) (eq .Values.main.istio.enable true)) }}
+    {{- if .Values.route.enabled -}}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   labels:
     app: {{ .Release.Name }}
-  name: {{ .Release.Name }}
+  name: {{ .Values.route.name | default .Release.Name }}
   namespace: {{ .Values.global.namespace }}
   annotations:
+    haproxy.router.openshift.io/balance: leastconn
+      {{- if .Values.route.path }}
     haproxy.router.openshift.io/rewrite-target: /
+      {{- end }}
 spec:
+      {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
+      {{- else }}
+  host: {{ .Release.Name }}-{{ .Values.global.namespace }}.apps.{{ .Values.global.ochost }}
+      {{- end }}
+      {{- if .Values.route.path }}
   path: {{ .Values.route.path }}
+      {{- end }}
   port:
-    targetPort: {{ .Values.main.port }}-tcp
+    targetPort: http-{{ .Values.main.port }}
   tls:
+      {{- if .Values.route.tls }}
+    insecureEdgeTerminationPolicy: {{ default "Redirect" .Values.route.tls.terminationPolicy }}
+      {{- else }}
     insecureEdgeTerminationPolicy: Redirect
+      {{- end }}
     termination: edge
   to:
     kind: Service
     name: {{ .Release.Name }}
     weight: 100
   wildcardPolicy: None
+    {{- end }}
   {{- end }}
+{{- end }}

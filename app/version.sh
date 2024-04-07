@@ -24,15 +24,15 @@ date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 table=$(${oc_dir}/oc get deploy -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
 {'<tr>'}
-    {'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].image}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.ms\-branch}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.config\-branch}{\" \"}{'</td>'}{'<td>'}{.status.conditions[?(@.reason == 'NewReplicaSetAvailable')].lastUpdateTime}{\" \"}{'</br>'}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].ports[0].containerPort} {'</td>'} {'<td align="left">'}{'CPU: '}{..containers[?(@.name == 'main')].resources.requests.cpu}{'</br>'}{'</br>'}{'RAM: '} {..containers[?(@.name == 'main')].resources.requests.memory}{'</td>'} {'<td align="left">'} <!--replicas-->{.spec.replicas} {'</td>'}
+    {'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].image}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.ms\-branch}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.config\-branch}{\" \"}{'</td>'}{'<td>'}{.status.conditions[?(@.reason == 'NewReplicaSetAvailable')].lastUpdateTime}{\" \"}{'</br>'}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].ports[0].containerPort} {'</td>'} {'<td align="left">'}{'CPU: '}{..containers[?(@.name == 'main')].resources.requests.cpu}{'</br>'}{'</br>'}{'RAM: '} {..containers[?(@.name == 'main')].resources.requests.memory}{'</td>'}
 {'</tr>'}
 {end}
-" | grep -vE istio\|dashbord\|stub\|devtool\|hello\|devtool\|kafka\|tyk\|mrp\|\<!--replicas--\>0)
+" | grep -vE istio\|dashbord\|stub\|devtool\|hello\|devtool\|kafka\|tyk\|mrp)
 
 sed_table=$(echo $table | sed 's/nexus[^:]*://g')
 
 ## добавляем время, HTML разметку и заголовок таблицы
-html="${html}<html><body><p style="font-size:12px" > update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>MsBranch</th><th>ConfigBranch</th><th>CREATION DATE</th><th>PORT</th><th>REQUEST</th><th>REPLICAS</th></tr></thead>${sed_table}</table></html>"
+html="${html}<html><body><p style="font-size:12px" > update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>MsBranch</th><th>ConfigBranch</th><th>CREATION DATE</th><th>PORT</th><th>REQUEST</th></tr></thead>${sed_table}</table></html>"
 
 # выгружаем html
 > $html_dir/$html_file

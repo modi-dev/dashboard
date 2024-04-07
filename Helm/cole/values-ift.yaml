@@ -13,7 +13,7 @@ global:
   stand: ift
   ochost: ift.cole.test.vtb.ru
   k8shost: ift.cole.test.vtb.ru
-  ingressClassName: ingress-default
+  ingressClassName: ingress-ik7-cole01-cole-001	
 
 # Настройки основного приложения
 main:

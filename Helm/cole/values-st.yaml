@@ -1,0 +1,28 @@
+route:
+  tls:
+    terminationPolicy: Allow
+#common values for all ST stands
+global:
+  # Openshift namespace в который производится деплой
+  namespace: sk5-cole01-cole-cole-st
+  # Репозиторий из которого загружаются образы
+  registry: nexus-ci.corp.dev.vtb/cole-docker-snapshot
+  # Код проекта для мониторинга
+  projectCode: COLE
+  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
+  stand: st
+  ochost: st.cole.corp.dev.vtb
+  k8shost: st.cole.corp.dev.vtb
+  ingressClassName: ingress-sk5-cole01-cole-001	
+
+# Настройки основного приложения
+main:
+  env:
+    # Профиль, используемый Spring Boot
+    springProfile: st
+  # Количество реплик подов
+  replicaCount: 1
+  istio:
+    enable: false
+
+    

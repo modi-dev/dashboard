@@ -1,0 +1,26 @@
+route:
+  tls:
+    terminationPolicy: Allow
+#common values for all ift stands
+global:
+  # Openshift namespace в который производится деплой
+  namespace: ik5-cole01-cole-cole-ift
+  # Репозиторий из которого загружаются образы
+  registry: nexus-cd.region.vtb.ru/cole-docker-test-g
+  # Код проекта для мониторинга
+  projectCode: ift
+  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
+  stand: ift
+  ochost: ift.cole.test.vtb.ru
+  k8shost: ift.cole.test.vtb.ru
+  ingressClassName: ingress-default
+
+# Настройки основного приложения
+main:
+  env:
+    # Профиль, используемый Spring Boot
+    springProfile: ift
+  # Количество реплик подов
+  replicaCount: 1
+  istio:
+    enable: false

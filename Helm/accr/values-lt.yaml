@@ -1,0 +1,5 @@
+global:
+  # Openshift namespace в который производится деплой
+  namespace: ls5-genr03-accr-accr-lt
+  # Репозиторий из которого загружаются образы
+  registry: nexus-cd.region.vtb.ru/accr-docker-uat-g

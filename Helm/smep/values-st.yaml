@@ -1,0 +1,5 @@
+global:
+  # Openshift namespace в который производится деплой
+  namespace: ds1-genr01-smep-smep-st
+  # Репозиторий из которого загружаются образы
+  registry: nexus-ci.corp.dev.vtb/smep-docker-snapshot

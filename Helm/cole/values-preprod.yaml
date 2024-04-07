@@ -1,0 +1,26 @@
+route:
+  tls:
+    terminationPolicy: Allow
+#common values for all lt stands
+global:
+  # Openshift namespace в который производится деплой
+  namespace: rk5-cole01-cole-cole-preprod
+  # Репозиторий из которого загружаются образы
+  registry: nexus-cd.region.vtb.ru:4000/cole-docker-uat-g
+  # Код проекта для мониторинга
+  projectCode: preprod
+  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
+  stand: preprod
+  ochost: pp.cole.test.vtb.ru
+  k8shost: pp.cole.test.vtb.ru
+  ingressClassName: ingress-default	
+
+# Настройки основного приложения
+main:
+  env:
+    # Профиль, используемый Spring Boot
+    springProfile: preprod
+  # Количество реплик подов
+  replicaCount: 1
+  istio:
+    enable: false

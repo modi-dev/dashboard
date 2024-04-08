@@ -21,7 +21,7 @@ namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 ## запрос данных из опеншифт
-table=$(${oc_dir}/oc get deploy -o jsonpath="
+table=$(${oc_dir}/oc get pods -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
 {'<tr>'}
     {'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].image}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.ms\-branch}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.config\-branch}{\" \"}{'</td>'}{'<td>'}{.status.conditions[?(@.reason == 'NewReplicaSetAvailable')].lastUpdateTime}{\" \"}{'</br>'}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].ports[0].containerPort} {'</td>'} {'<td align="left">'}{'CPU: '}{..containers[?(@.name == 'main')].resources.requests.cpu}{'</br>'}{'</br>'}{'RAM: '} {..containers[?(@.name == 'main')].resources.requests.memory}{'</td>'}

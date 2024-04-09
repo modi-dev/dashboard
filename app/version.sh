@@ -29,7 +29,7 @@ table=$(${oc_dir}/oc get pods -o jsonpath="
 {end}
 " | grep -vE istio\|dashbord\|stub\|devtool\|hello\|devtool\|kafka\|tyk\|mrp)
 
-sed_table=$(echo $table | sed 's/nexus[^:]*://g')
+sed_table=$(echo $table | sed 's/nexus[^:]\S*://g')
 
 ## добавляем время, HTML разметку и заголовок таблицы
 html="${html}<html><body><p style="font-size:12px" > update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>MsBranch</th><th>ConfigBranch</th><th>CREATION DATE</th><th>PORT</th><th>REQUEST</th></tr></thead>${sed_table}</table></html>"

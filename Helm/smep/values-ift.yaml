@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
-  namespace: ss1-genr01-smep-smep-ift
+  # K8s namespace в который производится деплой
+  namespace: ik7-cole01-smep-smep-ift
   # Репозиторий из которого загружаются образы
-  registry: nexus-cd.region.vtb.ru/smep-docker-test-g
+  registry: docker.repo-cd.sfera.test.vtb.ru:3000/smep-docker-test-g

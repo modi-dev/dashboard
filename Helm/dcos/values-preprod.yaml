@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: rs1-genr01-smep-smep-preprod
+  namespace: rk7-cole01-dcos-dcos-pp
   # Репозиторий из которого загружаются образы
-  registry: nexus-cd.region.vtb.ru/smep-docker-uat-g
+  registry: docker.repo-cd.sfera.test.vtb.ru:4000/dcos-docker-uat-g

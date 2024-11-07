@@ -1,26 +1,5 @@
-route:
-  tls:
-    terminationPolicy: Allow
-#common values for all lt stands
 global:
   # Openshift namespace в который производится деплой
-  namespace: ls5-genr05-cole-cole-lt
+  namespace: lk5-cole01-cole-cole-lt
   # Репозиторий из которого загружаются образы
-  registry: nexus-cd.region.vtb.ru:4000/cole-docker-uat-g
-  # Код проекта для мониторинга
-  projectCode: lt
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: lt
-  ochost: ls5-genr05.test.vtb.ru
-  k8shost: ls5-genr05.test.vtb.ru
-  ingressClassName: ingress-cole	
-
-# Настройки основного приложения
-main:
-  env:
-    # Профиль, используемый Spring Boot
-    springProfile: lt
-  # Количество реплик подов
-  replicaCount: 1
-  istio:
-    enable: false
+  registry: docker.repo-cd.sfera.test.vtb.ru:4000/cole-docker-uat-g

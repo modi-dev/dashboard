@@ -3,3 +3,5 @@ global:
   namespace: ns-smep-st
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/smep-docker-snapshot
+main:
+  image: smep/ms-dashbord

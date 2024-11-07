@@ -3,3 +3,5 @@ global:
   namespace: stonbc
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/onb-docker-snapshot
+main:
+  image: smeo/ms-dashbord

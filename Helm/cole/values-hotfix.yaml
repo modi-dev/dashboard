@@ -3,3 +3,5 @@ global:
   namespace: hk7-cole01-cole-cole-hf
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:4000/cole-docker-uat-g
+main:
+  image: cole/ms-dashbord

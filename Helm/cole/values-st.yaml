@@ -3,3 +3,5 @@ global:
   namespace: sk1-cole02-cole-cole-st
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/cole-docker-snapshot
+main:
+  image: cole/ms-dashbord

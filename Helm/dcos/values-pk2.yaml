@@ -3,3 +3,5 @@ global:
   namespace: pk2-cole01-dcos-dcos
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/dcos-docker-prod_si
+main:
+  image: dcos/ms-dashbord

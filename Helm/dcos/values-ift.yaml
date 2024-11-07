@@ -3,3 +3,5 @@ global:
   namespace: ik7-cole01-dcos-dcos-ift
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:3000/dcos-docker-test-g
+main:
+  image: dcos/ms-dashbord

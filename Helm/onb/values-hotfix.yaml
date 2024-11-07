@@ -3,3 +3,5 @@ global:
   namespace: hk7-cole01-onbc-onbc-hf
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:4000/onb-docker-uat-g
+main:
+  image: smeo/ms-dashbord

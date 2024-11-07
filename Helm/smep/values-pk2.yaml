@@ -3,3 +3,5 @@ global:
   namespace: pk5-cole01-smep-smep
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/smep-docker-prod_si
+main:
+  image: smep/ms-dashbord

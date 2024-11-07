@@ -3,3 +3,5 @@ global:
   namespace: pk2-cole01-onbc-onbc
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/onb-docker-prod_si
+main:
+  image: smeo/ms-dashbord

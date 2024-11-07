@@ -3,3 +3,5 @@ global:
   namespace: lk5-cole01-smep-smep
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:4000/smep-docker-uat-g
+main:
+  image: smep/ms-dashbord

@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: lk5-cole01-onbc-onbc
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:4000/onb-docker-uat-g

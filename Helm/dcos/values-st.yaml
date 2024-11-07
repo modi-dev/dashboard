@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: d5k8s-cole-3859dc-dev-dcos
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/dcos-docker-snapshot

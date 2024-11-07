@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: pk2-cole01-cole-cole
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/cole-docker-prod_si

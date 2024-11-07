@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: rk7-cole01-accr-psi1
+  namespace: rs1-genr01-smep-smep-preprod
   # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/accr-docker-uat-g
+  registry: nexus-cd.region.vtb.ru/smep-docker-uat-g

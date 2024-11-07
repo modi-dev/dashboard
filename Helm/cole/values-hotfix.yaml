@@ -1,26 +1,5 @@
-route:
-  tls:
-    terminationPolicy: Allow
-#common values for all hotfix stands
 global:
-  # Openshift namespace в который производится деплой
-  namespace: hk5-cole01-cole-cole-hf
+  # K8s namespace в который производится деплой
+  namespace: hk7-cole01-cole-cole-hf
   # Репозиторий из которого загружаются образы
-  registry: nexus-cd.region.vtb.ru:4000/cole-docker-uat-g
-  # Код проекта для мониторинга
-  projectCode: hotfix
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: hotfix
-  ochost: hf.cole.test.vtb.ru
-  k8shost: hf.cole.test.vtb.ru
-  ingressClassName: ingress-hk5-cole01-cole-001
-
-# Настройки основного приложения
-main:
-  env:
-    # Профиль, используемый Spring Boot
-    springProfile: hotfix
-  # Количество реплик подов
-  replicaCount: 1
-  istio:
-    enable: false
+  registry: docker.repo-cd.sfera.test.vtb.ru:4000/cole-docker-uat-g

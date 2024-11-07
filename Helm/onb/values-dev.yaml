@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
-  namespace: ds1-genr01-onbc-onb-development
+  # K8s namespace в который производится деплой
+  namespace: d0onbc
   # Репозиторий из которого загружаются образы
-  registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot
+  registry: docker.repo-ci.sfera.inno.local/onb-docker-snapshot

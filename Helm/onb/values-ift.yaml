@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
-  namespace: ss1-genr01-onbc-onb-ift
+  # K8s namespace в который производится деплой
+  namespace: ik7-cole01-onbc-onb-ift
   # Репозиторий из которого загружаются образы
-  registry: nexus-cd.region.vtb.ru/onb-docker-test-g
+  registry: docker.repo-cd.sfera.test.vtb.ru:3000/onb-docker-test-g

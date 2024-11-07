@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: hk7-cole01-onbc-onbc-hf
+  namespace: pk2-cole01-onbc-onbc
   # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/onb-docker-uat-g
+  registry: pcss-prod.region.vtb.ru:5000/onb-docker-prod_si

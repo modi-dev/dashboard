@@ -12,6 +12,8 @@ spec:
       app: {{ .Release.Name }}
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "{{ .Values.main.istio.enable }}"
       labels:
         app: {{ .Release.Name }}
     spec:

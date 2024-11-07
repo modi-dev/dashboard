@@ -3,3 +3,5 @@ global:
   namespace: ns-accr-st
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/accr-docker-snapshot
+main:
+  image: accr/ms-dashbord

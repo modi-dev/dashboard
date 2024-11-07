@@ -3,3 +3,5 @@ global:
   namespace: ik7-cole01-onbc-onb-ift
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:3000/onb-docker-test-g
+main:
+  image: smeo/ms-dashbord

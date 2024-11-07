@@ -3,3 +3,5 @@ global:
   namespace: pk5-cole01-accr-accr
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/accr-docker-prod_si
+main:
+  image: accr/ms-dashbord

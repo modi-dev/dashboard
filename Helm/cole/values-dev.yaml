@@ -1,26 +1,5 @@
-route:
-  tls:
-    terminationPolicy: Allow
-#common values for all DEV stands
 global:
   # Openshift namespace в который производится деплой
-  namespace: ds5-genr06-cole-develop
+  namespace: dk1-cole01-cole-cole-dev
   # Репозиторий из которого загружаются образы
-  registry: nexus-ci.corp.dev.vtb/cole-docker-snapshot
-  # Код проекта для мониторинга
-  projectCode: COLE
-  # Стенд, используется для создания секретов с нужными сертификатами для конкретного стенда
-  stand: dev
-  ochost: ds5-genr06.corp.dev.vtb
-  k8shost: ds5-genr06.corp.dev.vtb
-  ingressClassName: ingress-cole
-
-# Настройки основного приложения
-main:
-  env:
-    # Профиль, используемый Spring Boot
-    springProfile: dev
-  # Количество реплик подов
-  replicaCount: 1
-  istio:
-    enable: false
+  registry: docker.repo-ci.sfera.inno.local/cole-docker-snapshot

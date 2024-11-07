@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: hk7-cole01-cole-cole-hf
+  namespace: pk5-cole01-cole-cole
   # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/cole-docker-uat-g
+  registry: pcss-prod.region.vtb.ru:5000/cole-docker-prod_si

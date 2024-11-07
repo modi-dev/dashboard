@@ -12,8 +12,15 @@ spec:
       app: {{ .Release.Name }}
   template:
     metadata:
+      {{- if .Values.main.istio.enable }}
       annotations:
         sidecar.istio.io/inject: "{{ .Values.main.istio.enable }}"
+        sidecar.istio.io/proxyCPU: 160m
+        sidecar.istio.io/proxyCPULimit: 320m
+        sidecar.istio.io/proxyMemory: 256Mi
+        sidecar.istio.io/proxyMemoryLimit: 512Mi
+        sidecar.istio.io/rewriteAppHTTPProbers: 'true'
+      {{- end }}
       labels:
         app: {{ .Release.Name }}
     spec:

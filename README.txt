@@ -2,7 +2,7 @@
 
 1. Перед развертыванием необхожимо залогинится в нужный namespace k8s.
 2. Команда развертывания выполняется из папки Helm.
-3. Необходимо уктуализировать тэг имаджа (main.tag).
+3. В команде развертыения необходимо актуализировать тэг имаджа (main.tag).
 4. Примеры команды для разных СУБО (отличаются только каталогом для values)
 
 helm upgrade -i -f ./values.yaml -f ./accr/values-dev.yaml --set main.image=accr/ms-dashbord --set main.tag=sfera-v2 ms-dashboard .

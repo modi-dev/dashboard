@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: rk7-cole01-cole-preprod
   # Репозиторий из которого загружаются образы
   registry: docker.repo-cd.sfera.test.vtb.ru:4000/cole-docker-uat-g

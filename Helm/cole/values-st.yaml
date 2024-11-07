@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: sk1-cole02-cole-cole-st
   # Репозиторий из которого загружаются образы
   registry: docker.repo-ci.sfera.inno.local/cole-docker-snapshot

@@ -1,5 +1,5 @@
 global:
-  # Openshift namespace в который производится деплой
+  # K8s namespace в который производится деплой
   namespace: pk2-cole01-accr-accr
   # Репозиторий из которого загружаются образы
   registry: pcss-prod.region.vtb.ru:5000/accr-docker-prod_si

@@ -1,9 +1,4 @@
 global:
-  # Openshift namespace в который производится деплой
-  namespace: ds1-genr01-onbc-onb-development
-  # Репозиторий из которого загружаются образы
-  registry: nexus-ci.corp.dev.vtb/onb-docker-snapshot/smeo
-  # Код проекта для мониторинга
 
 route:
   enabled: true
@@ -12,7 +7,7 @@ route:
 # Настройки основного приложения
 main:
   istio:
-    enable: false
+    enable: true
   # Количество реплик подов
   replicaCount: 1
   # Образ в репозитории

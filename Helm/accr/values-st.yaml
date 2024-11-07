@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: ds1-genr01-accr-accr-st
+  namespace: ns-accr-st
   # Репозиторий из которого загружаются образы
-  registry: nexus-ci.corp.dev.vtb/accr-docker-snapshot
+  registry: docker.repo-ci.sfera.inno.local/accr-docker-snapshot

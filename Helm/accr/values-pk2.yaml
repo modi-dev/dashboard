@@ -1,5 +1,5 @@
 global:
   # Openshift namespace в который производится деплой
-  namespace: rk7-cole01-accr-psi1
+  namespace: pk2-cole01-accr-accr
   # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/accr-docker-uat-g
+  registry: pcss-prod.region.vtb.ru:5000/accr-docker-prod_si

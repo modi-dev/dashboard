@@ -1,0 +1,6 @@
+registry=https://sfera.inno.local/app/repo-ci-npm/api/repository/smep-npm/
+@vtb-ib:registry=https://sfera.inno.local/app/repo-ci-npm/api/repository/smib-npm-pub
+always-auth=true
+
+strict-ssl=false
+//sfera.inno.local/app/repo-ci-npm/api/repository/:_auth=${NPM_TOKEN}

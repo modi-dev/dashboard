@@ -14,12 +14,14 @@ spec:
     metadata:
       {{- if .Values.main.istio.enable }}
       annotations:
+        proxy.istio.io/config: 'holdApplicationUntilProxyStarts: true'
         sidecar.istio.io/inject: "{{ .Values.main.istio.enable }}"
         sidecar.istio.io/proxyCPU: 160m
         sidecar.istio.io/proxyCPULimit: 320m
         sidecar.istio.io/proxyMemory: 256Mi
         sidecar.istio.io/proxyMemoryLimit: 512Mi
         sidecar.istio.io/rewriteAppHTTPProbers: 'true'
+        traffic.sidecar.istio.io/excludeOutboundPorts: '443'
       {{- end }}
       labels:
         app: {{ .Release.Name }}
@@ -29,17 +31,17 @@ spec:
           image: "{{ .Values.global.registry }}/{{ .Values.main.image }}:{{ .Values.main.tag }}"
           {{- if .Values.main.Probe.enabled }}
           livenessProbe:
-            exec:
-              command:
-                - {{ .Values.main.Probe.livenessProbe.exec.command }}
-            periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.main.Probe.livenessProbe.failureThreshold }}
-          readinessProbe:
             httpGet:
               path: {{ .Values.main.Probe.readinessProbe.httpGet.path }}
               port: {{ .Values.main.Probe.readinessProbe.httpGet.port }}
               scheme: HTTP
+            periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.main.Probe.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - {{ .Values.main.Probe.livenessProbe.exec.command }}
             periodSeconds: {{ .Values.main.Probe.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.main.Probe.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.main.Probe.readinessProbe.failureThreshold }}

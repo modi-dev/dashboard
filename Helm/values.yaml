@@ -1,5 +1,5 @@
 global:
-
+  imagePullSecrets: [sfera-ci, sfera-distr, sfera-cdp, sfera-cd, nexus-cd]
 route:
   enabled: true
   name:
@@ -13,7 +13,7 @@ main:
   # Образ в репозитории
   image: ""
   # Тег образа
-  tag: "sfera-v2"
+  tag: "2.0.0"
   # Политика кеширования образов на нодах
   pullPolicy: Always
   # Порт, на котором принимает запросы приложение

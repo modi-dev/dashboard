@@ -58,6 +58,10 @@ spec:
           imagePullPolicy: {{ .Values.main.pullPolicy }}
       serviceAccount: {{ .Values.main.serviceAccount }}
       serviceAccountName: {{ .Values.main.serviceAccountName }}
+      imagePullSecrets:
+        {{- range .Values.global.imagePullSecrets }}
+        - name: {{ . }}
+        {{- end }}
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst

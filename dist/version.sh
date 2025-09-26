@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# каталог с html страницей и клиентом openshift
+#Catalog with an HTML page and an OpenShift client
 html_dir="/app"
 html_file="index.html"
 oc_dir="/app"
 
-# собираем HTML
-## выбираем стиль 
+#Build HTML
 html="<style>"
 html="${html}/* Стили таблицы (IKSWEB) */"
 html="${html}table.iksweb{text-decoration: none;border-collapse:collapse;width:100%;text-align:center;}"
@@ -16,11 +15,11 @@ html="${html}table.iksweb td,table.iksweb th{white-space:pre-wrap;padding:10px 5
 html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
-## получаем текущий namespace в OC и текущую даты
+#Get the current namespace in OC and the current date
 namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
-## запрос данных из опеншифт
+#request data from OpenShift
 table=$(${oc_dir}/oc get pods -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
 {'<tr>'}
@@ -31,9 +30,9 @@ table=$(${oc_dir}/oc get pods -o jsonpath="
 
 sed_table=$(echo $table | sed 's/nexus[^:]\S*://g')
 
-## добавляем время, HTML разметку и заголовок таблицы
+#Add time and HTML markup
 html="${html}<html><body><p style="font-size:12px" > update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>MsBranch</th><th>ConfigBranch</th><th>CREATION DATE</th><th>PORT</th><th>REQUEST</th></tr></thead>${sed_table}</table></html>"
 
-# выгружаем html
+#unload html
 > $html_dir/$html_file
 echo $html >> $html_dir/$html_file

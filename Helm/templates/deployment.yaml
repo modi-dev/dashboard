@@ -32,8 +32,8 @@ spec:
           {{- if .Values.main.Probe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.main.Probe.readinessProbe.httpGet.path }}
-              port: {{ .Values.main.Probe.readinessProbe.httpGet.port }}
+              path: {{ .Values.main.Probe.livenessProbe.httpGet.path }}
+              port: {{ .Values.main.Probe.livenessProbe.httpGet.port }}
               scheme: HTTP
             periodSeconds: {{ .Values.main.Probe.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.main.Probe.livenessProbe.timeoutSeconds }}
@@ -41,7 +41,7 @@ spec:
           readinessProbe:
             exec:
               command:
-                - {{ .Values.main.Probe.livenessProbe.exec.command }}
+                - {{ .Values.main.Probe.readinessProbe.exec.command }}
             periodSeconds: {{ .Values.main.Probe.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.main.Probe.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.main.Probe.readinessProbe.failureThreshold }}

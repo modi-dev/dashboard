@@ -27,7 +27,7 @@ spec:
         app: {{ .Release.Name }}
     spec:
       containers:
-        - name: {{ .Release.Name }}
+        - name: main
           image: "{{ .Values.global.registry }}/{{ .Values.main.image }}:{{ .Values.main.tag }}"
           {{- if .Values.main.Probe.enabled }}
           livenessProbe:

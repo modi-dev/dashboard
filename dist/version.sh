@@ -3,7 +3,6 @@
 #Catalog with an HTML page and an OpenShift client
 html_dir="/app"
 html_file="index.html"
-oc_dir="/app"
 
 #Build HTML
 html="<style>"
@@ -16,11 +15,11 @@ html="${html}table.iksweb tr:hover td{color:#354251;cursor:default;}"
 html="${html}</style>"
 
 #Get the current namespace in OC and the current date
-namespace=$(${oc_dir}/oc get pods -o jsonpath="{.items[0].metadata.namespace}")
+namespace=$(oc get pods -o jsonpath="{.items[0].metadata.namespace}")
 date="$(date +'%Y-%m-%d %H:%M:%S') UTC"
 
 #request data from OpenShift
-table=$(${oc_dir}/oc get pods --field-selector=status.phase=="Running" -o jsonpath="
+table=$(oc get pods --field-selector=status.phase=="Running" -o jsonpath="
 {range .items[?(@.metadata.labels.app)]}
 {'<tr>'}
     {'<td align="left">'}{.metadata.labels.app}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].image}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.ms\-branch}{\" \"}{'</td>'}{'<td>'}{..metadata.annotations.config\-branch}{\" \"}{'</td>'}{'<td>'}{.metadata.creationTimestamp}{\" \"}{'</br>'}{'</td>'}{'<td align="left">'}{..containers[?(@.name == 'main')].ports[0].containerPort} {'</td>'} {'<td align="left">'}{'CPU: '}{..containers[?(@.name == 'main')].resources.requests.cpu}{'</br>'}{'</br>'}{'RAM: '} {..containers[?(@.name == 'main')].resources.requests.memory}{'</td>'}

@@ -27,7 +27,8 @@ table=$(oc get pods --field-selector=status.phase=="Running" -o jsonpath="
 {end}
 " )
 
-sed_table=$(echo $table | sed 's/nexus[^:]\S*://g' | sed 's/docker[^:]\S*://g' | sed 's/pcss-prod[^:]\S*://g')
+#delete registry from table
+sed_table=$(echo $table | sed 's/pcss-prod[^:]\S*://g' | sed 's/nexus[^:]\S*://g' | sed 's/docker[^:]\S*://g' )
 
 #Add time and HTML markup
 html="${html}<html><body><p style="font-size:12px" > update time: ${date}<br>namespace: ${namespace}</p><br><table class='iksweb'><thead><tr><th>NAME</th><th>VERSION</th><th>MsBranch</th><th>ConfigBranch</th><th>CREATION DATE</th><th>PORT</th><th>REQUEST</th></tr></thead>${sed_table}</table></html>"

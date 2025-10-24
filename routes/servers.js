@@ -19,10 +19,10 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     // Валидация данных
-    const { name, url } = req.body;
+    const { name, url, type, healthcheck } = req.body;
     
-    if (!name || !url) {
-      return res.status(400).json({ error: 'Name and URL are required' });
+    if (!name || !url || !type) {
+      return res.status(400).json({ error: 'Name, URL and type are required' });
     }
     
     // Проверка формата URL
@@ -32,13 +32,24 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid URL format' });
     }
     
+    // Проверка типа сервера
+    const validTypes = ['Postgres', 'Redis', 'Kafka', 'Astra Linux', 'Другое'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid server type' });
+    }
+    
+    // Если тип "Другое", healthcheck обязателен
+    if (type === 'Другое' && !healthcheck) {
+      return res.status(400).json({ error: 'Healthcheck is required for "Другое" type' });
+    }
+    
     // Проверка на дублирование
     const existingServer = await Server.findOne({ where: { url } });
     if (existingServer) {
       return res.status(409).json({ error: 'Server with this URL already exists' });
     }
     
-    const server = await Server.create({ name, url });
+    const server = await Server.create({ name, url, type, healthcheck });
     res.status(201).json(server);
   } catch (err) {
     console.error('Error creating server:', err);
@@ -63,10 +74,10 @@ router.get('/:id', async (req, res) => {
 // Обновление сервера
 router.put('/:id', async (req, res) => {
   try {
-    const { name, url } = req.body;
+    const { name, url, type, healthcheck } = req.body;
     
-    if (!name || !url) {
-      return res.status(400).json({ error: 'Name and URL are required' });
+    if (!name || !url || !type) {
+      return res.status(400).json({ error: 'Name, URL and type are required' });
     }
     
     // Проверка формата URL
@@ -76,12 +87,23 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid URL format' });
     }
     
+    // Проверка типа сервера
+    const validTypes = ['Postgres', 'Redis', 'Kafka', 'Astra Linux', 'Другое'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid server type' });
+    }
+    
+    // Если тип "Другое", healthcheck обязателен
+    if (type === 'Другое' && !healthcheck) {
+      return res.status(400).json({ error: 'Healthcheck is required for "Другое" type' });
+    }
+    
     const server = await Server.findByPk(req.params.id);
     if (!server) {
       return res.status(404).json({ error: 'Server not found' });
     }
     
-    await server.update({ name, url });
+    await server.update({ name, url, type, healthcheck });
     res.json(server);
   } catch (err) {
     console.error('Error updating server:', err);

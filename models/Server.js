@@ -19,6 +19,18 @@ const Server = sequelize.define('Server', {
       isUrl: true
     }
   },
+  type: {
+    type: DataTypes.ENUM('Postgres', 'Redis', 'Kafka', 'Astra Linux', 'Другое'),
+    allowNull: false,
+    defaultValue: 'Другое'
+  },
+  healthcheck: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      len: [0, 500]
+    }
+  },
   status: {
     type: DataTypes.ENUM('online', 'offline', 'unknown'),
     defaultValue: 'unknown'

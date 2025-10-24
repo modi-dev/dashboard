@@ -18,8 +18,13 @@ const connectDB = async () => {
 // Синхронизация БД
 const syncDatabase = async () => {
   try {
-    // Принудительно пересоздаем таблицы для добавления новых колонок
-    await sequelize.sync({ force: true });
+    // Синхронизируем базовую структуру без force
+    await sequelize.sync({ force: false });
+    
+    // Запускаем миграции для безопасного обновления схемы
+    const { runMigrations } = require('../scripts/migrate');
+    await runMigrations();
+    
     console.log('Database synchronized successfully.');
   } catch (err) {
     console.error('Error synchronizing database:', err);

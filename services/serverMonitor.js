@@ -69,11 +69,23 @@ class ServerMonitor {
   async checkServer(server) {
     try {
       const startTime = Date.now();
-      const response = await fetch(server.url, {
+      
+      // Определяем URL для проверки
+      let checkUrl = server.url;
+      
+      // Если есть healthcheck, используем его
+      if (server.healthcheck) {
+        const baseUrl = server.url.endsWith('/') ? server.url.slice(0, -1) : server.url;
+        const healthcheckPath = server.healthcheck.startsWith('/') ? server.healthcheck : `/${server.healthcheck}`;
+        checkUrl = `${baseUrl}${healthcheckPath}`;
+      }
+      
+      const response = await fetch(checkUrl, {
         method: 'GET',
         timeout: 10000, // 10 секунд таймаут
         headers: {
-          'User-Agent': 'ServerMonitor/1.0'
+          'User-Agent': 'ServerMonitor/1.0',
+          'Accept': 'application/json, text/plain, */*'
         }
       });
       
@@ -85,7 +97,8 @@ class ServerMonitor {
         lastChecked: new Date()
       });
       
-      console.log(`✓ Server: ${server.name} | Status: ${status} | Response: ${response.status} | Time: ${responseTime}ms`);
+      const healthcheckInfo = server.healthcheck ? ` (healthcheck: ${server.healthcheck})` : '';
+      console.log(`✓ Server: ${server.name} | Type: ${server.type} | Status: ${status} | Response: ${response.status} | Time: ${responseTime}ms${healthcheckInfo}`);
       
     } catch (error) {
       await server.update({ 
@@ -93,7 +106,8 @@ class ServerMonitor {
         lastChecked: new Date()
       });
       
-      console.log(`✗ Server: ${server.name} | Error: ${error.message}`);
+      const healthcheckInfo = server.healthcheck ? ` (healthcheck: ${server.healthcheck})` : '';
+      console.log(`✗ Server: ${server.name} | Type: ${server.type} | Error: ${error.message}${healthcheckInfo}`);
     }
   }
 

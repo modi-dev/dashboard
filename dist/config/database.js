@@ -32,15 +32,20 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sequelize = exports.syncDatabase = exports.connectDB = void 0;
 const sequelize_1 = require("sequelize");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const dbConfig = {
-    host: '127.0.0.1',
-    port: 5432,
-    database: 'postgres',
-    username: 'postgres',
-    password: 'password'
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'postgres',
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'password'
 };
 const sequelize = new sequelize_1.Sequelize(`postgres://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
 exports.sequelize = sequelize;

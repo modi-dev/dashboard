@@ -1,13 +1,17 @@
 import { Sequelize } from 'sequelize';
 import { IDatabaseConfig } from '../types';
+import dotenv from 'dotenv';
 
-// Конфигурация базы данных
+// Загружаем переменные окружения
+dotenv.config();
+
+// Конфигурация базы данных из переменных окружения
 const dbConfig: IDatabaseConfig = {
-  host: '127.0.0.1',
-  port: 5432,
-  database: 'postgres',
-  username: 'postgres',
-  password: 'password'
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'postgres',
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password'
 };
 
 // Создание подключения к БД

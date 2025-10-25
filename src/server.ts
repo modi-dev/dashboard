@@ -2,16 +2,20 @@ import express, { Request, Response, NextFunction } from 'express';
 import { connectDB, syncDatabase } from './config/database';
 import serverMonitor from './services/serverMonitor';
 import serversRouter from './routes/servers';
+import dotenv from 'dotenv';
+
+// Загружаем переменные окружения
+dotenv.config();
 
 const app = express();
-const PORT = process.env['PORT'] || 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json());
 
 // CORS для работы с фронтендом
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   if (req.method === 'OPTIONS') {

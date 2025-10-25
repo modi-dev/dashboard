@@ -7,11 +7,13 @@ const express_1 = __importDefault(require("express"));
 const database_1 = require("./config/database");
 const serverMonitor_1 = __importDefault(require("./services/serverMonitor"));
 const servers_1 = __importDefault(require("./routes/servers"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const app = (0, express_1.default)();
-const PORT = process.env['PORT'] || 3001;
+const PORT = process.env.PORT || 3001;
 app.use(express_1.default.json());
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     if (req.method === 'OPTIONS') {

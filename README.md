@@ -2,6 +2,42 @@
 
 Система мониторинга серверов с веб-интерфейсом и API.
 
+## 🏗️ Архитектура проекта
+
+### Backend (Java Spring Boot)
+- **Технологии**: Java 17, Spring Boot 3.2, Maven, PostgreSQL
+- **Особенности**: REST API, JPA/Hibernate, WebFlux, Actuator
+- **Мониторинг**: Автоматическая проверка серверов каждые 30 секунд
+
+### Frontend (React)
+- **Технологии**: React 18, Axios, CSS
+- **Особенности**: Responsive UI, Real-time updates, Error handling
+
+## 📁 Структура проекта
+
+```
+dashboard/
+├── backend/                    # Java Spring Boot Backend
+│   ├── src/main/java/com/dashboard/
+│   │   ├── controller/         # REST контроллеры
+│   │   ├── model/             # JPA модели
+│   │   ├── dto/               # DTO классы
+│   │   ├── repository/        # JPA репозитории
+│   │   ├── service/           # Бизнес логика
+│   │   └── config/            # Конфигурация
+│   ├── src/main/resources/
+│   │   └── application.yml     # Конфигурация
+│   ├── pom.xml                # Maven конфигурация
+│   └── README.md              # Документация backend
+├── client/                     # React Frontend
+│   ├── src/
+│   │   └── App.js             # Главный компонент
+│   ├── package.json           # NPM зависимости
+│   └── README.md              # Документация frontend
+├── src/                       # TypeScript Backend (Legacy)
+└── README.md                  # Основная документация
+```
+
 ## 🚀 Быстрый старт
 
 ### 1. Установка зависимостей

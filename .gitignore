@@ -48,3 +48,13 @@ yarn-error.log*
 # OS
 Thumbs.db
 .DS_Store
+
+# Java/Spring Boot
+*.jar
+*.war
+*.ear
+*.class
+target/
+!target/*.jar
+!target/*.war
+!target/*.ear

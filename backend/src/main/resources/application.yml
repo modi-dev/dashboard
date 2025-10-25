@@ -1,0 +1,14 @@
+server:
+  port: 3001
+
+spring:
+  application:
+    name: server-dashboard
+  
+  webflux:
+    base-path: /api
+
+# Note: Sensitive configuration moved to application.properties
+# Database, JPA, logging, and monitoring settings are now in application.properties
+# with environment variable support for security
+

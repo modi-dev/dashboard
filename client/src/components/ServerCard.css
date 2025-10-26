@@ -152,6 +152,18 @@
   transform: translateY(-1px);
 }
 
+/* Кнопка удаления */
+.delete-btn {
+  background: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.delete-btn:hover {
+  background: #ffcdd2;
+  transform: translateY(-1px);
+}
+
 /* Status-specific styles */
 .server-card[data-status="online"] {
   border-left: 4px solid #4CAF50;

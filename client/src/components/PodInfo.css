@@ -1,0 +1,358 @@
+/* Стили для компонента PodInfo - отображение информации о Kubernetes подах */
+
+.pod-info-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Заголовок с кнопками управления */
+.pod-info-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pod-info-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pod-info-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pod-info-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.pod-info-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pod-info-controls button:active {
+  transform: translateY(0);
+}
+
+/* Метаинформация */
+.pod-info-meta {
+  background: #f8f9fa;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.meta-value {
+  color: #6c757d;
+  font-size: 14px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+/* Контейнер таблицы */
+.pod-info-table-container {
+  overflow-x: auto;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Таблица с информацией о подах */
+.pod-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: white;
+}
+
+.pod-info-table thead {
+  background: #354251;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.pod-info-table th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-right: 1px solid #495057;
+}
+
+.pod-info-table th:last-child {
+  border-right: none;
+}
+
+.pod-info-table tbody tr {
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.pod-info-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.pod-info-table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.pod-info-table tbody tr:nth-child(even):hover {
+  background-color: #f1f3f4;
+}
+
+.pod-info-table td {
+  padding: 12px 8px;
+  vertical-align: top;
+  border-right: 1px solid #e9ecef;
+}
+
+.pod-info-table td:last-child {
+  border-right: none;
+}
+
+/* Стили для ячеек таблицы */
+.pod-name {
+  font-weight: 600;
+  color: #495057;
+  min-width: 120px;
+}
+
+.pod-version {
+  color: #6c757d;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  min-width: 150px;
+}
+
+.pod-ms-branch,
+.pod-config-branch {
+  color: #28a745;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.pod-gc-options {
+  color: #6c757d;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  min-width: 120px;
+}
+
+.pod-creation-date {
+  color: #6c757d;
+  font-size: 13px;
+  min-width: 140px;
+}
+
+.pod-port {
+  color: #007bff;
+  font-weight: 600;
+  text-align: center;
+  min-width: 60px;
+}
+
+.pod-resources {
+  min-width: 120px;
+}
+
+/* Стили для ресурсов */
+.resource-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.resource-value {
+  font-size: 12px;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #dee2e6;
+}
+
+/* Сообщения об отсутствии данных */
+.no-pods-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.no-pods-message p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.no-pods-message p:first-child {
+  font-size: 20px;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Индикатор загрузки */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #6c757d;
+}
+
+.loading-spinner::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e9ecef;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Сообщение об ошибке */
+.error-message {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+}
+
+.error-message p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.retry-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.retry-button:hover {
+  background: #c82333;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .pod-info-container {
+    margin: 10px;
+  }
+  
+  .pod-info-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .pod-info-controls {
+    justify-content: center;
+  }
+  
+  .pod-info-meta {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .pod-info-table {
+    font-size: 12px;
+  }
+  
+  .pod-info-table th,
+  .pod-info-table td {
+    padding: 8px 4px;
+  }
+  
+  .pod-name {
+    min-width: 100px;
+  }
+  
+  .pod-version {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pod-info-table-container {
+    font-size: 11px;
+  }
+  
+  .pod-info-table th,
+  .pod-info-table td {
+    padding: 6px 2px;
+  }
+  
+  .resource-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}

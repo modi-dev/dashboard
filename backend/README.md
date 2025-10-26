@@ -59,26 +59,53 @@ mvn spring-boot:run
 | GET | `/actuator/health` | Статус приложения |
 | GET | `/actuator/metrics` | Метрики приложения |
 
+### Kubernetes интеграция
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/version/pods` | Информация о подах (JSON) |
+| GET | `/api/version/html` | HTML страница с подами |
+| GET | `/api/version/namespace` | Текущий namespace |
+| GET | `/api/version/summary` | Краткая информация о подах |
+| GET | `/api/version/pods/{name}` | Информация о конкретном поде |
+| GET | `/api/version/health` | Проверка доступности Kubernetes |
+
 ## 🔧 Конфигурация
 
-### application.yml
-```yaml
-server:
-  port: 3001
+### application.properties
+```properties
+# Server configuration
+server.port=3001
 
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/server_dashboard
-    username: postgres
-    password: password
-  
-  jpa:
-    hibernate:
-      ddl-auto: update
+# Database configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/server_dashboard
+spring.datasource.username=postgres
+spring.datasource.password=password
 
-monitoring:
-  interval: 30000  # Интервал проверки (мс)
-  timeout: 10000   # Таймаут проверки (мс)
+# JPA configuration
+spring.jpa.hibernate.ddl-auto=update
+
+# Monitoring configuration
+monitoring.interval=30000  # Интервал проверки (мс)
+monitoring.timeout=10000   # Таймаут проверки (мс)
+
+# Kubernetes configuration
+kubernetes.namespace=default
+kubernetes.kubectl.path=kubectl
+kubernetes.enabled=false
+```
+
+### Переменные окружения:
+```bash
+# Database
+export DB_URL=jdbc:postgresql://localhost:5432/server_dashboard
+export DB_USERNAME=postgres
+export DB_PASSWORD=password
+
+# Kubernetes (опционально)
+export KUBERNETES_ENABLED=true
+export KUBERNETES_NAMESPACE=my-namespace
+export KUBERNETES_KUBECTL_PATH=kubectl
 ```
 
 ## 🏗️ Архитектура
@@ -100,9 +127,11 @@ backend/
 │   ├── repository/                       # JPA репозитории
 │   │   └── ServerRepository.java
 │   ├── service/                          # Бизнес логика
-│   │   └── ServerMonitorService.java
+│   │   ├── ServerMonitorService.java
+│   │   └── KubernetesService.java
 │   └── config/                           # Конфигурация
-│       └── WebClientConfig.java
+│       ├── WebClientConfig.java
+│       └── KubernetesConfig.java
 ├── src/main/resources/
 │   └── application.yml                   # Конфигурация
 └── pom.xml                               # Maven конфигурация

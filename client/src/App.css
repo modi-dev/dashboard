@@ -1,33 +1,45 @@
-/* Reset and base styles */
+/* ========================================
+   СБРОС СТИЛЕЙ И БАЗОВЫЕ НАСТРОЙКИ
+   ======================================== */
+
+/* Сброс box-sizing для всех элементов */
 * {
-  box-sizing: border-box;
+  box-sizing: border-box; /* Включает padding и border в общую ширину элемента */
 }
 
+/* Базовые стили для body */
 body {
-  margin: 0;
+  margin: 0; /* Убираем отступы по умолчанию */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f8f9fa;
-  color: #333;
+    sans-serif; /* Системный шрифт для лучшей читаемости */
+  -webkit-font-smoothing: antialiased; /* Сглаживание шрифтов в WebKit */
+  -moz-osx-font-smoothing: grayscale; /* Сглаживание шрифтов в Firefox */
+  background-color: #f8f9fa; /* Светло-серый фон */
+  color: #333; /* Темно-серый цвет текста */
 }
+
+/* ========================================
+   ОСНОВНОЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ
+   ======================================== */
 
 .App {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh; /* Минимальная высота на весь экран */
+  display: flex; /* Flexbox для вертикального расположения */
+  flex-direction: column; /* Элементы располагаются вертикально */
 }
 
-/* Header */
+/* ========================================
+   ЗАГОЛОВОК ПРИЛОЖЕНИЯ
+   ======================================== */
+
 .app-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  background: #ffffff; /* Белый фон */
+  border-bottom: 1px solid #e0e0e0; /* Тонкая линия снизу */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Тень для глубины */
+  position: sticky; /* Липкий заголовок */
+  top: 0; /* Прилипает к верху экрана */
+  z-index: 100; /* Высокий z-index для отображения поверх контента */
 }
 
 .header-content {
@@ -49,8 +61,11 @@ body {
   gap: 8px;
 }
 
-.title-icon {
-  font-size: 1.5rem;
+.title-logo {
+  height: 32px;
+  width: 32px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 .header-actions {
@@ -117,6 +132,30 @@ body {
   background: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
+}
+
+.btn-info:hover:not(:disabled) {
+  background: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+.pod-info-btn {
+  background: #6f42c1;
+  color: white;
+  box-shadow: 0 2px 4px rgba(111, 66, 193, 0.2);
+}
+
+.pod-info-btn:hover:not(:disabled) {
+  background: #5a32a3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
 }
 
 /* Main content */

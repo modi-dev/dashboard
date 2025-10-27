@@ -53,3 +53,4 @@ client/dist/
 # Temporary files
 *.tmp
 *.temp
+pods.json

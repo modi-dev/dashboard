@@ -1,322 +1,227 @@
-# Server Dashboard
+# Server Dashboard - Java Spring Boot Backend
 
-Система мониторинга серверов с веб-интерфейсом и API.
-
-## 🏗️ Архитектура проекта
-
-### Backend (Java Spring Boot)
-- **Технологии**: Java 17, Spring Boot 3.2, Maven, PostgreSQL
-- **Особенности**: REST API, JPA/Hibernate, WebFlux, Actuator
-- **Мониторинг**: Автоматическая проверка серверов каждые 30 секунд
-
-### Frontend (React)
-- **Технологии**: React 18, Axios, CSS
-- **Особенности**: Responsive UI, Real-time updates, Error handling
-
-## 📁 Структура проекта
-
-```
-dashboard/
-├── backend/                    # Java Spring Boot Backend
-│   ├── src/main/java/com/dashboard/
-│   │   ├── controller/         # REST контроллеры
-│   │   ├── model/             # JPA модели
-│   │   ├── dto/               # DTO классы
-│   │   ├── repository/        # JPA репозитории
-│   │   ├── service/           # Бизнес логика
-│   │   └── config/            # Конфигурация
-│   ├── src/main/resources/
-│   │   └── application.yml     # Конфигурация
-│   ├── pom.xml                # Maven конфигурация
-│   └── README.md              # Документация backend
-├── client/                     # React Frontend
-│   ├── src/
-│   │   └── App.js             # Главный компонент
-│   ├── package.json           # NPM зависимости
-│   └── README.md              # Документация frontend
-├── src/                       # TypeScript Backend (Legacy)
-└── README.md                  # Основная документация
-```
+Сервис мониторинга серверов и подов K8s на Java Spring Boot с Maven.
 
 ## 🚀 Быстрый старт
 
-### 1. Установка зависимостей
+### Требования
+- Java 17+
+- Maven 3.6+
+- PostgreSQL 12+
+
+### Установка и запуск
+
+1. **Клонирование и сборка:**
 ```bash
-npm install
+git clone <repository-url>
+cd dashboard
+mvn clean install
 ```
 
-### 2. Настройка переменных окружения
-Скопируйте `.env.example` в `.env` и настройте переменные:
+2. **Настройка базы данных:**
 ```bash
-cp .env.example .env
-```
+# Создание базы данных PostgreSQL
+createdb server_dashboard
 
-Отредактируйте `.env` файл:
-```env
-# Database Configuration
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=your_password_here
-
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-
-# Monitoring Configuration
-MONITOR_INTERVAL=30000
-MONITOR_TIMEOUT=10000
-
-# CORS Configuration
-CORS_ORIGIN=*
-```
-
-### 3. Запуск PostgreSQL и PgAdmin4
-```bash
-# Через Docker
-#   Создадим сеть 
-docker network create postgres_net
+# Или через Docker
 docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --network postgres_net postgres
 docker run -d --name pgadmin -p 8080:80 -e PGADMIN_DEFAULT_EMAIL=user@example.com -e PGADMIN_DEFAULT_PASSWORD=password --network postgres_net dpage/pgadmin4
+docker run --name postgres-dashboard -e POSTGRES_PASSWORD=password -e POSTGRES_DB=server_dashboard -p 5432:5432 -d postgres:15
 ```
 
-### 4. Запуск сервера
+3. **Настройка переменных окружения:**
 ```bash
-npm run dev
+export DB_URL=jdbc:postgresql://localhost:5432/server_dashboard
+export DB_USERNAME=postgres
+export DB_PASSWORD=password
 ```
 
-### 5. Запуск клиента
+4. **Запуск приложения:**
+
+**Windows:**
 ```bash
-cd client
-npm start
+start.bat
 ```
 
-## 📁 Структура файлов
-
+**Linux/Mac:**
+```bash
+mvn spring-boot:run
 ```
-dashboard/src/
-├── server.js                 # Основной файл сервера
-├── config/
-│   └── database.js          # Конфигурация базы данных
-├── models/
-│   └── Server.js            # Модель сервера (Sequelize)
-├── routes/
-│   └── servers.js           # API маршруты для серверов
-├── services/
-│   └── serverMonitor.js     # Сервис мониторинга серверов
-└── client/                  # React фронтенд
-    └── src/
-        └── App.js
-```
-
-## 🔧 Описание модулей
-
-### `server.js` - Основной файл
-- Инициализация Express приложения
-- Настройка middleware (CORS, JSON)
-- Подключение маршрутов
-- Запуск сервера и мониторинга
-- Graceful shutdown
-
-### `config/database.js` - Конфигурация БД
-- Настройка подключения к PostgreSQL
-- Проверка соединения
-- Синхронизация схемы БД
-
-### `models/Server.js` - Модель сервера
-- Определение структуры таблицы Server
-- Валидация полей
-- Настройки Sequelize
-
-### `routes/servers.js` - API маршруты
-- `GET /api/servers` - получение всех серверов
-- `POST /api/servers` - создание сервера
-- `GET /api/servers/:id` - получение сервера по ID
-- `PUT /api/servers/:id` - обновление сервера
-- `DELETE /api/servers/:id` - удаление сервера
-
-### `services/serverMonitor.js` - Мониторинг серверов
-- Класс для управления мониторингом
-- Автоматическая проверка серверов
-- Обновление статуса в БД
-- Управление интервалами проверки
-
-## 🚀 Преимущества новой структуры
-
-1. **Разделение ответственности** - каждый файл отвечает за свою область
-2. **Легкость тестирования** - модули можно тестировать независимо
-3. **Масштабируемость** - легко добавлять новые модели и маршруты
-4. **Читаемость** - код легче понимать и поддерживать
-5. **Переиспользование** - модули можно использовать в других проектах
 
 ## 📋 API Endpoints
+
+### Основные маршруты
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Информация об API |
 | GET | `/api/servers` | Получить все серверы |
 | POST | `/api/servers` | Создать сервер |
-| GET | `/api/servers/:id` | Получить сервер по ID |
-| PUT | `/api/servers/:id` | Обновить сервер |
-| DELETE | `/api/servers/:id` | Удалить сервер |
+| GET | `/api/servers/{id}` | Получить сервер по ID |
+| PUT | `/api/servers/{id}` | Обновить сервер |
+| DELETE | `/api/servers/{id}` | Удалить сервер |
+| POST | `/api/servers/{id}/check` | Проверить сервер |
+
+### Мониторинг
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/actuator/health` | Статус приложения |
+| GET | `/actuator/metrics` | Метрики приложения |
+
+### Kubernetes интеграция
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/version/pods` | Информация о подах (JSON) |
+| GET | `/api/version/html` | HTML страница с подами |
+| GET | `/api/version/namespace` | Текущий namespace |
+| GET | `/api/version/summary` | Краткая информация о подах |
+| GET | `/api/version/pods/{name}` | Информация о конкретном поде |
+| GET | `/api/version/health` | Проверка доступности Kubernetes |
+
+## 🔧 Конфигурация
+
+### application.properties
+```properties
+# Server configuration
+server.port=3001
+
+# Database configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/server_dashboard
+spring.datasource.username=postgres
+spring.datasource.password=password
+
+# JPA configuration
+spring.jpa.hibernate.ddl-auto=update
+
+# Monitoring configuration
+monitoring.interval=30000  # Интервал проверки (мс)
+monitoring.timeout=10000   # Таймаут проверки (мс)
+
+# Kubernetes configuration
+kubernetes.namespace=default
+kubernetes.kubectl.path=kubectl
+kubernetes.enabled=false
+```
+
+### Переменные окружения:
+```bash
+# Database
+export DB_URL=jdbc:postgresql://localhost:5432/server_dashboard
+export DB_USERNAME=postgres
+export DB_PASSWORD=password
+
+# Kubernetes (опционально)
+export KUBERNETES_ENABLED=true
+export KUBERNETES_NAMESPACE=my-namespace
+export KUBERNETES_KUBECTL_PATH=kubectl
+```
+
+## 🏗️ Архитектура
+
+### Структура проекта
+```
+backend/
+├── src/main/java/com/dashboard/
+│   ├── ServerDashboardApplication.java    # Главный класс
+│   ├── controller/                        # REST контроллеры
+│   │   ├── ServerController.java
+│   │   └── HomeController.java
+│   ├── model/                            # JPA модели
+│   │   ├── Server.java
+│   │   ├── ServerType.java
+│   │   └── ServerStatus.java
+│   ├── dto/                              # DTO классы
+│   │   └── ServerDto.java
+│   ├── repository/                       # JPA репозитории
+│   │   └── ServerRepository.java
+│   ├── service/                          # Бизнес логика
+│   │   ├── ServerMonitorService.java
+│   │   └── KubernetesService.java
+│   └── config/                           # Конфигурация
+│       ├── WebClientConfig.java
+│       └── KubernetesConfig.java
+├── src/main/resources/
+│   └── application.yml                   # Конфигурация
+└── pom.xml                               # Maven конфигурация
+```
+
+## 🎯 Типы серверов
+
+### Поддерживаемые типы:
+- **POSTGRES** - PostgreSQL база данных
+- **REDIS** - Redis кэш
+- **KAFKA** - Apache Kafka
+- **ASTRA_LINUX** - Astra Linux сервер
+- **OTHER** - Кастомные HTTP серверы
+
+### Методы проверки:
+- **TCP соединение** - для PostgreSQL, Redis, Kafka, Astra Linux
+- **HTTP запросы** - для кастомных серверов с healthcheck
 
 ## 🔄 Мониторинг
 
-Сервис мониторинга автоматически:
-- Проверяет все серверы каждые 30 секунд
-- Обновляет статус (online/offline/unknown)
-- Записывает время последней проверки
-- Логирует результаты в консоль
+### Автоматическая проверка:
+- Интервал: 30 секунд (настраивается)
+- Таймаут: 10 секунд (настраивается)
+- Параллельная проверка всех серверов
 
-### 🎯 Типы проверок серверов
-
-#### **PostgreSQL** 
-- Проверка TCP соединения на порт 5432 (по умолчанию)
-- URL формат: `postgres://host:port` или `postgres://host:5432`
-
-#### **Redis**
-- Проверка TCP соединения на порт 6379 (по умолчанию)
-- URL формат: `redis://host:port` или `redis://host:6379`
-
-#### **Kafka**
-- Проверка TCP соединения на порт 9092 (по умолчанию)
-- URL формат: `kafka://host:port` или `kafka://host:9092`
-
-#### **Astra Linux**
-- Проверка SSH соединения на порт 22 (по умолчанию)
-- URL формат: `ssh://host:port` или `ssh://host:22`
-
-#### **Другое**
-- HTTP/HTTPS проверка с поддержкой healthcheck endpoints
-- URL формат: `http://host:port` или `https://host:port`
-- Поддержка кастомных healthcheck путей
-
-
-## 📁 **Новая структура проекта**
-
+### Логирование:
 ```
-dashboard/
-├── src/                          # TypeScript исходники
-│   ├── config/
-│   │   └── database.ts           # Конфигурация БД
-│   ├── models/
-│   │   └── Server.ts             # Типизированная модель
-│   ├── routes/
-│   │   └── servers.ts            # Типизированные маршруты
-│   ├── services/
-│   │   └── serverMonitor.ts     # Типизированный мониторинг
-│   ├── scripts/
-│   │   └── migrate.ts            # Типизированные миграции
-│   ├── types/
-│   │   └── index.ts              # Определения типов
-│   └── server.ts                 # Основной файл сервера
-├── dist/                         # Скомпилированный JavaScript
-├── tsconfig.json                 # Конфигурация TypeScript
-├── nodemon.json                  # Конфигурация для разработки
-└── package.json                  # Обновленные скрипты
+✓ Server: My DB | Type: POSTGRES | Status: ONLINE | Time: 2ms
+✗ Server: Redis Cache | Type: REDIS | Status: OFFLINE | Time: 10000ms
 ```
 
-## 🎯 **Преимущества TypeScript**
+## 🧪 Тестирование
 
-### **1. Типобезопасность:**
-```typescript
-// ❌ JavaScript - ошибки во время выполнения
-const server = { name: "Test", url: 123 }; // url должен быть строкой
-
-// ✅ TypeScript - ошибки на этапе компиляции
-const server: IServer = { 
-  name: "Test", 
-  url: "http://example.com", // ✅ Правильный тип
-  type: "Postgres"           // ✅ Обязательное поле
-};
-```
-
-### **2. Лучший IntelliSense:**
-```typescript
-// Автодополнение полей и методов
-server. // IDE покажет все доступные свойства
-```
-
-### **3. Рефакторинг:**
-```typescript
-// Переименование свойства обновит все использования
-interface IServer {
-  serverName: string; // Переименовали name -> serverName
-}
-```
-
-### **4. Документация в коде:**
-```typescript
-interface IServer {
-  name: string;        // Название сервера
-  url: string;        // URL для мониторинга
-  type: ServerType;   // Тип сервера
-  status: ServerStatus; // Текущий статус
-}
-```
-
-## 🛠️ **Команды для работы**
-
-### **Разработка:**
+### Запуск тестов:
 ```bash
-npm run dev          # Запуск в режиме разработки с автоперезагрузкой
+mvn test
 ```
 
-### **Продакшн:**
+### Интеграционные тесты:
 ```bash
-npm run build        # Компиляция TypeScript в JavaScript
-npm start            # Запуск скомпилированного кода
+mvn test -Dtest=*IntegrationTest
 ```
 
-### **Проверка типов:**
+## 📊 Мониторинг и метрики
+
+### Actuator endpoints:
+- `/actuator/health` - Статус здоровья
+- `/actuator/metrics` - Метрики приложения
+- `/actuator/info` - Информация о приложении
+
+## 🚀 Развертывание
+
+### JAR файл:
 ```bash
-npx tsc --noEmit     # Проверка типов без компиляции
+mvn clean package
+java -jar target/server-dashboard-1.0.0.jar
 ```
 
-## 📋 **Созданные типы**
+### Docker:
+```bash
+# Создание образа
+docker build -t server-dashboard .
 
-### **Основные интерфейсы:**
-```typescript
-interface IServer {
-  id?: number;
-  name: string;
-  url: string;
-  type: ServerType;
-  healthcheck?: string;
-  status: ServerStatus;
-  lastChecked?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-type ServerType = 'Postgres' | 'Redis' | 'Kafka' | 'Astra Linux' | 'Другое';
-type ServerStatus = 'online' | 'offline' | 'unknown';
+# Запуск контейнера
+docker run -p 3001:3001 server-dashboard
 ```
 
-### **API типы:**
-```typescript
-interface IApiResponse<T = any> {
-  success: boolean;
-  data?: T | undefined;
-  error?: string | undefined;
-  message?: string | undefined;
-}
+## 🔧 Разработка
+
+### Горячая перезагрузка:
+```bash
+mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.devtools.restart.enabled=true"
 ```
 
-## 🔧 **Конфигурация TypeScript**
+### Профили:
+```bash
+# Development
+mvn spring-boot:run -Dspring.profiles.active=dev
 
-### **tsconfig.json:**
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "strict": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
-  }
-}
+# Production
+mvn spring-boot:run -Dspring.profiles.active=prod
 ```
+

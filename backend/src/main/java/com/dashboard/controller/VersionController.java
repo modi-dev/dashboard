@@ -1,14 +1,18 @@
 package com.dashboard.controller;
 
 import com.dashboard.model.PodInfo;
+import com.dashboard.service.CsvExportService;
 import com.dashboard.service.KubernetesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,9 @@ public class VersionController {
     
     @Autowired
     private KubernetesService kubernetesService;
+    
+    @Autowired
+    private CsvExportService csvExportService;
     
     /**
      * Получает информацию о всех запущенных подах в JSON формате
@@ -194,6 +201,70 @@ public class VersionController {
         } catch (Exception e) {
             logger.error("Ошибка при получении конфигурации: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(config);
+        }
+    }
+    
+    /**
+     * Получает общую информацию о Kubernetes и подах
+     * GET /api/version/info
+     */
+    @GetMapping("/info")
+    public ResponseEntity<Map<String, Object>> getInfo() {
+        Map<String, Object> info = new HashMap<>();
+        
+        try {
+            logger.info("Запрос общей информации о Kubernetes");
+            
+            // Информация о конфигурации
+            info.put("enabled", kubernetesService.getKubernetesConfig().isEnabled());
+            info.put("namespace", kubernetesService.getKubernetesConfig().getNamespace());
+            info.put("kubectlPath", kubernetesService.getKubernetesConfig().getKubectlPath());
+            
+            // Информация о подах
+            List<PodInfo> pods = kubernetesService.getRunningPods();
+            info.put("totalPods", pods.size());
+            info.put("pods", pods);
+            
+            // Статус
+            info.put("status", "ok");
+            info.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(info);
+        } catch (Exception e) {
+            logger.error("Ошибка при получении информации: {}", e.getMessage(), e);
+            info.put("status", "error");
+            info.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(info);
+        }
+    }
+    
+    /**
+     * Экспортирует список подов в CSV формат
+     * GET /api/version/export/csv
+     */
+    @GetMapping("/export/csv")
+    public ResponseEntity<String> exportPodsToCsv() {
+        try {
+            logger.info("Экспорт подов в CSV формат");
+            List<PodInfo> pods = kubernetesService.getRunningPods();
+            String csv = csvExportService.exportPodsToCsv(pods);
+            
+            // Генерируем имя файла с текущей датой
+            String filename = "pods_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setCacheControl("no-cache");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(csv);
+                
+        } catch (Exception e) {
+            logger.error("Ошибка при экспорте подов: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                .body("Error exporting pods: " + e.getMessage());
         }
     }
 }

@@ -9,7 +9,7 @@ import java.util.Map;
 @RestController
 public class HomeController {
     
-    @GetMapping("/")
+    @GetMapping("/api")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Server Dashboard API");

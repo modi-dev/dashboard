@@ -4,14 +4,18 @@ import com.dashboard.dto.ServerDto;
 import com.dashboard.model.Server;
 import com.dashboard.model.ServerType;
 import com.dashboard.repository.ServerRepository;
+import com.dashboard.service.CsvExportService;
 import com.dashboard.service.ServerMonitorService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +30,9 @@ public class ServerController {
     
     @Autowired
     private ServerMonitorService serverMonitorService;
+    
+    @Autowired
+    private CsvExportService csvExportService;
     
     @GetMapping
     public ResponseEntity<ApiResponse<List<ServerDto>>> getAllServers() {
@@ -149,6 +156,34 @@ public class ServerController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, null, "Internal server error", null));
+        }
+    }
+    
+    /**
+     * Экспортирует список серверов в CSV формат
+     * GET /api/servers/export/csv
+     */
+    @GetMapping("/export/csv")
+    public ResponseEntity<String> exportServersToCsv() {
+        try {
+            List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
+            String csv = csvExportService.exportServersToCsv(servers);
+            
+            // Генерируем имя файла с текущей датой
+            String filename = "servers_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setCacheControl("no-cache");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(csv);
+                
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error exporting servers: " + e.getMessage());
         }
     }
     

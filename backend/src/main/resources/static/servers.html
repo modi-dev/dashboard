@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Серверы - Server Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-online { color: #28a745; }
+        .status-offline { color: #dc3545; }
+        .status-unknown { color: #6c757d; }
+        .card-header { background-color: #f8f9fa; }
+        .navbar-brand { font-weight: bold; }
+        .footer { margin-top: auto; }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1050;
+            overflow-y: auto;
+        }
+        
+        .sidebar.open {
+            right: 0;
+        }
+        
+        .sidebar-header {
+            background: #343a40;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sidebar-body {
+            padding: 1.5rem;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+        
+        .sidebar-overlay.show {
+            display: block;
+        }
+        
+        .btn-add-server {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1030;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .main-content {
+            transition: margin-right 0.3s ease;
+        }
+        
+        .main-content.sidebar-open {
+            margin-right: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .main-content.sidebar-open {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-server me-2"></i>Server Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/servers.html">
+                            <i class="fas fa-server me-1"></i>Servers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pods.html">
+                            <i class="fas fa-cube me-1"></i>Pods
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content container my-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1><i class="fas fa-server me-2"></i>Управление серверами</h1>
+                <p class="text-muted">Мониторинг и управление серверами</p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-server fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">Всего серверов</h5>
+                        <h3 class="text-primary" id="totalServers">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">Онлайн</h5>
+                        <h3 class="text-success" id="onlineServers">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                        <h5 class="card-title">Оффлайн</h5>
+                        <h3 class="text-danger" id="offlineServers">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Servers List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Список серверов</h5>
+                        <div>
+                            <a href="/api/servers/export/csv" class="btn btn-sm btn-outline-success me-2" title="Экспорт в CSV">
+                                <i class="fas fa-file-csv me-1"></i>Экспорт CSV
+                            </a>
+                            <span class="badge bg-primary" id="serverCount">0 серверов</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="serversEmpty" class="text-center text-muted py-4" style="display: none;">
+                            <i class="fas fa-server fa-3x mb-3"></i>
+                            <p>Нет добавленных серверов</p>
+                            <button class="btn btn-primary" onclick="openSidebar()">
+                                <i class="fas fa-plus me-1"></i>Добавить первый сервер
+                            </button>
+                        </div>
+                        <div id="serversTable" class="table-responsive" style="display: none;">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>URL</th>
+                                        <th>Тип</th>
+                                        <th>Статус</th>
+                                        <th>Последняя проверка</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="serversTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Add Button -->
+    <button class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
+        <i class="fas fa-plus fa-lg"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Add Server Sidebar -->
+    <div class="sidebar" id="addServerSidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Добавить сервер</h5>
+            <button class="btn btn-sm btn-outline-light" onclick="closeSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-body">
+            <form id="addServerForm">
+                <div class="mb-3">
+                    <label for="serverName" class="form-label">Название сервера</label>
+                    <input type="text" class="form-control" id="serverName" required placeholder="Например: My Server">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverUrl" class="form-label">URL</label>
+                    <input type="url" class="form-control" id="serverUrl" required placeholder="https://example.com">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverType" class="form-label">Тип сервера</label>
+                    <select class="form-select" id="serverType" required onchange="toggleHealthcheck()">
+                        <option value="">Выберите тип</option>
+                        <option value="POSTGRES">PostgreSQL</option>
+                        <option value="REDIS">Redis</option>
+                        <option value="KAFKA">Kafka</option>
+                        <option value="ASTRA_LINUX">Astra Linux</option>
+                        <option value="OTHER">Другое</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="healthcheckField" style="display: none;">
+                    <label for="serverHealthcheck" class="form-label">Healthcheck endpoint</label>
+                    <input type="text" class="form-control" id="serverHealthcheck" placeholder="/health">
+                    <div class="form-text">Обязательно для типа "Другое"</div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Добавить сервер
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="closeSidebar()">
+                        <i class="fas fa-times me-1"></i>Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer bg-light text-center py-3 mt-auto">
+        <div class="container">
+            <span class="text-muted">Server Dashboard v1.0.0 | 
+                <a href="/actuator/health" target="_blank">Health</a> | 
+                <a href="/actuator/metrics" target="_blank">Metrics</a>
+            </span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadServers();
+            
+            // Add form submission handler
+            document.getElementById('addServerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addServer();
+            });
+            
+            // Add keyboard handler for Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Load servers data
+        function loadServers() {
+            fetch('/api/servers')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateServersDisplay(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading servers:', error);
+                });
+        }
+
+        // Sidebar functions
+        function openSidebar() {
+            document.getElementById('addServerSidebar').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('show');
+            document.querySelector('.main-content').classList.add('sidebar-open');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeSidebar() {
+            document.getElementById('addServerSidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('show');
+            document.querySelector('.main-content').classList.remove('sidebar-open');
+            document.body.style.overflow = 'auto';
+            // Reset form
+            document.getElementById('addServerForm').reset();
+            toggleHealthcheck();
+        }
+        
+        // Toggle healthcheck field visibility
+        function toggleHealthcheck() {
+            const serverType = document.getElementById('serverType').value;
+            const healthcheckField = document.getElementById('healthcheckField');
+            const healthcheckInput = document.getElementById('serverHealthcheck');
+            
+            if (serverType === 'OTHER') {
+                healthcheckField.style.display = 'block';
+                healthcheckInput.required = true;
+            } else {
+                healthcheckField.style.display = 'none';
+                healthcheckInput.required = false;
+            }
+        }
+
+        // Add server function
+        function addServer() {
+            const serverData = {
+                name: document.getElementById('serverName').value,
+                url: document.getElementById('serverUrl').value,
+                type: document.getElementById('serverType').value
+            };
+            
+            // Add healthcheck if type is OTHER
+            if (serverData.type === 'OTHER') {
+                serverData.healthcheck = document.getElementById('serverHealthcheck').value;
+            }
+            
+            fetch('/api/servers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(serverData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close sidebar
+                    closeSidebar();
+                    // Reload servers
+                    loadServers();
+                    // Show success message
+                    showNotification('Сервер успешно добавлен!', 'success');
+                } else {
+                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Произошла ошибка при добавлении сервера', 'error');
+            });
+        }
+
+        // Update servers display
+        function updateServersDisplay(servers) {
+            const totalServers = servers.length;
+            const onlineServers = servers.filter(s => s.status === 'ONLINE').length;
+            const offlineServers = servers.filter(s => s.status === 'OFFLINE').length;
+
+            document.getElementById('totalServers').textContent = totalServers;
+            document.getElementById('onlineServers').textContent = onlineServers;
+            document.getElementById('offlineServers').textContent = offlineServers;
+            document.getElementById('serverCount').textContent = totalServers + ' ' + (totalServers === 1 ? 'сервер' : 'серверов');
+
+            if (totalServers === 0) {
+                document.getElementById('serversEmpty').style.display = 'block';
+                document.getElementById('serversTable').style.display = 'none';
+            } else {
+                document.getElementById('serversEmpty').style.display = 'none';
+                document.getElementById('serversTable').style.display = 'block';
+                
+                const tbody = document.getElementById('serversTableBody');
+                tbody.innerHTML = '';
+                
+                servers.forEach(server => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${server.name}</strong></td>
+                        <td><code>${server.url}</code></td>
+                        <td>${server.type}</td>
+                        <td><span class="badge bg-${server.status === 'ONLINE' ? 'success' : server.status === 'OFFLINE' ? 'danger' : 'secondary'}">${server.status}</span></td>
+                        <td>${server.lastChecked ? new Date(server.lastChecked).toLocaleString('ru-RU') : '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteServer(${server.id})" title="Удалить">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Delete server function
+        function deleteServer(serverId) {
+            if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
+                fetch('/api/servers/' + serverId, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadServers();
+                        showNotification('Сервер успешно удален!', 'success');
+                    } else {
+                        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Произошла ошибка при удалении сервера', 'error');
+                });
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(function() {
+            loadServers();
+        }, 30000);
+    </script>
+</body>
+</html>

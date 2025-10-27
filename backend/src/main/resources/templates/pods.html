@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout}">
+<head>
+    <title>Pods</title>
+</head>
+<body>
+    <div th:fragment="content">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1><i class="fas fa-cube me-2"></i>Kubernetes Pods</h1>
+                <p class="text-muted">Информация о подах и их версиях</p>
+            </div>
+        </div>
+
+        <!-- Pods Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-cube fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">Всего подов</h5>
+                        <h3 class="text-primary" th:text="${totalPods}">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-tag fa-2x text-info mb-2"></i>
+                        <h5 class="card-title">Namespace</h5>
+                        <h6 class="text-info" th:text="${namespace}">default</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">Последнее обновление</h5>
+                        <h6 class="text-success" th:text="${#temporals.format(#temporals.createNow(), 'HH:mm:ss')}">-</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pods List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Список подов</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshPods()">
+                                <i class="fas fa-sync-alt me-1"></i>Обновить
+                            </button>
+                            <span class="badge bg-primary ms-2" th:text="${totalPods} + ' подов'">0 подов</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${pods.empty}" class="text-center text-muted py-4">
+                            <i class="fas fa-cube fa-3x mb-3"></i>
+                            <p>Нет доступных подов</p>
+                            <p class="small">Убедитесь, что Kubernetes настроен и поды запущены</p>
+                        </div>
+                        <div th:unless="${pods.empty}" class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>Версия</th>
+                                        <th>Порт</th>
+                                        <th>CPU Request</th>
+                                        <th>Memory Request</th>
+                                        <th>MS Branch</th>
+                                        <th>Config Branch</th>
+                                        <th>GC Options</th>
+                                        <th>Дата создания</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="pod : ${pods}">
+                                        <td>
+                                            <strong th:text="${pod.name}">pod-name</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info" th:text="${pod.version}">v1.0.0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary" th:text="${pod.port}">8080</span>
+                                        </td>
+                                        <td th:text="${pod.cpuRequest}">100m</td>
+                                        <td th:text="${pod.memoryRequest}">128Mi</td>
+                                        <td th:text="${pod.msBranch}">-</td>
+                                        <td th:text="${pod.configBranch}">-</td>
+                                        <td th:text="${pod.gcOptions}">-</td>
+                                        <td th:text="${#temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm')}">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Information -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-code me-2"></i>API Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Данные о подах получаются через Kubernetes API. Для получения JSON данных используйте:</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>API Endpoints:</h6>
+                                <ul class="list-unstyled">
+                                    <li><code>GET /api/version/pods</code> - Список подов</li>
+                                    <li><code>GET /api/version/info</code> - Общая информация</li>
+                                    <li><code>GET /actuator/health</code> - Health check</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Пример запроса:</h6>
+                                <pre class="bg-light p-2"><code>curl http://localhost:3001/api/version/pods</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function refreshPods() {
+            location.reload();
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(function() {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

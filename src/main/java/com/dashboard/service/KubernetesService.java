@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Сервис для работы с Kubernetes API
@@ -286,7 +288,10 @@ public class KubernetesService {
                             for (JsonNode envVar : envNode) {
                                 if (envVar.has("name") && "JAVA_TOOL_OPTIONS".equals(envVar.get("name").asText())) {
                                     if (envVar.has("value")) {
-                                        podInfo.setGcOptions(envVar.get("value").asText());
+                                        String javaToolOptions = envVar.get("value").asText();
+                                        // Извлекаем только GC-связанные опции с помощью регулярного выражения
+                                        String gcOptions = extractGcOptions(javaToolOptions);
+                                        podInfo.setGcOptions(gcOptions);
                                     }
                                     break;
                                 }
@@ -366,7 +371,7 @@ public class KubernetesService {
      * - VERSION: версия Docker образа
      * - MsBranch: ветка микросервиса
      * - ConfigBranch: ветка конфигурации
-     * - GC: настройки сборщика мусора
+     * - GC: настройки сборщика мусора (извлеченные из JAVA_TOOL_OPTIONS)
      * - CREATION DATE: дата создания пода
      * - PORT: порты контейнера (все порты через запятую)
      * - REQUEST: запрошенные ресурсы (CPU/RAM)
@@ -431,5 +436,50 @@ public class KubernetesService {
         html.append("</html></body>");
         
         return html.toString();
+    }
+    
+    /**
+     * Извлекает GC-связанные опции из строки JAVA_TOOL_OPTIONS
+     * 
+     * Регулярное выражение ищет опции, содержащие:
+     * - GC в любом регистре (gc, GC, Gc)
+     * - Опции начинающиеся с -XX: и содержащие GC
+     * - Опции начинающиеся с -X и содержащие GC
+     * - Опции начинающиеся с -XX:+Use и содержащие GC
+     * - Опции начинающиеся с -XX:-Use и содержащие GC
+     * 
+     * @param javaToolOptions - строка с JAVA_TOOL_OPTIONS
+     * @return строка с GC опциями, разделенными переносами строк
+     */
+    private String extractGcOptions(String javaToolOptions) {
+        if (javaToolOptions == null || javaToolOptions.trim().isEmpty()) {
+            return "";
+        }
+        
+        // Регулярное выражение для поиска GC-связанных опций
+        // Ищем опции, которые содержат "GC" в любом регистре или связаны с garbage collection
+        Pattern gcPattern = Pattern.compile(
+            "-XX:[+-]?[^\\s]*[Gg][Cc][^\\s]*|" +  // -XX: опции с GC
+            "-X[^\\s]*[Gg][Cc][^\\s]*|" +        // -X опции с GC  
+            "-XX:[+-]?Use[^\\s]*[Gg][Cc][^\\s]*|" + // -XX:+UseGC, -XX:-UseGC
+            "-XX:[+-]?[Gg][Cc][^\\s]*|" +        // -XX:GC опции
+            "-XX:[+-]?[^\\s]*[Gg][Cc]|" +        // опции заканчивающиеся на GC
+            "-XX:[+-]?[^\\s]*[Gg]arbage[^\\s]*"  // garbage collection опции
+        );
+        
+        Matcher matcher = gcPattern.matcher(javaToolOptions);
+        StringBuilder gcOptions = new StringBuilder();
+        
+        while (matcher.find()) {
+            String option = matcher.group().trim();
+            if (!option.isEmpty()) {
+                if (gcOptions.length() > 0) {
+                    gcOptions.append("\n");
+                }
+                gcOptions.append(option);
+            }
+        }
+        
+        return gcOptions.toString();
     }
 }

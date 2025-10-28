@@ -229,8 +229,8 @@ mvn clean package
 - `POST /api/servers` - добавить сервер
 - `DELETE /api/servers/{id}` - удалить сервер
 - `GET /api/servers/export/csv` - экспорт в CSV
-- `GET /api/version/pods` - список Kubernetes подов
-- `GET /api/version/export/csv` - экспорт подов в CSV
+- `GET /api/pods/pods` - список Kubernetes подов
+- `GET /api/pods/export/csv` - экспорт подов в CSV
 
 ## 💡 Советы для Junior
 

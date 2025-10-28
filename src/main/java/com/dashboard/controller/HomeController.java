@@ -12,7 +12,7 @@ public class HomeController {
     @GetMapping("/api")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Server Dashboard API");
+        response.put("message", "Version Dashboard API");
         response.put("version", "1.0.0");
         response.put("status", "running");
         

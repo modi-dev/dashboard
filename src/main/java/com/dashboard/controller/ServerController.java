@@ -132,7 +132,7 @@ public class ServerController {
             }
             
             serverRepository.deleteById(id);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, null, null, "Server deleted successfully"));
                 
         } catch (Exception e) {

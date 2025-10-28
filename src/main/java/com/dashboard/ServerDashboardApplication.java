@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Главный класс приложения Server Dashboard
+ * Главный класс приложения Version Dashboard
  * 
  * Это точка входа в приложение - отсюда все начинается.
  * Spring Boot автоматически настраивает все необходимые компоненты.

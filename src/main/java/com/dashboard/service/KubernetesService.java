@@ -14,7 +14,9 @@ import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -132,6 +134,7 @@ public class KubernetesService {
     
     /**
      * Парсит JSON вывод kubectl и извлекает информацию о подах
+     * Группирует одинаковые поды и подсчитывает количество реплик
      * 
      * Структура JSON ответа kubectl:
      * {
@@ -145,7 +148,7 @@ public class KubernetesService {
      * }
      * 
      * @param jsonOutput - JSON строка от kubectl команды
-     * @return список объектов PodInfo с извлеченной информацией
+     * @return список объектов PodInfo с извлеченной информацией (сгруппированные по уникальности)
      */
     public List<PodInfo> parseKubectlOutput(String jsonOutput) {
         List<PodInfo> pods = new ArrayList<>();
@@ -161,20 +164,45 @@ public class KubernetesService {
             if (itemsNode != null && itemsNode.isArray()) {
                 logger.debug("Найден массив items с {} элементами", itemsNode.size());
                 
+                // Карта для группировки подов по уникальному ключу
+                Map<String, PodInfo> podMap = new HashMap<>();
+                
                 // Проходим по каждому элементу массива
                 for (JsonNode itemNode : itemsNode) {
                     PodInfo podInfo = parsePodJson(itemNode);
                     if (podInfo != null) {
-                        pods.add(podInfo);
-                        logger.debug("Успешно распарсен под: {}", podInfo.getName());
+                        // Создаем уникальный ключ для группировки (имя + версия + ветки)
+                        String uniqueKey = createUniqueKey(podInfo);
+                        logger.info("Ключ группировки для пода {}: '{}'", podInfo.getName(), uniqueKey);
+                        
+                        if (podMap.containsKey(uniqueKey)) {
+                            // Увеличиваем счетчик реплик для существующего пода
+                            PodInfo existingPod = podMap.get(uniqueKey);
+                            existingPod.setReplicas(existingPod.getReplicas() + 1);
+                            logger.info("Увеличено количество реплик для пода: {} (теперь: {})", 
+                                       existingPod.getName(), existingPod.getReplicas());
+                        } else {
+                            // Добавляем новый под с количеством реплик = 1
+                            podInfo.setReplicas(1);
+                            podMap.put(uniqueKey, podInfo);
+                            logger.info("Добавлен новый под: {} (реплик: 1)", podInfo.getName());
+                        }
                     }
                 }
+                
+                // Преобразуем карту в список и сортируем по количеству реплик (по убыванию)
+                pods.addAll(podMap.values());
+                pods.sort((p1, p2) -> {
+                    int replicas1 = p1.getReplicas() != null ? p1.getReplicas() : 1;
+                    int replicas2 = p2.getReplicas() != null ? p2.getReplicas() : 1;
+                    return Integer.compare(replicas2, replicas1); // Сортировка по убыванию
+                });
+                logger.info("Найдено {} уникальных подов из {} общих, успешно распарсено: {}", 
+                           podMap.size(), itemsNode.size(), pods.size());
+                
             } else {
                 logger.warn("Не найден массив items в JSON");
             }
-            
-            logger.info("Найдено {} подов в JSON, успешно распарсено: {}", 
-                       itemsNode != null ? itemsNode.size() : 0, pods.size());
             
         } catch (Exception e) {
             logger.error("Ошибка при парсинге JSON kubectl: {}", e.getMessage(), e);
@@ -374,6 +402,7 @@ public class KubernetesService {
      * - GC: настройки сборщика мусора (извлеченные из JAVA_TOOL_OPTIONS)
      * - CREATION DATE: дата создания пода
      * - PORT: порты контейнера (все порты через запятую)
+     * - REPLICAS: количество реплик (одинаковых подов)
      * - REQUEST: запрошенные ресурсы (CPU/RAM)
      * 
      * @return HTML строка с полной страницей
@@ -412,6 +441,7 @@ public class KubernetesService {
         html.append("<th>GC</th>");
         html.append("<th>CREATION DATE</th>");
         html.append("<th>PORT</th>");
+        html.append("<th>REPLICAS</th>");
         html.append("<th>REQUEST</th>");
         html.append("</tr></thead>");
         
@@ -425,6 +455,7 @@ public class KubernetesService {
             html.append("<td>").append(pod.getGcOptions() != null ? pod.getGcOptions() : "").append("</td>");
             html.append("<td>").append(pod.getCreationDate() != null ? pod.getCreationDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "").append("</td>");
             html.append("<td align=\"left\">").append(pod.getPort() != null ? pod.getPort() : "").append("</td>");
+            html.append("<td align=\"center\">").append(pod.getReplicas() != null ? pod.getReplicas().toString() : "1").append("</td>");
             html.append("<td align=\"left\">");
             html.append("CPU: ").append(pod.getCpuRequest() != null ? pod.getCpuRequest() : "").append("<br><br>");
             html.append("RAM: ").append(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "");
@@ -481,5 +512,27 @@ public class KubernetesService {
         }
         
         return gcOptions.toString();
+    }
+    
+    /**
+     * Создает уникальный ключ для группировки подов
+     * 
+     * Поды считаются одинаковыми, если у них совпадают:
+     * - Имя приложения (name) - основная характеристика
+     * - Версия образа (version) - основная характеристика
+     * 
+     * Остальные поля могут отличаться между репликами
+     * 
+     * @param podInfo - информация о поде
+     * @return уникальный ключ для группировки
+     */
+    private String createUniqueKey(PodInfo podInfo) {
+        StringBuilder keyBuilder = new StringBuilder();
+        
+        // Группируем только по основным характеристикам
+        keyBuilder.append(podInfo.getName() != null ? podInfo.getName() : "").append("|");
+        keyBuilder.append(podInfo.getVersion() != null ? podInfo.getVersion() : "");
+        
+        return keyBuilder.toString();
     }
 }

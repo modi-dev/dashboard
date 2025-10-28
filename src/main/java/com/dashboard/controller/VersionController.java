@@ -10,6 +10,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.Model;
+import org.springframework.stereotype.Controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,8 +23,8 @@ import java.util.Map;
  * Контроллер для работы с версиями и информацией о подах
  * Интегрирует функциональность из version.sh скрипта
  */
-@RestController
-@RequestMapping("/api/version")
+@Controller
+@RequestMapping("/api/pods")
 @CrossOrigin(origins = "*")
 public class VersionController {
     
@@ -36,9 +38,10 @@ public class VersionController {
     
     /**
      * Получает информацию о всех запущенных подах в JSON формате
-     * GET /api/version/pods
+     * GET /api/pods/pods
      */
-    @GetMapping("/pods")
+    @GetMapping(value = "/api/pods/pods", produces = "application/json")
+    @ResponseBody
     public ResponseEntity<List<PodInfo>> getRunningPods() {
         try {
             logger.info("Запрос информации о запущенных подах");
@@ -52,9 +55,10 @@ public class VersionController {
     
     /**
      * Получает HTML страницу с информацией о подах (как в оригинальном скрипте)
-     * GET /api/version/html
+     * GET /api/pods/html
      */
     @GetMapping(value = "/html", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
     public ResponseEntity<String> getHtmlPage() {
         try {
             logger.info("Запрос HTML страницы с информацией о подах");
@@ -68,9 +72,10 @@ public class VersionController {
     
     /**
      * Получает информацию о текущем namespace
-     * GET /api/version/namespace
+     * GET /api/pods/namespace
      */
     @GetMapping("/namespace")
+    @ResponseBody
     public ResponseEntity<String> getCurrentNamespace() {
         try {
             logger.info("Запрос текущего namespace");
@@ -84,9 +89,10 @@ public class VersionController {
     
     /**
      * Получает краткую информацию о подах (только имена и версии)
-     * GET /api/version/summary
+     * GET /api/pods/summary
      */
     @GetMapping("/summary")
+    @ResponseBody
     public ResponseEntity<List<PodInfo>> getPodsSummary() {
         try {
             logger.info("Запрос краткой информации о подах");
@@ -109,9 +115,10 @@ public class VersionController {
     
     /**
      * Получает информацию о конкретном поде по имени
-     * GET /api/version/pods/{name}
+     * GET /api/pods/pods/{name}
      */
     @GetMapping("/pods/{name}")
+    @ResponseBody
     public ResponseEntity<PodInfo> getPodByName(@PathVariable String name) {
         try {
             logger.info("Запрос информации о поде: {}", name);
@@ -135,9 +142,10 @@ public class VersionController {
     
     /**
      * Проверяет доступность Kubernetes API
-     * GET /api/version/health
+     * GET /api/pods/health
      */
     @GetMapping("/health")
+    @ResponseBody
     public ResponseEntity<String> checkKubernetesHealth() {
         try {
             logger.info("Проверка доступности Kubernetes API");
@@ -151,9 +159,10 @@ public class VersionController {
     
     /**
      * Тестовый endpoint для проверки работы сервиса
-     * GET /api/version/test
+     * GET /api/pods/test
      */
     @GetMapping("/test")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> testKubernetesService() {
         Map<String, Object> result = new HashMap<>();
         
@@ -186,9 +195,10 @@ public class VersionController {
     
     /**
      * Получает конфигурацию Kubernetes
-     * GET /api/version/config
+     * GET /api/pods/config
      */
     @GetMapping("/config")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getKubernetesConfig() {
         Map<String, Object> config = new HashMap<>();
         
@@ -206,9 +216,10 @@ public class VersionController {
     
     /**
      * Получает общую информацию о Kubernetes и подах
-     * GET /api/version/info
+     * GET /api/pods/info
      */
     @GetMapping("/info")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getInfo() {
         Map<String, Object> info = new HashMap<>();
         
@@ -240,9 +251,10 @@ public class VersionController {
     
     /**
      * Экспортирует список подов в CSV формат
-     * GET /api/version/export/csv
+     * GET /api/pods/export/csv
      */
     @GetMapping("/export/csv")
+    @ResponseBody
     public ResponseEntity<String> exportPodsToCsv() {
         try {
             logger.info("Экспорт подов в CSV формат");

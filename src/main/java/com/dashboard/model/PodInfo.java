@@ -18,13 +18,14 @@ public class PodInfo {
     private String port;           // Порты контейнера (все порты через запятую)
     private String cpuRequest;     // Запрошенные CPU ресурсы
     private String memoryRequest;  // Запрошенные RAM ресурсы
+    private Integer replicas;      // Количество реплик (одинаковых подов)
     
     // Конструкторы
     public PodInfo() {}
     
     public PodInfo(String name, String version, String msBranch, String configBranch, 
                    String gcOptions, LocalDateTime creationDate, String port, 
-                   String cpuRequest, String memoryRequest) {
+                   String cpuRequest, String memoryRequest, Integer replicas) {
         this.name = name;
         this.version = version;
         this.msBranch = msBranch;
@@ -34,6 +35,7 @@ public class PodInfo {
         this.port = port;
         this.cpuRequest = cpuRequest;
         this.memoryRequest = memoryRequest;
+        this.replicas = replicas;
     }
     
     // Getters и Setters
@@ -110,6 +112,14 @@ public class PodInfo {
         this.memoryRequest = memoryRequest;
     }
     
+    public Integer getReplicas() {
+        return replicas;
+    }
+    
+    public void setReplicas(Integer replicas) {
+        this.replicas = replicas;
+    }
+    
     @Override
     public String toString() {
         return "PodInfo{" +
@@ -122,6 +132,7 @@ public class PodInfo {
                 ", port=" + port +
                 ", cpuRequest='" + cpuRequest + '\'' +
                 ", memoryRequest='" + memoryRequest + '\'' +
+                ", replicas=" + replicas +
                 '}';
     }
 }

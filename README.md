@@ -1,4 +1,4 @@
-# Server Dashboard - Java Spring Boot Backend
+# Version Dashboard - Java Spring Boot Backend
 
 Сервис мониторинга серверов и подов K8s на Java Spring Boot с Maven.
 
@@ -73,12 +73,12 @@ mvn spring-boot:run
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/version/pods` | Информация о подах (JSON) |
-| GET | `/api/version/html` | HTML страница с подами |
-| GET | `/api/version/namespace` | Текущий namespace |
-| GET | `/api/version/summary` | Краткая информация о подах |
-| GET | `/api/version/pods/{name}` | Информация о конкретном поде |
-| GET | `/api/version/health` | Проверка доступности Kubernetes |
+| GET | `/api/pods/pods` | Информация о подах (JSON) |
+| GET | `/api/pods/html` | HTML страница с подами |
+| GET | `/api/pods/namespace` | Текущий namespace |
+| GET | `/api/pods/summary` | Краткая информация о подах |
+| GET | `/api/pods/pods/{name}` | Информация о конкретном поде |
+| GET | `/api/pods/health` | Проверка доступности Kubernetes |
 
 ## 🔧 Конфигурация
 

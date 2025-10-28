@@ -75,24 +75,26 @@ public class CsvExportService {
         // Заголовок CSV
         csv.append("Name").append(CSV_SEPARATOR)
            .append("Version").append(CSV_SEPARATOR)
-           .append("Port").append(CSV_SEPARATOR)
-           .append("CPU Request").append(CSV_SEPARATOR)
-           .append("Memory Request").append(CSV_SEPARATOR)
            .append("MS Branch").append(CSV_SEPARATOR)
            .append("Config Branch").append(CSV_SEPARATOR)
            .append("GC Options").append(CSV_SEPARATOR)
+           .append("Port").append(CSV_SEPARATOR)
+           .append("Replicas").append(CSV_SEPARATOR)
+           .append("CPU Request").append(CSV_SEPARATOR)
+           .append("Memory Request").append(CSV_SEPARATOR)
            .append("Creation Date\n");
         
         // Данные
         for (PodInfo pod : pods) {
             csv.append(escapeCsvValue(pod.getName() != null ? pod.getName() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getVersion() != null ? pod.getVersion() : "")).append(CSV_SEPARATOR);
-            csv.append(escapeCsvValue(pod.getPort() != null ? String.valueOf(pod.getPort()) : "")).append(CSV_SEPARATOR);
-            csv.append(escapeCsvValue(pod.getCpuRequest() != null ? pod.getCpuRequest() : "")).append(CSV_SEPARATOR);
-            csv.append(escapeCsvValue(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getMsBranch() != null ? pod.getMsBranch() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getConfigBranch() != null ? pod.getConfigBranch() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getGcOptions() != null ? pod.getGcOptions() : "")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getPort() != null ? String.valueOf(pod.getPort()) : "")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getReplicas() != null ? String.valueOf(pod.getReplicas()) : "1")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getCpuRequest() != null ? pod.getCpuRequest() : "")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getCreationDate() != null ? pod.getCreationDate().format(DATE_FORMATTER) : ""));
             csv.append("\n");
         }

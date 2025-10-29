@@ -46,6 +46,7 @@ public class PodsController {
             model.addAttribute("uniquePods", uniquePods);   // уникальные записи
             model.addAttribute("totalReplicas", totalReplicas);
             model.addAttribute("withReplicas", withReplicas);
+            model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
             return "pods";
         } catch (Exception e) {
             logger.error("Ошибка при получении HTML страницы с подами: {}", e.getMessage(), e);

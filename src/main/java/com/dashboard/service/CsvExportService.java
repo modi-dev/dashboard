@@ -41,6 +41,7 @@ public class CsvExportService {
            .append("Name").append(CSV_SEPARATOR)
            .append("URL").append(CSV_SEPARATOR)
            .append("Type").append(CSV_SEPARATOR)
+           .append("Version").append(CSV_SEPARATOR)
            .append("Status").append(CSV_SEPARATOR)
            .append("Healthcheck").append(CSV_SEPARATOR)
            .append("Last Checked").append(CSV_SEPARATOR)
@@ -53,6 +54,7 @@ public class CsvExportService {
             csv.append(escapeCsvValue(server.getName())).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(server.getUrl())).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(server.getType().getDisplayName())).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(server.getVersion() != null ? server.getVersion() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(server.getStatus().name())).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(server.getHealthcheck() != null ? server.getHealthcheck() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(server.getLastChecked() != null ? server.getLastChecked().format(DATE_FORMATTER) : "")).append(CSV_SEPARATOR);

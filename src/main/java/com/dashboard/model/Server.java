@@ -97,6 +97,27 @@ public class Server {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    /**
+     * Версия сервера (получается автоматически через метрики)
+     * Пример: "PostgreSQL 15.8", "Redis 7.0.5"
+     */
+    @Column(name = "version")
+    private String version;
+    
+    /**
+     * Кастомный endpoint для получения метрик (только для типа OTHER)
+     * Пример: "/custom-metrics", "/api/version"
+     */
+    @Column(name = "metrics_endpoint")
+    private String metricsEndpoint;
+    
+    /**
+     * Кастомное регулярное выражение для извлечения версии из метрик (только для типа OTHER)
+     * Пример: "version\\s*=\\s*\"([^\"]+)\""
+     */
+    @Column(name = "version_regex")
+    private String versionRegex;
+    
     // === КОНСТРУКТОРЫ ===
     
     /**
@@ -214,6 +235,30 @@ public class Server {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public void setVersion(String version) {
+        this.version = version;
+    }
+    
+    public String getMetricsEndpoint() {
+        return metricsEndpoint;
+    }
+    
+    public void setMetricsEndpoint(String metricsEndpoint) {
+        this.metricsEndpoint = metricsEndpoint;
+    }
+    
+    public String getVersionRegex() {
+        return versionRegex;
+    }
+    
+    public void setVersionRegex(String versionRegex) {
+        this.versionRegex = versionRegex;
     }
 }
 

@@ -387,6 +387,68 @@ public class KubernetesService {
     }
     
     /**
+     * Получает версию Kubernetes кластера
+     * 
+     * Использует команду: kubectl version --client
+     * Эта команда возвращает версию клиента kubectl и сервера
+     * 
+     * @return версия Kubernetes или "Неизвестно" если не удалось определить
+     */
+    public String getKubernetesVersion() {
+        try {
+            // Надежный способ: JSON-вывод, из которого достаем serverVersion.gitVersion
+            String command = String.format("%s version -o json", kubernetesConfig.getKubectlPath());
+            Process process = new ProcessBuilder(command.split("\\s+")).start();
+
+            BufferedReader outReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            StringBuilder output = new StringBuilder();
+            StringBuilder error = new StringBuilder();
+
+            String line;
+            while ((line = outReader.readLine()) != null) {
+                output.append(line);
+            }
+            while ((line = errReader.readLine()) != null) {
+                error.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                logger.warn("kubectl version exited with code {}: {}", exitCode, error.toString());
+                return "Неизвестно";
+            }
+
+            String json = output.toString();
+            if (json.isEmpty()) {
+                return "Неизвестно";
+            }
+
+            JsonNode root = objectMapper.readTree(json);
+            // Пытаемся взять версию сервера, иначе клиента
+            JsonNode server = root.get("serverVersion");
+            if (server != null) {
+                JsonNode gitVersion = server.get("gitVersion");
+                if (gitVersion != null && !gitVersion.asText().isBlank()) {
+                    return gitVersion.asText();
+                }
+            }
+            JsonNode client = root.get("clientVersion");
+            if (client != null) {
+                JsonNode gitVersion = client.get("gitVersion");
+                if (gitVersion != null && !gitVersion.asText().isBlank()) {
+                    return gitVersion.asText();
+                }
+            }
+            return "Неизвестно";
+        } catch (Exception e) {
+            logger.warn("Не удалось получить версию Kubernetes: {}", e.getMessage());
+            return "Неизвестно";
+        }
+    }
+    
+    /**
      * Генерирует HTML страницу с информацией о подах (аналог оригинального version.sh скрипта)
      * 
      * Создает полноценную HTML страницу с:

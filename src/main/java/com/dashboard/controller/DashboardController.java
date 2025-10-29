@@ -52,6 +52,9 @@ public class DashboardController {
             // Статистика подов
             model.addAttribute("totalPods", pods.size());
             
+            // Версия Kubernetes
+            model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
+            
             logger.info("Главная страница загружена: {} серверов, {} подов", servers.size(), pods.size());
             
         } catch (Exception e) {

@@ -179,49 +179,7 @@
                             <i class="fas fa-file-csv me-1"></i>Экспорт CSV
                         </a>
                     </div>
-                    <div class="card-body">
-                        <div th:if="${#lists.isEmpty(servers)}" class="text-center text-muted py-4">
-                            <i class="fas fa-server fa-3x mb-3"></i>
-                            <p>Нет добавленных серверов</p>
-                            <button class="btn btn-primary" onclick="openSidebar()">
-                                <i class="fas fa-plus me-1"></i>Добавить первый сервер
-                            </button>
-                        </div>
-                        <div th:unless="${#lists.isEmpty(servers)}" class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Название</th>
-                                        <th>URL</th>
-                                        <th>Тип</th>
-                                        <th>Статус</th>
-                                        <th>Последняя проверка</th>
-                                        <th>Дата создания</th>
-                                        <th>Действия</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="server : ${servers}">
-                                        <td><strong th:text="${server.name}">-</strong></td>
-                                        <td th:text="${server.url}">-</td>
-                                        <td><span class="badge bg-info" th:text="${server.type}">-</span></td>
-                                        <td>
-                                            <span th:if="${server.status.name() == 'ONLINE'}" class="badge bg-success" th:text="${server.status}">-</span>
-                                            <span th:if="${server.status.name() == 'OFFLINE'}" class="badge bg-danger" th:text="${server.status}">-</span>
-                                            <span th:if="${server.status.name() != 'ONLINE' and server.status.name() != 'OFFLINE'}" class="badge bg-secondary" th:text="${server.status}">-</span>
-                                        </td>
-                                        <td th:text="${server.lastChecked != null ? #temporals.format(server.lastChecked, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
-                                        <td th:text="${server.createdAt != null ? #temporals.format(server.createdAt, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-danger" th:onclick="'deleteServer(' + ${server.id} + ')'" title="Удалить сервер">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div class="card-body" th:replace="~{fragments/servers :: serversTable(${servers})}"></div>
                 </div>
             </div>
         </div>
@@ -271,6 +229,18 @@
                     <label for="serverHealthcheck" class="form-label">Healthcheck endpoint</label>
                     <input type="text" class="form-control" id="serverHealthcheck" placeholder="/health">
                     <div class="form-text">Обязательно для типа "Другое"</div>
+                </div>
+                
+                <div class="mb-3" id="metricsEndpointField" style="display: none;">
+                    <label for="serverMetricsEndpoint" class="form-label">Metrics endpoint</label>
+                    <input type="text" class="form-control" id="serverMetricsEndpoint" placeholder="/metrics">
+                    <div class="form-text">Endpoint для получения метрик (например: /metrics, /api/version)</div>
+                </div>
+                
+                <div class="mb-3" id="versionRegexField" style="display: none;">
+                    <label for="serverVersionRegex" class="form-label">Version regex</label>
+                    <input type="text" class="form-control" id="serverVersionRegex" placeholder='version\\s*=\\s*"([^"]+)"'>
+                    <div class="form-text">Регулярное выражение для извлечения версии из метрик</div>
                 </div>
                 
                 <div class="d-grid gap-2">
@@ -336,13 +306,19 @@
             const serverType = document.getElementById('serverType').value;
             const healthcheckField = document.getElementById('healthcheckField');
             const healthcheckInput = document.getElementById('serverHealthcheck');
+            const metricsEndpointField = document.getElementById('metricsEndpointField');
+            const versionRegexField = document.getElementById('versionRegexField');
             
             if (serverType === 'OTHER') {
                 healthcheckField.style.display = 'block';
                 healthcheckInput.required = true;
+                metricsEndpointField.style.display = 'block';
+                versionRegexField.style.display = 'block';
             } else {
                 healthcheckField.style.display = 'none';
                 healthcheckInput.required = false;
+                metricsEndpointField.style.display = 'none';
+                versionRegexField.style.display = 'none';
             }
         }
 
@@ -354,9 +330,11 @@
                 type: document.getElementById('serverType').value
             };
             
-            // Add healthcheck if type is OTHER
+            // Add healthcheck and custom metrics fields if type is OTHER
             if (serverData.type === 'OTHER') {
                 serverData.healthcheck = document.getElementById('serverHealthcheck').value;
+                serverData.metricsEndpoint = document.getElementById('serverMetricsEndpoint').value;
+                serverData.versionRegex = document.getElementById('serverVersionRegex').value;
             }
             
             fetch('/api/servers', {

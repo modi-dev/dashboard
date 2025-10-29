@@ -33,6 +33,12 @@ public class ServerDto {
     
     private LocalDateTime updatedAt;
     
+    private String version;
+    
+    private String metricsEndpoint;
+    
+    private String versionRegex;
+    
     // Constructors
     public ServerDto() {}
     
@@ -113,6 +119,30 @@ public class ServerDto {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public void setVersion(String version) {
+        this.version = version;
+    }
+    
+    public String getMetricsEndpoint() {
+        return metricsEndpoint;
+    }
+    
+    public void setMetricsEndpoint(String metricsEndpoint) {
+        this.metricsEndpoint = metricsEndpoint;
+    }
+    
+    public String getVersionRegex() {
+        return versionRegex;
+    }
+    
+    public void setVersionRegex(String versionRegex) {
+        this.versionRegex = versionRegex;
     }
 }
 

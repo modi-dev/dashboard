@@ -6,6 +6,7 @@ import com.dashboard.model.ServerType;
 import com.dashboard.repository.ServerRepository;
 import com.dashboard.service.CsvExportService;
 import com.dashboard.service.ServerMonitorService;
+import com.dashboard.service.ServerVersionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -34,10 +35,25 @@ public class ServerController {
     @Autowired
     private CsvExportService csvExportService;
     
+    @Autowired
+    private ServerVersionService serverVersionService;
+    
     @GetMapping
     public ResponseEntity<ApiResponse<List<ServerDto>>> getAllServers() {
         try {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
+            
+            // Получаем версии для всех серверов
+            for (Server server : servers) {
+                if (server.getVersion() == null) {
+                    String version = serverVersionService.getServerVersion(server);
+                    if (version != null) {
+                        server.setVersion(version);
+                        serverRepository.save(server); // Сохраняем версию в БД
+                    }
+                }
+            }
+            
             List<ServerDto> serverDtos = servers.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -83,6 +99,8 @@ public class ServerController {
             
             Server server = new Server(serverDto.getName(), serverDto.getUrl(), serverDto.getType());
             server.setHealthcheck(serverDto.getHealthcheck());
+            server.setMetricsEndpoint(serverDto.getMetricsEndpoint());
+            server.setVersionRegex(serverDto.getVersionRegex());
             
             Server savedServer = serverRepository.save(server);
             
@@ -112,6 +130,8 @@ public class ServerController {
             server.setUrl(serverDto.getUrl());
             server.setType(serverDto.getType());
             server.setHealthcheck(serverDto.getHealthcheck());
+            server.setMetricsEndpoint(serverDto.getMetricsEndpoint());
+            server.setVersionRegex(serverDto.getVersionRegex());
             
             Server savedServer = serverRepository.save(server);
             
@@ -198,6 +218,9 @@ public class ServerController {
         dto.setLastChecked(server.getLastChecked());
         dto.setCreatedAt(server.getCreatedAt());
         dto.setUpdatedAt(server.getUpdatedAt());
+        dto.setVersion(server.getVersion());
+        dto.setMetricsEndpoint(server.getMetricsEndpoint());
+        dto.setVersionRegex(server.getVersionRegex());
         return dto;
     }
     

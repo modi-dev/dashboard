@@ -3,6 +3,7 @@ package com.dashboard.controller;
 import com.dashboard.model.Server;
 import com.dashboard.model.PodInfo;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.ServerVersionService;
 import com.dashboard.repository.ServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -29,6 +30,9 @@ public class DashboardController {
     @Autowired
     private KubernetesService kubernetesService;
     
+    @Autowired
+    private ServerVersionService serverVersionService;
+    
     /**
      * Главная страница dashboard
      * GET /
@@ -37,7 +41,19 @@ public class DashboardController {
     public String index(Model model) {
         try {
             // Получаем список серверов
-            List<Server> servers = serverRepository.findAll();
+            List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
+            
+            // Получаем версии для всех серверов
+            for (Server server : servers) {
+                if (server.getVersion() == null) {
+                    String version = serverVersionService.getServerVersion(server);
+                    if (version != null) {
+                        server.setVersion(version);
+                        serverRepository.save(server); // Сохраняем версию в БД
+                    }
+                }
+            }
+            
             model.addAttribute("servers", servers);
             
             // Получаем информацию о подах
@@ -89,7 +105,19 @@ public class DashboardController {
     public String servers(Model model) {
         try {
             // Получаем список серверов
-            List<Server> servers = serverRepository.findAll();
+            List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
+            
+            // Получаем версии для всех серверов
+            for (Server server : servers) {
+                if (server.getVersion() == null) {
+                    String version = serverVersionService.getServerVersion(server);
+                    if (version != null) {
+                        server.setVersion(version);
+                        serverRepository.save(server); // Сохраняем версию в БД
+                    }
+                }
+            }
+            
             model.addAttribute("servers", servers);
             
             // Статистика

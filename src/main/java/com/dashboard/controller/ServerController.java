@@ -8,6 +8,8 @@ import com.dashboard.service.CsvExportService;
 import com.dashboard.service.ServerMonitorService;
 import com.dashboard.service.ServerVersionService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/servers")
 @CrossOrigin(origins = "*")
 public class ServerController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ServerController.class);
     
     @Autowired
     private ServerRepository serverRepository;
@@ -44,13 +48,27 @@ public class ServerController {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
             // Получаем версии для всех серверов
+            System.out.println("=== DEBUG: Проверяем версии для " + servers.size() + " серверов ===");
+            logger.info("Проверяем версии для {} серверов", servers.size());
             for (Server server : servers) {
+                System.out.println("=== DEBUG: Сервер: " + server.getName() + " (тип: " + server.getType() + "), версия: " + server.getVersion() + " ===");
+                logger.info("Сервер: {} (тип: {}), версия: {}", server.getName(), server.getType(), server.getVersion());
                 if (server.getVersion() == null) {
+                    System.out.println("=== DEBUG: У сервера " + server.getName() + " нет версии, пытаемся получить ===");
+                    logger.info("У сервера {} нет версии, пытаемся получить", server.getName());
                     String version = serverVersionService.getServerVersion(server);
                     if (version != null) {
+                        System.out.println("=== DEBUG: Получена версия " + version + " для сервера " + server.getName() + " ===");
+                        logger.info("Получена версия {} для сервера {}", version, server.getName());
                         server.setVersion(version);
                         serverRepository.save(server); // Сохраняем версию в БД
+                    } else {
+                        System.out.println("=== DEBUG: Не удалось получить версию для сервера " + server.getName() + " ===");
+                        logger.warn("Не удалось получить версию для сервера {}", server.getName());
                     }
+                } else {
+                    System.out.println("=== DEBUG: У сервера " + server.getName() + " уже есть версия: " + server.getVersion() + " ===");
+                    logger.info("У сервера {} уже есть версия: {}", server.getName(), server.getVersion());
                 }
             }
             

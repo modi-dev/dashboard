@@ -77,7 +77,7 @@ mvn spring-boot:run
 ### Через JAR файл
 ```bash
 mvn clean package
-java -jar target/server-dashboard-1.0.0.jar
+java -jar target/ms-dashboard-1.0.0.jar
 ```
 
 ### Через IDE
@@ -163,13 +163,13 @@ mvn spring-boot:run -Dspring.profiles.active=prod
 ### JAR файл
 ```bash
 mvn clean package -Pprod
-java -jar target/server-dashboard-1.0.0.jar
+java -jar target/ms-dashboard-1.0.0.jar
 ```
 
 ### Docker
 ```bash
-docker build -t server-dashboard .
-docker run -p 3001:3001 server-dashboard
+docker build -t ms-dashboard .
+docker run -p 3001:3001 ms-dashboard
 ```
 
 ## ❓ Решение проблем

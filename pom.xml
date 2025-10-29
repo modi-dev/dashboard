@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>com.dashboard</groupId>
-    <artifactId>server-dashboard</artifactId>
+    <artifactId>ms-dashboard</artifactId>
     <version>1.0.0</version>
     <name>Version Dashboard</name>
     <description>Server monitoring dashboard with Spring Boot</description>

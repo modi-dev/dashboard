@@ -1,14 +1,69 @@
 server:
-  port: 3001
+  port: ${SERVER_PORT:3001}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:}
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   application:
     name: server-dashboard
-  
   webflux:
     base-path: /api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO:update}
+    show-sql: ${DB_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: ${DB_FORMAT_SQL:false}
 
-# Note: Sensitive configuration moved to application.properties
-# Database, JPA, logging, and monitoring settings are now in application.properties
-# with environment variable support for security
+logging:
+  level:
+    com:
+      dashboard: ${LOG_LEVEL_DASHBOARD:INFO}
+      dashboard.service.ServerMonitorService: ${LOG_LEVEL_MONITOR:DEBUG}
+      dashboard.service.KubernetesService: ${LOG_LEVEL_KUBERNETES:DEBUG}
+    org:
+      springframework:
+        web: ${LOG_LEVEL_WEB:INFO}
+      hibernate:
+        SQL: ${LOG_LEVEL_SQL:INFO}
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ${LOG_LEVEL_BINDER:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  charset:
+    console: UTF-8
+    file: UTF-8
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:always}
+
+kubernetes:
+  namespace: ${KUBERNETES_NAMESPACE:dev-tools}
+  kubectl:
+    path: ${KUBERNETES_KUBECTL_PATH:kubectl}
+  enabled: ${KUBERNETES_ENABLED:true}
+
+# Custom monitoring configuration (kept also in application.properties for env-only overrides)
+monitoring:
+  interval: ${MONITORING_INTERVAL:30000}
+  timeout: ${MONITORING_TIMEOUT:10000}

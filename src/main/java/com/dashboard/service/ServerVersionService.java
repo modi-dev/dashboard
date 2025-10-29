@@ -184,6 +184,11 @@ public class ServerVersionService {
     private String buildMetricsUrl(Server server, int port, String path) {
         String baseUrl = server.getUrl();
         
+        // Добавляем протокол если его нет
+        if (!baseUrl.contains("://")) {
+            baseUrl = "http://" + baseUrl;
+        }
+        
         // Если URL уже содержит порт, заменяем его
         if (baseUrl.matches(".*:\\d+.*")) {
             baseUrl = baseUrl.replaceAll(":\\d+", ":" + port);
@@ -322,6 +327,11 @@ public class ServerVersionService {
             // Формируем URL для кастомных метрик
             String baseUrl = server.getUrl();
             String metricsEndpoint = server.getMetricsEndpoint();
+            
+            // Добавляем протокол если его нет
+            if (!baseUrl.contains("://")) {
+                baseUrl = "http://" + baseUrl;
+            }
             
             // Убеждаемся, что endpoint начинается с /
             if (!metricsEndpoint.startsWith("/")) {

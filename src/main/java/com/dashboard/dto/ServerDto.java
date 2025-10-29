@@ -16,8 +16,6 @@ public class ServerDto {
     private String name;
     
     @NotBlank(message = "Server URL is required")
-    @Pattern(regexp = "^(https?|postgres|redis|kafka|ssh)://.*", 
-             message = "URL must start with http://, https://, postgres://, redis://, kafka://, or ssh://")
     private String url;
     
     @NotNull(message = "Server type is required")

@@ -42,13 +42,11 @@ public class Server {
     
     /**
      * URL адрес сервера для проверки доступности
-     * Примеры: https://google.com, postgresql://localhost:5432
+     * Примеры: google.com, localhost:8080, https://google.com
      * 
-     * @Pattern - проверяет формат URL (должен начинаться с правильного протокола)
+     * Протокол будет добавлен автоматически при проверке здоровья в зависимости от типа сервера
      */
     @NotBlank(message = "Server URL is required")
-    @Pattern(regexp = "^(https?|postgres|redis|kafka|ssh)://.*", 
-             message = "URL must start with http://, https://, postgres://, redis://, kafka://, or ssh://")
     @Column(nullable = false)
     private String url;
     

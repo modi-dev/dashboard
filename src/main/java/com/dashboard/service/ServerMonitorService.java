@@ -77,9 +77,21 @@ public class ServerMonitorService {
     
     private ServerStatus determineServerStatus(Server server) {
         try {
-            URI uri = URI.create(server.getUrl());
-            String host = uri.getHost();
-            int port = uri.getPort();
+            String host;
+            int port;
+            
+            // Parse URL and extract host/port
+            if (server.getUrl().contains("://")) {
+                // URL already has protocol
+                URI uri = URI.create(server.getUrl());
+                host = uri.getHost();
+                port = uri.getPort();
+            } else {
+                // URL without protocol - extract host and port
+                String[] parts = server.getUrl().split(":");
+                host = parts[0];
+                port = parts.length > 1 ? Integer.parseInt(parts[1]) : -1;
+            }
             
             // Set default ports based on server type
             if (port == -1) {
@@ -119,10 +131,15 @@ public class ServerMonitorService {
         try {
             String checkUrl = server.getUrl();
             
+            // Add protocol if not present
+            if (!checkUrl.contains("://")) {
+                checkUrl = "http://" + checkUrl;
+            }
+            
             // If healthcheck is specified, append it to the URL
             if (server.getHealthcheck() != null && !server.getHealthcheck().isEmpty()) {
-                String baseUrl = server.getUrl().endsWith("/") ? 
-                    server.getUrl().substring(0, server.getUrl().length() - 1) : server.getUrl();
+                String baseUrl = checkUrl.endsWith("/") ? 
+                    checkUrl.substring(0, checkUrl.length() - 1) : checkUrl;
                 String healthcheckPath = server.getHealthcheck().startsWith("/") ? 
                     server.getHealthcheck() : "/" + server.getHealthcheck();
                 checkUrl = baseUrl + healthcheckPath;

@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: ik7-cole01-smep-smep-ift
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:3000/smep-docker-test-g
-main:
-  image: smep/ms-dashbord

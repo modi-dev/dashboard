@@ -9,7 +9,7 @@ server:
 
 spring:
   application:
-    name: server-dashboard
+    name: ms-dashboard
   webflux:
     base-path: /api
   datasource:

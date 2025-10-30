@@ -40,6 +40,10 @@ public class KubernetesService {
     @Autowired
     private KubernetesConfig kubernetesConfig;
     
+    // Встроенный kubectl сервис
+    @Autowired
+    private EmbeddedKubectlService embeddedKubectlService;
+    
     // Jackson ObjectMapper для парсинга JSON ответов от kubectl
     private final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -48,6 +52,27 @@ public class KubernetesService {
      */
     public KubernetesConfig getKubernetesConfig() {
         return kubernetesConfig;
+    }
+    
+    /**
+     * Получает путь к kubectl с приоритетом встроенного
+     * 
+     * @return путь к kubectl (встроенный или из конфигурации)
+     */
+    private String getKubectlPath() {
+        // Сначала пытаемся использовать встроенный kubectl
+        if (embeddedKubectlService.isInitialized()) {
+            String embeddedPath = embeddedKubectlService.getKubectlPath();
+            if (embeddedPath != null) {
+                logger.debug("Используем встроенный kubectl: {}", embeddedPath);
+                return embeddedPath;
+            }
+        }
+        
+        // Если встроенный не работает, используем из конфигурации
+        String configPath = kubernetesConfig.getKubectlPath();
+        logger.debug("Используем kubectl из конфигурации: {}", configPath);
+        return configPath;
     }
     
     /**
@@ -73,13 +98,13 @@ public class KubernetesService {
             }
             
             logger.info("Получение информации о подах в namespace: {}", kubernetesConfig.getNamespace());
-            logger.info("Используется kubectl: {}", kubernetesConfig.getKubectlPath());
+            logger.info("Используется kubectl: {}", getKubectlPath());
             
             // Формируем команду kubectl для получения только запущенных подов в JSON формате
             // --field-selector=status.phase==Running - фильтрует только запущенные поды
             // -o json - выводит результат в JSON формате для удобного парсинга
             String command = String.format("%s get pods --field-selector=status.phase==Running -n %s -o json", 
-                                         kubernetesConfig.getKubectlPath(), kubernetesConfig.getNamespace());
+                                         getKubectlPath(), kubernetesConfig.getNamespace());
             
             logger.debug("Выполняем команду: {}", command);
             
@@ -366,7 +391,7 @@ public class KubernetesService {
     public String getCurrentNamespace() {
         try {
             // Команда для получения текущего namespace из kubectl конфигурации
-            String command = String.format("%s config view --minify -o jsonpath='{.contexts[0].context.namespace}'", kubernetesConfig.getKubectlPath());
+            String command = String.format("%s config view --minify -o jsonpath='{.contexts[0].context.namespace}'", getKubectlPath());
             Process process = new ProcessBuilder(command.split("\\s+")).start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             
@@ -397,7 +422,7 @@ public class KubernetesService {
     public String getKubernetesVersion() {
         try {
             // Надежный способ: JSON-вывод, из которого достаем serverVersion.gitVersion
-            String command = String.format("%s version -o json", kubernetesConfig.getKubectlPath());
+            String command = String.format("%s version -o json", getKubectlPath());
             Process process = new ProcessBuilder(command.split("\\s+")).start();
 
             BufferedReader outReader = new BufferedReader(new InputStreamReader(process.getInputStream()));

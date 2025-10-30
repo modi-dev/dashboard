@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>com.dashboard</groupId>
-    <artifactId>server-dashboard</artifactId>
+    <artifactId>ms-dashboard</artifactId>
     <version>1.0.0</version>
     <name>Version Dashboard</name>
     <description>Server monitoring dashboard with Spring Boot</description>
@@ -112,6 +112,33 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            
+                   <!-- Плагин для копирования Linux kubectl в итоговый JAR -->
+                   <plugin>
+                       <groupId>org.apache.maven.plugins</groupId>
+                       <artifactId>maven-resources-plugin</artifactId>
+                       <version>3.3.1</version>
+                       <executions>
+                           <execution>
+                               <id>copy-kubectl-linux</id>
+                               <phase>process-resources</phase>
+                               <goals>
+                                   <goal>copy-resources</goal>
+                               </goals>
+                               <configuration>
+                                   <outputDirectory>${project.build.outputDirectory}/binaries/kubectl</outputDirectory>
+                                   <resources>
+                                       <resource>
+                                           <directory>src/main/resources/binaries/kubectl</directory>
+                                           <includes>
+                                               <include>kubectl-linux-amd64</include>
+                                           </includes>
+                                       </resource>
+                                   </resources>
+                               </configuration>
+                           </execution>
+                       </executions>
+                   </plugin>
         </plugins>
     </build>
 </project>

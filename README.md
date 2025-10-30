@@ -197,16 +197,16 @@ mvn test -Dtest=*IntegrationTest
 ### JAR файл:
 ```bash
 mvn clean package
-java -jar target/server-dashboard-1.0.0.jar
+java -jar target/ms-dashboard-1.0.0.jar
 ```
 
 ### Docker:
 ```bash
 # Создание образа
-docker build -t server-dashboard .
+docker build -t ms-dashboard .
 
 # Запуск контейнера
-docker run -p 3001:3001 server-dashboard
+docker run -p 3001:3001 ms-dashboard
 ```
 
 ## 🔧 Разработка

@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: lk5-cole01-dcos-dcos
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/dcos-docker-uat-g
-main:
-  image: dcos/ms-dashbord

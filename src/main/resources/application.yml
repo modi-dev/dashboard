@@ -13,10 +13,14 @@ spring:
   webflux:
     base-path: /api
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    url: ${DATABASE_CLUSTER_URL}/${DATABASE_NAME}?${DATABASE_CLUSTER_PARAMETERS}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: "SET TIME ZONE 'UTC'"
+      minimum-idle: 1
+      maximum-pool-size: 5
   jpa:
     hibernate:
       ddl-auto: ${DB_DDL_AUTO:update}
@@ -31,7 +35,7 @@ logging:
     com:
       dashboard: ${LOG_LEVEL_DASHBOARD:INFO}
       dashboard.service.ServerMonitorService: ${LOG_LEVEL_MONITOR:DEBUG}
-      dashboard.service.KubernetesService: ${LOG_LEVEL_KUBERNETES:DEBUG}
+      dashboard.service.KubernetesService: ${LOG_LEVEL_KUBERNETES:INFO}
     org:
       springframework:
         web: ${LOG_LEVEL_WEB:INFO}
@@ -40,7 +44,7 @@ logging:
         type:
           descriptor:
             sql:
-              BasicBinder: ${LOG_LEVEL_BINDER:DEBUG}
+              BasicBinder: ${LOG_LEVEL_BINDER:INFO}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -55,7 +59,7 @@ management:
         include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
   endpoint:
     health:
-      show-details: ${HEALTH_SHOW_DETAILS:always}
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:always}
 
 kubernetes:
   namespace: ${KUBERNETES_NAMESPACE:dev-tools}
@@ -65,5 +69,5 @@ kubernetes:
 
 # Custom monitoring configuration (kept also in application.properties for env-only overrides)
 monitoring:
-  interval: ${MONITORING_INTERVAL:30000}
+  interval: ${MONITORING_INTERVAL:300000}
   timeout: ${MONITORING_TIMEOUT:10000}

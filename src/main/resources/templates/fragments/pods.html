@@ -1,0 +1,45 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion)">
+    <div th:if="${#lists.isEmpty(pods)}" class="text-center text-muted py-4">
+        <i class="fas fa-cube fa-3x mb-3"></i>
+        <p>Нет доступных подов</p>
+    </div>
+    <div th:unless="${#lists.isEmpty(pods)}" class="table-responsive">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="badge bg-info" th:text="${kubernetesVersion ?: 'Неизвестно'}">v1.28.0</span>
+        </div>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Версия</th>
+                    <th>Ветка сервиса</th>
+                    <th>Ветка SD</th>
+                    <th>GC Options</th>
+                    <th>Порт</th>
+                    <th>Реплики</th>
+                    <th>CPU</th>
+                    <th>Память</th>
+                    <th>Дата создания</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="pod : ${pods}">
+                    <td><strong th:text="${pod.name}">-</strong></td>
+                    <td><span class="badge bg-info" th:text="${pod.version}">-</span></td>
+                    <td th:text="${pod.msBranch ?: '-'}">-</td>
+                    <td th:text="${pod.configBranch ?: '-'}">-</td>
+                    <td>
+                        <pre class="m-0" style="white-space: pre-wrap; font-size: 0.85em;" th:text="${pod.gcOptions ?: '-'}">-</pre>
+                    </td>
+                    <td><span class="badge bg-secondary" th:text="${pod.port ?: '-'}">-</span></td>
+                    <td><span class="badge bg-primary" th:text="${pod.replicas ?: 1}">1</span></td>
+                    <td th:text="${pod.cpuRequest ?: '-'}">-</td>
+                    <td th:text="${pod.memoryRequest ?: '-'}">-</td>
+                    <td th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+

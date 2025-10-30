@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: stonbc
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-ci.sfera.inno.local/onb-docker-snapshot
-main:
-  image: smeo/ms-dashbord

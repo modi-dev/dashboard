@@ -1,0 +1,73 @@
+server:
+  port: ${SERVER_PORT:3001}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:}
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: ms-dashboard
+  webflux:
+    base-path: /api
+  datasource:
+    url: ${DATABASE_CLUSTER_URL}/${DATABASE_NAME}?${DATABASE_CLUSTER_PARAMETERS}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: "SET TIME ZONE 'UTC'"
+      minimum-idle: 1
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO:update}
+    show-sql: ${DB_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: ${DB_FORMAT_SQL:false}
+
+logging:
+  level:
+    com:
+      dashboard: ${LOG_LEVEL_DASHBOARD:INFO}
+      dashboard.service.ServerMonitorService: ${LOG_LEVEL_MONITOR:DEBUG}
+      dashboard.service.KubernetesService: ${LOG_LEVEL_KUBERNETES:INFO}
+    org:
+      springframework:
+        web: ${LOG_LEVEL_WEB:INFO}
+      hibernate:
+        SQL: ${LOG_LEVEL_SQL:INFO}
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ${LOG_LEVEL_BINDER:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:always}
+
+kubernetes:
+  namespace: ${KUBERNETES_NAMESPACE:dev-tools}
+  kubectl:
+    path: ${KUBERNETES_KUBECTL_PATH:kubectl}
+  enabled: ${KUBERNETES_ENABLED:true}
+
+# Custom monitoring configuration (kept also in application.properties for env-only overrides)
+monitoring:
+  interval: ${MONITORING_INTERVAL:300000}
+  timeout: ${MONITORING_TIMEOUT:10000}

@@ -7,10 +7,8 @@ import com.dashboard.repository.ServerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,17 +31,17 @@ public class ServerMonitorService {
     
     private static final int TIMEOUT_MS = 10000;
     
-    @Scheduled(fixedRate = 30000) // Every 30 seconds
+    // Scheduling moved to ServerMonitorScheduler to avoid running in tests
     public void checkAllServers() {
         List<Server> servers = serverRepository.findAll();
-        
+
         if (servers.isEmpty()) {
             logger.info("No servers to monitor");
             return;
         }
-        
+
         logger.info("Checking {} server(s)...", servers.size());
-        
+
         for (Server server : servers) {
             checkServer(server);
         }

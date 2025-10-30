@@ -1,0 +1,51 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    hikari:
+      max-lifetime: 10000
+      idle-timeout: 5000
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  h2:
+    console:
+      enabled: false
+
+  task:
+    scheduling:
+      enabled: false
+
+# Отключаем Kubernetes интеграцию для тестов
+kubernetes:
+  enabled: false
+
+# Настройки логирования для тестов
+logging:
+  level:
+    com.dashboard: DEBUG
+    org.springframework.web: DEBUG
+    org.testcontainers: INFO
+    org.testcontainers.containers: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Настройки сервера для тестов
+server:
+  port: 0  # Случайный порт для тестов
+
+# Отключаем мониторинг серверов в тестах
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true

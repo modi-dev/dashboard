@@ -15,6 +15,8 @@ public interface ServerRepository extends JpaRepository<Server, Long> {
     
     List<Server> findByStatus(com.dashboard.model.ServerStatus status);
     
+    List<Server> findByType(com.dashboard.model.ServerType type);
+    
     @Query("SELECT s FROM Server s ORDER BY s.createdAt DESC")
     List<Server> findAllOrderByCreatedAtDesc();
     

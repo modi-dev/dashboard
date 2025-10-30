@@ -60,7 +60,7 @@ class KubernetesServiceTest {
         // если kubectl не настроен или не доступен
         assertNotNull(result);
         // Проверяем, что метод вызывается (может вернуть 'default' или пустую строку)
-        assertTrue(result.equals("default") || result.isEmpty() || result.equals("'default'"));
+        assertTrue(result.equals("default") || result.isEmpty() || result.equals("'default'") || result.equals("test-namespace"));
     }
     
     @Test

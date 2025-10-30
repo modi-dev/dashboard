@@ -57,6 +57,7 @@ public class KubernetesService {
     /**
      * Получает путь к kubectl с приоритетом встроенного
      * 
+     * @return путь к kubectl (встроенный или из конфигурации)
      */
     private String getKubectlPath() {
         // Сначала пытаемся использовать встроенный kubectl
@@ -76,6 +77,8 @@ public class KubernetesService {
     
     /**
      * Получает информацию о всех запущенных подах в namespace
+     * 
+     * Алгоритм работы:
      * 1. Проверяет, включена ли интеграция с Kubernetes
      * 2. Формирует команду kubectl для получения запущенных подов
      * 3. Выполняет команду через ProcessBuilder (современная замена Runtime.exec)

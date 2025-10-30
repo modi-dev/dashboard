@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:3001}
+  port: ${APP_PORT:3001}
   servlet:
     context-path: ${SERVER_CONTEXT_PATH:}
     encoding:

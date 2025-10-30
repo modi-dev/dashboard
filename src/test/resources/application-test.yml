@@ -44,6 +44,8 @@ server:
 
 # Отключаем мониторинг серверов в тестах
 management:
+  server:
+    port: 0
   endpoints:
     enabled-by-default: false
   endpoint:

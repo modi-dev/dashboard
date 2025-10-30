@@ -60,16 +60,14 @@ public class KubernetesService {
      * @return путь к kubectl (встроенный или из конфигурации)
      */
     private String getKubectlPath() {
-        // Сначала пытаемся использовать встроенный kubectl
-        if (embeddedKubectlService.isInitialized()) {
-            String embeddedPath = embeddedKubectlService.getKubectlPath();
-            if (embeddedPath != null) {
-                logger.debug("Используем встроенный kubectl: {}", embeddedPath);
-                return embeddedPath;
-            }
+        // Сначала пытаемся использовать встроенный kubectl (инициализация по требованию)
+        String embeddedPath = embeddedKubectlService.getKubectlPath();
+        if (embeddedPath != null && embeddedKubectlService.isInitialized()) {
+            logger.debug("Используем встроенный kubectl: {}", embeddedPath);
+            return embeddedPath;
         }
-        
-        // Если встроенный не работает, используем из конфигурации
+
+        // Если встроенный недоступен, используем путь из конфигурации
         String configPath = kubernetesConfig.getKubectlPath();
         logger.debug("Используем kubectl из конфигурации: {}", configPath);
         return configPath;
@@ -414,7 +412,7 @@ public class KubernetesService {
     /**
      * Получает версию Kubernetes кластера
      * 
-     * Использует команду: kubectl version --client
+     * Использует команду: kubectl version
      * Эта команда возвращает версию клиента kubectl и сервера
      * 
      * @return версия Kubernetes или "Неизвестно" если не удалось определить

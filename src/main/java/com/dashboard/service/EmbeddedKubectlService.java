@@ -117,31 +117,37 @@ public class EmbeddedKubectlService {
      */
     private boolean testKubectl() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(kubectlPath, "version", "--client", "--short");
+            ProcessBuilder processBuilder = new ProcessBuilder(kubectlPath, "version", "-o", "json");
             processBuilder.redirectErrorStream(true);
-            
+
             Process process = processBuilder.start();
-            
-            // Ждем завершения процесса (максимум 10 секунд)
+
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append('\n');
+                }
+            }
+
             boolean finished = process.waitFor(10, TimeUnit.SECONDS);
-            
             if (!finished) {
                 process.destroyForcibly();
                 logger.error("kubectl не ответил в течение 10 секунд");
                 return false;
             }
-            
+
             int exitCode = process.exitValue();
             if (exitCode == 0) {
-                logger.debug("kubectl тест прошел успешно");
+                logger.debug("kubectl тест прошел успешно: {}", output.toString());
                 return true;
             } else {
-                logger.error("kubectl завершился с кодом: {}", exitCode);
+                logger.error("kubectl завершился с кодом: {}. Вывод: {}", exitCode, output.toString());
                 return false;
             }
-            
+
         } catch (Exception e) {
-            logger.error("Ошибка при тестировании kubectl: {}", e.getMessage());
+            logger.error("Ошибка при тестировании kubectl: {}", e.getMessage(), e);
             return false;
         }
     }

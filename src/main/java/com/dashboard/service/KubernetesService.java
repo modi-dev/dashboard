@@ -401,6 +401,21 @@ public class KubernetesService {
     }
     
     /**
+     * Подсчитывает количество уникальных сервисов из списка подов
+     * (уникальные значения поля name из подов)
+     * 
+     * @param pods список подов для анализа
+     * @return количество уникальных сервисов
+     */
+    public long countUniqueServices(List<PodInfo> pods) {
+        return pods.stream()
+                .map(PodInfo::getName)
+                .filter(name -> name != null && !name.isEmpty())
+                .distinct()
+                .count();
+    }
+    
+    /**
      * Получает версию Kubernetes кластера
      * 
      * Использует команду: kubectl version

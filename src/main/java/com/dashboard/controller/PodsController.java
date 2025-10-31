@@ -34,17 +34,10 @@ public class PodsController {
 
             // Подсчеты статистики
             int totalPods = pods.size();
-            
-            // Подсчет уникальных сервисов (уникальные значения поля name)
-            long uniqueServices = pods.stream()
-                    .map(PodInfo::getName)
-                    .filter(name -> name != null && !name.isEmpty())
-                    .distinct()
-                    .count();
 
             model.addAttribute("pods", pods);
             model.addAttribute("totalPods", totalPods); // всего подов
-            model.addAttribute("uniqueServices", uniqueServices);   // уникальные сервисы (по полю name)
+            model.addAttribute("uniqueServices", kubernetesService.countUniqueServices(pods));   // уникальные сервисы (по полю name)
             model.addAttribute("totalReplicas", totalPods);
             model.addAttribute("withReplicas", 0); // больше нет группировки
             model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());

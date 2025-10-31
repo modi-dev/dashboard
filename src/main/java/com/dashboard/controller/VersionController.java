@@ -250,6 +250,26 @@ public class VersionController {
     }
     
     /**
+     * Принудительно обновляет информацию о подах
+     * POST /api/pods/refresh
+     */
+    @PostMapping("/refresh")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<String>> refreshPods() {
+        try {
+            logger.info("Принудительное обновление информации о подах");
+            // Вызываем getRunningPods для обновления кэша/данных
+            kubernetesService.getRunningPods();
+            return ResponseEntity.ok()
+                .body(new ApiResponse<>(true, "Информация о подах успешно обновлена", null, null));
+        } catch (Exception e) {
+            logger.error("Ошибка при обновлении информации о подах: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                .body(new ApiResponse<>(false, null, "Ошибка при обновлении информации о подах: " + e.getMessage(), null));
+        }
+    }
+    
+    /**
      * Экспортирует список подов в CSV формат
      * GET /api/pods/export/csv
      */
@@ -280,6 +300,54 @@ public class VersionController {
             logger.error("Ошибка при экспорте подов: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                 .body(("Error exporting pods: " + e.getMessage()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+    
+    // Inner class for API response
+    public static class ApiResponse<T> {
+        private boolean success;
+        private T data;
+        private String error;
+        private String message;
+        
+        public ApiResponse(boolean success, T data, String error, String message) {
+            this.success = success;
+            this.data = data;
+            this.error = error;
+            this.message = message;
+        }
+        
+        // Getters and setters
+        public boolean isSuccess() {
+            return success;
+        }
+        
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+        
+        public T getData() {
+            return data;
+        }
+        
+        public void setData(T data) {
+            this.data = data;
+        }
+        
+        public String getError() {
+            return error;
+        }
+        
+        public void setError(String error) {
+            this.error = error;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
+        
+        public void setMessage(String message) {
+            this.message = message;
         }
     }
 }

@@ -34,6 +34,34 @@ public class DashboardController {
     private ServerVersionService serverVersionService;
     
     /**
+     * Добавляет статистику серверов в модель
+     * 
+     * @param model модель для добавления атрибутов
+     * @param servers список серверов для подсчета статистики
+     */
+    private void addServerStatistics(Model model, List<Server> servers) {
+        model.addAttribute("totalServers", servers.size());
+        model.addAttribute("onlineServers", servers.stream()
+                .mapToInt(s -> s.getStatus().name().equals("ONLINE") ? 1 : 0)
+                .sum());
+        model.addAttribute("offlineServers", servers.stream()
+                .mapToInt(s -> s.getStatus().name().equals("OFFLINE") ? 1 : 0)
+                .sum());
+    }
+    
+    /**
+     * Устанавливает пустые значения статистики серверов в случае ошибки
+     * 
+     * @param model модель для добавления атрибутов
+     */
+    private void setEmptyServerStatistics(Model model) {
+        model.addAttribute("totalServers", 0);
+        model.addAttribute("onlineServers", 0);
+        model.addAttribute("offlineServers", 0);
+    }
+    
+    
+    /**
      * Главная страница dashboard
      * GET /
      */
@@ -44,15 +72,7 @@ public class DashboardController {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
             // Получаем версии для всех серверов
-            for (Server server : servers) {
-                if (server.getVersion() == null) {
-                    String version = serverVersionService.getServerVersion(server);
-                    if (version != null) {
-                        server.setVersion(version);
-                        serverRepository.save(server); // Сохраняем версию в БД
-                    }
-                }
-            }
+            serverVersionService.updateServerVersionsIfNeeded(servers);
             
             model.addAttribute("servers", servers);
             
@@ -61,12 +81,13 @@ public class DashboardController {
             model.addAttribute("pods", pods);
             
             // Статистика серверов
-            model.addAttribute("totalServers", servers.size());
-            model.addAttribute("onlineServers", servers.stream().mapToInt(s -> s.getStatus().name().equals("ONLINE") ? 1 : 0).sum());
-            model.addAttribute("offlineServers", servers.stream().mapToInt(s -> s.getStatus().name().equals("OFFLINE") ? 1 : 0).sum());
+            addServerStatistics(model, servers);
             
             // Статистика подов
             model.addAttribute("totalPods", pods.size());
+            
+            // Подсчет уникальных сервисов
+            model.addAttribute("uniqueServices", kubernetesService.countUniqueServices(pods));
             
             // Версия Kubernetes
             model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
@@ -78,10 +99,9 @@ public class DashboardController {
             // В случае ошибки показываем пустые данные
             model.addAttribute("servers", new ArrayList<>());
             model.addAttribute("pods", new ArrayList<>());
-            model.addAttribute("totalServers", 0);
-            model.addAttribute("onlineServers", 0);
-            model.addAttribute("offlineServers", 0);
+            setEmptyServerStatistics(model);
             model.addAttribute("totalPods", 0);
+            model.addAttribute("uniqueServices", 0);
             model.addAttribute("error", "Ошибка при загрузке данных: " + e.getMessage());
         }
         
@@ -108,31 +128,19 @@ public class DashboardController {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
             // Получаем версии для всех серверов
-            for (Server server : servers) {
-                if (server.getVersion() == null) {
-                    String version = serverVersionService.getServerVersion(server);
-                    if (version != null) {
-                        server.setVersion(version);
-                        serverRepository.save(server); // Сохраняем версию в БД
-                    }
-                }
-            }
+            serverVersionService.updateServerVersionsIfNeeded(servers);
             
             model.addAttribute("servers", servers);
             
             // Статистика
-            model.addAttribute("totalServers", servers.size());
-            model.addAttribute("onlineServers", servers.stream().mapToInt(s -> s.getStatus().name().equals("ONLINE") ? 1 : 0).sum());
-            model.addAttribute("offlineServers", servers.stream().mapToInt(s -> s.getStatus().name().equals("OFFLINE") ? 1 : 0).sum());
+            addServerStatistics(model, servers);
             
             logger.info("Страница серверов загружена: {} серверов", servers.size());
             
         } catch (Exception e) {
             logger.error("Ошибка при загрузке страницы серверов: {}", e.getMessage(), e);
             model.addAttribute("servers", new ArrayList<>());
-            model.addAttribute("totalServers", 0);
-            model.addAttribute("onlineServers", 0);
-            model.addAttribute("offlineServers", 0);
+            setEmptyServerStatistics(model);
             model.addAttribute("error", "Ошибка при загрузке данных: " + e.getMessage());
         }
         

@@ -1,6 +1,7 @@
 package com.dashboard.service;
 
 import com.dashboard.model.Server;
+import com.dashboard.repository.ServerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +30,9 @@ public class ServerVersionService {
     
     @Autowired
     private RestTemplate restTemplate;
+    
+    @Autowired
+    private ServerRepository serverRepository;
     
     // Регулярное выражение для извлечения версии PostgreSQL из метрик
     // Ищем строку вида: pg_static{server="hostname:6432",short_version="15.8.0",version="PostgreSQL 15.8 (Debian 15.8-1.pgdg100+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 8.3.0-6) 8.3.0, 64-bit"}
@@ -379,6 +384,34 @@ public class ServerVersionService {
         } catch (Exception e) {
             logger.error("Неожиданная ошибка при получении кастомной версии {}: {}", server.getName(), e.getMessage(), e);
             return null;
+        }
+    }
+    
+    /**
+     * Обновляет версии для серверов, у которых версия еще не определена
+     * Получает версии через getServerVersion и сохраняет их в базу данных
+     * 
+     * @param servers список серверов для обработки
+     */
+    public void updateServerVersionsIfNeeded(List<Server> servers) {
+        if (servers == null || servers.isEmpty()) {
+            return;
+        }
+        
+        logger.debug("Обновление версий для {} серверов", servers.size());
+        
+        for (Server server : servers) {
+            if (server.getVersion() == null) {
+                logger.debug("Получение версии для сервера: {} (тип: {})", server.getName(), server.getType());
+                String version = getServerVersion(server);
+                if (version != null) {
+                    server.setVersion(version);
+                    serverRepository.save(server); // Сохраняем версию в БД
+                    logger.info("Версия {} сохранена для сервера {}", version, server.getName());
+                } else {
+                    logger.debug("Не удалось получить версию для сервера {}", server.getName());
+                }
+            }
         }
     }
 }

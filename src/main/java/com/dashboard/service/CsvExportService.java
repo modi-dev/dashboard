@@ -31,10 +31,12 @@ public class CsvExportService {
     /**
      * Экспортирует список серверов в CSV формат
      * @param servers список серверов для экспорта
-     * @return строка в формате CSV
+     * @return строка в формате CSV с UTF-8 BOM
      */
     public String exportServersToCsv(List<Server> servers) {
         StringBuilder csv = new StringBuilder();
+        // Добавляем UTF-8 BOM для корректного отображения в Excel
+        csv.append("\uFEFF");
         
         // Заголовок CSV
         csv.append("ID").append(CSV_SEPARATOR)
@@ -69,19 +71,23 @@ public class CsvExportService {
     /**
      * Экспортирует список подов в CSV формат
      * @param pods список подов для экспорта
-     * @return строка в формате CSV
+     * @return строка в формате CSV с UTF-8 BOM
      */
     public String exportPodsToCsv(List<PodInfo> pods) {
         StringBuilder csv = new StringBuilder();
+        // Добавляем UTF-8 BOM для корректного отображения в Excel
+        csv.append("\uFEFF");
         
         // Заголовок CSV
         csv.append("Name").append(CSV_SEPARATOR)
+           .append("POD_NAME").append(CSV_SEPARATOR)
            .append("Version").append(CSV_SEPARATOR)
            .append("MS Branch").append(CSV_SEPARATOR)
            .append("Config Branch").append(CSV_SEPARATOR)
            .append("GC Options").append(CSV_SEPARATOR)
            .append("Port").append(CSV_SEPARATOR)
-           .append("Replicas").append(CSV_SEPARATOR)
+           .append("Restarts").append(CSV_SEPARATOR)
+           .append("Ready Time").append(CSV_SEPARATOR)
            .append("CPU Request").append(CSV_SEPARATOR)
            .append("Memory Request").append(CSV_SEPARATOR)
            .append("Creation Date\n");
@@ -89,12 +95,14 @@ public class CsvExportService {
         // Данные
         for (PodInfo pod : pods) {
             csv.append(escapeCsvValue(pod.getName() != null ? pod.getName() : "")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getPodName() != null ? pod.getPodName() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getVersion() != null ? pod.getVersion() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getMsBranch() != null ? pod.getMsBranch() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getConfigBranch() != null ? pod.getConfigBranch() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getGcOptions() != null ? pod.getGcOptions() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getPort() != null ? String.valueOf(pod.getPort()) : "")).append(CSV_SEPARATOR);
-            csv.append(escapeCsvValue(pod.getReplicas() != null ? String.valueOf(pod.getReplicas()) : "1")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getRestarts() != null ? String.valueOf(pod.getRestarts()) : "0")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getReadyTime() != null ? pod.getReadyTime() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getCpuRequest() != null ? pod.getCpuRequest() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getCreationDate() != null ? pod.getCreationDate().format(DATE_FORMATTER) : ""));

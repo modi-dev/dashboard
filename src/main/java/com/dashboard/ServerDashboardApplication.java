@@ -1,7 +1,9 @@
 package com.dashboard;
 
+import com.dashboard.config.KubernetesConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -15,9 +17,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *                          (включает автоконфигурацию, сканирование компонентов и конфигурацию)
  * @EnableScheduling - включает возможность запускать задачи по расписанию
  *                     (например, проверка серверов каждые 30 секунд)
+ * @EnableConfigurationProperties - включает поддержку классов с @ConfigurationProperties
  */
 @SpringBootApplication
 @EnableScheduling
+@EnableConfigurationProperties(KubernetesConfig.class)
 public class ServerDashboardApplication {
 
     /**

@@ -1,7 +1,6 @@
 package com.dashboard.service;
 
 import com.dashboard.model.Server;
-import com.dashboard.model.ServerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,11 +133,7 @@ public class ServerVersionService {
         } catch (ResourceAccessException e) {
             logger.warn("Не удалось подключиться к метрикам PostgreSQL {}: {}", server.getName(), e.getMessage());
             System.out.println("=== DEBUG: Не удалось подключиться к метрикам PostgreSQL: " + e.getMessage() + " ===");
-            // Для тестирования возвращаем мок-версию
-            String mockVersion = "PostgreSQL 15.8 (Mock)";
-            logger.info("Возвращаем мок-версию PostgreSQL для {}: {}", server.getName(), mockVersion);
-            System.out.println("=== DEBUG: Возвращаем мок-версию PostgreSQL: " + mockVersion + " ===");
-            return mockVersion;
+            return null;
         } catch (HttpClientErrorException e) {
             logger.warn("HTTP ошибка при получении метрик PostgreSQL {}: {}", server.getName(), e.getMessage());
             System.out.println("=== DEBUG: HTTP ошибка при получении метрик PostgreSQL: " + e.getMessage() + " ===");

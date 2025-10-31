@@ -255,11 +255,14 @@ public class VersionController {
      */
     @GetMapping("/export/csv")
     @ResponseBody
-    public ResponseEntity<String> exportPodsToCsv() {
+    public ResponseEntity<byte[]> exportPodsToCsv() {
         try {
             logger.info("Экспорт подов в CSV формат");
             List<PodInfo> pods = kubernetesService.getRunningPods();
             String csv = csvExportService.exportPodsToCsv(pods);
+            
+            // Конвертируем строку в байты с UTF-8 кодировкой (BOM уже включен в строку)
+            byte[] csvBytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             
             // Генерируем имя файла с текущей датой
             String filename = "pods_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
@@ -271,12 +274,12 @@ public class VersionController {
             
             return ResponseEntity.ok()
                 .headers(headers)
-                .body(csv);
+                .body(csvBytes);
                 
         } catch (Exception e) {
             logger.error("Ошибка при экспорте подов: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
-                .body("Error exporting pods: " + e.getMessage());
+                .body(("Error exporting pods: " + e.getMessage()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
     }
 }

@@ -177,21 +177,21 @@ class KubernetesServiceIntegrationTest {
         assertNotNull(pods);
         assertEquals(2, pods.size());
         
-        // Проверяем первый под (postgres-dev, так как сортировка по репликам)
-        PodInfo postgresPod = pods.get(0);
-        assertEquals("postgres-dev", postgresPod.getName());
-        assertEquals("postgres:15-alpine", postgresPod.getVersion());
-        assertEquals("5432", postgresPod.getPort());
-        assertEquals("250m", postgresPod.getCpuRequest());
-        assertEquals("256Mi", postgresPod.getMemoryRequest());
-        
-        // Проверяем второй под
-        PodInfo redisPod = pods.get(1);
+        // Проверяем первый под (redis-dev - первый в JSON)
+        PodInfo redisPod = pods.get(0);
         assertEquals("redis-dev", redisPod.getName());
         assertEquals("redis:7-alpine", redisPod.getVersion());
         assertEquals("6379", redisPod.getPort());
         assertEquals("100m", redisPod.getCpuRequest());
         assertEquals("128Mi", redisPod.getMemoryRequest());
+        
+        // Проверяем второй под (postgres-dev - второй в JSON)
+        PodInfo postgresPod = pods.get(1);
+        assertEquals("postgres-dev", postgresPod.getName());
+        assertEquals("postgres:15-alpine", postgresPod.getVersion());
+        assertEquals("5432", postgresPod.getPort());
+        assertEquals("250m", postgresPod.getCpuRequest());
+        assertEquals("256Mi", postgresPod.getMemoryRequest());
     }
     
     @Test

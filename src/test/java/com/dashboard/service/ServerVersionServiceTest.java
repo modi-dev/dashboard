@@ -190,8 +190,8 @@ public class ServerVersionServiceTest {
         
         String version = serverVersionService.getServerVersion(postgresServer);
         
-        // Ожидаем мок-версию для PostgreSQL при ошибке подключения
-        assertEquals("PostgreSQL 15.8 (Mock)", version);
+        // При ошибке подключения ожидаем null (без мок-версии)
+        assertNull(version);
     }
     
     @Test

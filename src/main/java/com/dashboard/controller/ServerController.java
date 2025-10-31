@@ -48,29 +48,7 @@ public class ServerController {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
             // Получаем версии для всех серверов
-            System.out.println("=== DEBUG: Проверяем версии для " + servers.size() + " серверов ===");
-            logger.info("Проверяем версии для {} серверов", servers.size());
-            for (Server server : servers) {
-                System.out.println("=== DEBUG: Сервер: " + server.getName() + " (тип: " + server.getType() + "), версия: " + server.getVersion() + " ===");
-                logger.info("Сервер: {} (тип: {}), версия: {}", server.getName(), server.getType(), server.getVersion());
-                if (server.getVersion() == null) {
-                    System.out.println("=== DEBUG: У сервера " + server.getName() + " нет версии, пытаемся получить ===");
-                    logger.info("У сервера {} нет версии, пытаемся получить", server.getName());
-                    String version = serverVersionService.getServerVersion(server);
-                    if (version != null) {
-                        System.out.println("=== DEBUG: Получена версия " + version + " для сервера " + server.getName() + " ===");
-                        logger.info("Получена версия {} для сервера {}", version, server.getName());
-                        server.setVersion(version);
-                        serverRepository.save(server); // Сохраняем версию в БД
-                    } else {
-                        System.out.println("=== DEBUG: Не удалось получить версию для сервера " + server.getName() + " ===");
-                        logger.warn("Не удалось получить версию для сервера {}", server.getName());
-                    }
-                } else {
-                    System.out.println("=== DEBUG: У сервера " + server.getName() + " уже есть версия: " + server.getVersion() + " ===");
-                    logger.info("У сервера {} уже есть версия: {}", server.getName(), server.getVersion());
-                }
-            }
+            serverVersionService.updateServerVersionsIfNeeded(servers);
             
             List<ServerDto> serverDtos = servers.stream()
                 .map(this::convertToDto)
@@ -194,6 +172,24 @@ public class ServerController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, null, "Internal server error", null));
+        }
+    }
+    
+    /**
+     * Принудительно обновляет статус всех серверов
+     * POST /api/servers/refresh
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<String>> refreshServers() {
+        try {
+            logger.info("Принудительное обновление статуса всех серверов");
+            serverMonitorService.checkAllServers();
+            return ResponseEntity.ok()
+                .body(new ApiResponse<>(true, "Статус серверов успешно обновлен", null, null));
+        } catch (Exception e) {
+            logger.error("Ошибка при обновлении статуса серверов: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, null, "Ошибка при обновлении статуса серверов: " + e.getMessage(), null));
         }
     }
     

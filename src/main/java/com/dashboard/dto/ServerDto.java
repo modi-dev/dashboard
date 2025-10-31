@@ -4,7 +4,6 @@ import com.dashboard.model.ServerType;
 import com.dashboard.model.ServerStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 

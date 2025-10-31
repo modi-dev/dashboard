@@ -14,8 +14,8 @@ spring:
     base-path: /api
   datasource:
     url: ${DATABASE_CLUSTER_URL}/${DATABASE_NAME}?${DATABASE_CLUSTER_PARAMETERS}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:password}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: "SET TIME ZONE 'UTC'"
@@ -73,6 +73,7 @@ kubernetes:
   enabled: ${KUBERNETES_ENABLED:true}
 
 # Custom monitoring configuration (kept also in application.properties for env-only overrides)
+# Values are in MINUTES (converted to milliseconds/seconds internally)
 monitoring:
-  interval: ${MONITORING_INTERVAL:300000}
-  timeout: ${MONITORING_TIMEOUT:10000}
+  interval: ${MONITORING_INTERVAL:5}  # Interval in minutes (default: 5 minutes, converted to milliseconds for scheduling)
+  timeout: ${MONITORING_TIMEOUT:1}  # Timeout in minutes (default: 0.17 minutes = 10 seconds, converted to milliseconds)

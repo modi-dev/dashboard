@@ -7,6 +7,7 @@ import com.dashboard.repository.ServerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -29,7 +30,14 @@ public class ServerMonitorService {
     @Autowired
     private WebClient.Builder webClientBuilder;
     
-    private static final int TIMEOUT_MS = 10000;
+    private final long timeoutMs;
+    
+    public ServerMonitorService(@Value("${monitoring.timeout:0.17}") double timeoutMinutes) {
+        // Convert minutes to milliseconds (default: 0.17 minutes = ~10 seconds)
+        this.timeoutMs = (long) (timeoutMinutes * 60 * 1000);
+        logger.debug("ServerMonitorService initialized with timeout: {} minutes ({} ms)", 
+                    timeoutMinutes, timeoutMs);
+    }
     
     // Scheduling moved to ServerMonitorScheduler to avoid running in tests
     public void checkAllServers() {
@@ -118,7 +126,7 @@ public class ServerMonitorService {
     
     private boolean checkTcpConnection(String host, int port) {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), TIMEOUT_MS);
+            socket.connect(new InetSocketAddress(host, port), (int) timeoutMs);
             return true;
         } catch (IOException e) {
             return false;
@@ -159,7 +167,7 @@ public class ServerMonitorService {
             var response = webClient.get()
                 .retrieve()
                 .toBodilessEntity()
-                .timeout(Duration.ofMillis(TIMEOUT_MS))
+                .timeout(Duration.ofMillis(timeoutMs))
                 .block();
             
             boolean isSuccessful = response.getStatusCode().is2xxSuccessful() || 

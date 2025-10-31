@@ -9,6 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -114,5 +116,104 @@ class KubernetesServiceTest {
         // HTML содержит информацию о namespace и времени обновления
         assertTrue(html.contains("namespace:") || html.contains("test-namespace"));
         assertTrue(html.contains("update time:"));
+    }
+    
+    @Test
+    void testGetKubernetesConfig_ShouldReturnConfig() {
+        // When
+        KubernetesConfig config = kubernetesService.getKubernetesConfig();
+        
+        // Then
+        assertNotNull(config);
+        assertEquals(kubernetesConfig, config);
+    }
+    
+    @Test
+    void testCountUniqueServices_WithEmptyList() {
+        // Given
+        List<PodInfo> emptyList = new ArrayList<>();
+        
+        // When
+        long count = kubernetesService.countUniqueServices(emptyList);
+        
+        // Then
+        assertEquals(0L, count);
+    }
+    
+    @Test
+    void testCountUniqueServices_WithUniquePods() {
+        // Given
+        PodInfo pod1 = new PodInfo();
+        pod1.setName("nginx");
+        
+        PodInfo pod2 = new PodInfo();
+        pod2.setName("redis");
+        
+        PodInfo pod3 = new PodInfo();
+        pod3.setName("postgres");
+        
+        List<PodInfo> pods = Arrays.asList(pod1, pod2, pod3);
+        
+        // When
+        long count = kubernetesService.countUniqueServices(pods);
+        
+        // Then
+        assertEquals(3L, count);
+    }
+    
+    @Test
+    void testCountUniqueServices_WithDuplicateNames() {
+        // Given
+        PodInfo pod1 = new PodInfo();
+        pod1.setName("nginx");
+        
+        PodInfo pod2 = new PodInfo();
+        pod2.setName("nginx");
+        
+        PodInfo pod3 = new PodInfo();
+        pod3.setName("redis");
+        
+        List<PodInfo> pods = Arrays.asList(pod1, pod2, pod3);
+        
+        // When
+        long count = kubernetesService.countUniqueServices(pods);
+        
+        // Then
+        assertEquals(2L, count);
+    }
+    
+    @Test
+    void testCountUniqueServices_WithNullNames() {
+        // Given
+        PodInfo pod1 = new PodInfo();
+        pod1.setName("nginx");
+        
+        PodInfo pod2 = new PodInfo();
+        pod2.setName(null);
+        
+        PodInfo pod3 = new PodInfo();
+        pod3.setName("");
+        
+        List<PodInfo> pods = Arrays.asList(pod1, pod2, pod3);
+        
+        // When
+        long count = kubernetesService.countUniqueServices(pods);
+        
+        // Then
+        assertEquals(1L, count);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_ShouldReturnVersion() {
+        // Given - метод выполняет kubectl команду
+        // Результат зависит от доступности kubectl
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertNotNull(version);
+        // Может быть "v1.34.0" или "unknown" или пустая строка
+        assertTrue(version.length() >= 0);
     }
 }

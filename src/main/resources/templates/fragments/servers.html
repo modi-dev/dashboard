@@ -5,7 +5,7 @@
         <button class="btn btn-primary" onclick="openSidebar()">Добавить сервер</button>
     </div>
     <div th:unless="${#lists.isEmpty(servers)}" class="table-responsive p-3">
-        <table class="table table-hover mb-0">
+        <table id="serversTable" class="table table-hover mb-0">
             <thead>
                 <tr>
                     <th>Название</th>

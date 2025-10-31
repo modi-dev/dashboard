@@ -99,3 +99,72 @@ function refreshPods() {
       if (btn) { btn.disabled = false; btn.innerHTML = originalContent; }
     });
 }
+
+// Theme toggle function
+function toggleTheme() {
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+  const isDark = htmlRoot.classList.contains('theme-dark');
+
+  if (isDark) {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+    localStorage.setItem('theme', 'light');
+  } else {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+    localStorage.setItem('theme', 'dark');
+  }
+}
+
+// Initialize theme on page load
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+
+  if (savedTheme === 'dark') {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+  } else {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+  }
+}
+
+// Call initTheme when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTheme);
+} else {
+  initTheme();
+}

@@ -14,9 +14,7 @@ import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -187,41 +185,19 @@ public class KubernetesService {
             if (itemsNode != null && itemsNode.isArray()) {
                 logger.debug("Найден массив items с {} элементами", itemsNode.size());
                 
-                // Карта для группировки подов по уникальному ключу
-                Map<String, PodInfo> podMap = new HashMap<>();
-                
-                // Проходим по каждому элементу массива
+                // Проходим по каждому элементу массива и добавляем каждый под отдельно (без группировки)
                 for (JsonNode itemNode : itemsNode) {
                     PodInfo podInfo = parsePodJson(itemNode);
                     if (podInfo != null) {
-                        // Создаем уникальный ключ для группировки (имя + версия + ветки)
-                        String uniqueKey = createUniqueKey(podInfo);
-                        logger.info("Ключ группировки для пода {}: '{}'", podInfo.getName(), uniqueKey);
+                        // Извлекаем дополнительную информацию: POD_NAME, рестарты, время до Ready
+                        extractAdditionalPodInfo(itemNode, podInfo);
                         
-                        if (podMap.containsKey(uniqueKey)) {
-                            // Увеличиваем счетчик реплик для существующего пода
-                            PodInfo existingPod = podMap.get(uniqueKey);
-                            existingPod.setReplicas(existingPod.getReplicas() + 1);
-                            logger.info("Увеличено количество реплик для пода: {} (теперь: {})", 
-                                       existingPod.getName(), existingPod.getReplicas());
-                        } else {
-                            // Добавляем новый под с количеством реплик = 1
-                            podInfo.setReplicas(1);
-                            podMap.put(uniqueKey, podInfo);
-                            logger.info("Добавлен новый под: {} (реплик: 1)", podInfo.getName());
-                        }
+                        pods.add(podInfo);
+                        logger.debug("Добавлен под: {} (POD_NAME: {})", podInfo.getName(), podInfo.getPodName());
                     }
                 }
                 
-                // Преобразуем карту в список и сортируем по количеству реплик (по убыванию)
-                pods.addAll(podMap.values());
-                pods.sort((p1, p2) -> {
-                    int replicas1 = p1.getReplicas() != null ? p1.getReplicas() : 1;
-                    int replicas2 = p2.getReplicas() != null ? p2.getReplicas() : 1;
-                    return Integer.compare(replicas2, replicas1); // Сортировка по убыванию
-                });
-                logger.info("Найдено {} уникальных подов из {} общих, успешно распарсено: {}", 
-                           podMap.size(), itemsNode.size(), pods.size());
+                logger.info("Успешно распарсено {} подов", pods.size());
                 
             } else {
                 logger.warn("Не найден массив items в JSON");
@@ -363,6 +339,21 @@ public class KubernetesService {
                             }
                         }
                     }
+                }
+            }
+            
+            // === ИЗВЛЕЧЕНИЕ СТАТУСА (рестарты) ===
+            JsonNode statusNode = podNode.get("status");
+            if (statusNode != null) {
+                // Суммарное количество рестартов по всем контейнерам
+                if (statusNode.has("containerStatuses") && statusNode.get("containerStatuses").isArray()) {
+                    int restartSum = 0;
+                    for (JsonNode cs : statusNode.get("containerStatuses")) {
+                        if (cs.has("restartCount")) {
+                            restartSum += cs.get("restartCount").asInt(0);
+                        }
+                    }
+                    podInfo.setRestarts(restartSum);
                 }
             }
             
@@ -526,7 +517,6 @@ public class KubernetesService {
         html.append("<th>GC</th>");
         html.append("<th>CREATION DATE</th>");
         html.append("<th>PORT</th>");
-        html.append("<th>REPLICAS</th>");
         html.append("<th>REQUEST</th>");
         html.append("</tr></thead>");
         
@@ -540,7 +530,6 @@ public class KubernetesService {
             html.append("<td>").append(pod.getGcOptions() != null ? pod.getGcOptions() : "").append("</td>");
             html.append("<td>").append(pod.getCreationDate() != null ? pod.getCreationDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "").append("</td>");
             html.append("<td align=\"left\">").append(pod.getPort() != null ? pod.getPort() : "").append("</td>");
-            html.append("<td align=\"center\">").append(pod.getReplicas() != null ? pod.getReplicas().toString() : "1").append("</td>");
             html.append("<td align=\"left\">");
             html.append("CPU: ").append(pod.getCpuRequest() != null ? pod.getCpuRequest() : "").append("<br><br>");
             html.append("RAM: ").append(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "");
@@ -600,24 +589,102 @@ public class KubernetesService {
     }
     
     /**
-     * Создает уникальный ключ для группировки подов
+     * Извлекает дополнительную информацию о поде и устанавливает её напрямую в PodInfo
      * 
-     * Поды считаются одинаковыми, если у них совпадают:
-     * - Имя приложения (name) - основная характеристика
-     * - Версия образа (version) - основная характеристика
+     * Извлекает:
+     * - Полное имя пода из metadata.name
+     * - Количество рестартов из status.containerStatuses[].restartCount
+     * - Время от создания до статуса Ready (разница между creationTimestamp и Ready condition lastTransitionTime)
      * 
-     * Остальные поля могут отличаться между репликами
-     * 
-     * @param podInfo - информация о поде
-     * @return уникальный ключ для группировки
+     * @param podNode - JSON узел с информацией о поде
+     * @param podInfo - объект PodInfo для заполнения данными
      */
-    private String createUniqueKey(PodInfo podInfo) {
-        StringBuilder keyBuilder = new StringBuilder();
-        
-        // Группируем только по основным характеристикам
-        keyBuilder.append(podInfo.getName() != null ? podInfo.getName() : "").append("|");
-        keyBuilder.append(podInfo.getVersion() != null ? podInfo.getVersion() : "");
-        
-        return keyBuilder.toString();
+    private void extractAdditionalPodInfo(JsonNode podNode, PodInfo podInfo) {
+        try {
+            JsonNode metadataNode = podNode.get("metadata");
+            
+            // Извлекаем полное имя пода из metadata.name
+            if (metadataNode != null && metadataNode.has("name")) {
+                podInfo.setPodName(metadataNode.get("name").asText());
+            }
+            
+            // Извлекаем время создания пода
+            LocalDateTime creationTime = null;
+            if (metadataNode != null && metadataNode.has("creationTimestamp")) {
+                try {
+                    String creationTimestamp = metadataNode.get("creationTimestamp").asText();
+                    creationTimestamp = creationTimestamp.replace("Z", "");
+                    creationTime = LocalDateTime.parse(creationTimestamp,
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+                } catch (Exception e) {
+                    logger.warn("Не удалось распарсить creationTimestamp: {}", e.getMessage());
+                }
+            }
+            
+            // Извлекаем время когда под стал Ready (из conditions)
+            JsonNode statusNode = podNode.get("status");
+            LocalDateTime readyTime = null;
+            if (statusNode != null && statusNode.has("conditions") && 
+                statusNode.get("conditions").isArray()) {
+                
+                for (JsonNode condition : statusNode.get("conditions")) {
+                    if (condition.has("type") && "Ready".equals(condition.get("type").asText()) &&
+                        condition.has("status") && "True".equals(condition.get("status").asText()) &&
+                        condition.has("lastTransitionTime")) {
+                        
+                        try {
+                            String lastTransitionTimeStr = condition.get("lastTransitionTime").asText();
+                            lastTransitionTimeStr = lastTransitionTimeStr.replace("Z", "");
+                            readyTime = LocalDateTime.parse(lastTransitionTimeStr,
+                                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+                            break; // Нашли условие Ready
+                        } catch (Exception e) {
+                            logger.warn("Не удалось распарсить lastTransitionTime: {}", e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            // Вычисляем разницу между созданием и статусом Ready
+            if (creationTime != null && readyTime != null) {
+                long seconds = java.time.Duration.between(creationTime, readyTime).getSeconds();
+                String readyTimeStr = formatDuration(seconds);
+                podInfo.setReadyTime(readyTimeStr);
+            } else {
+                podInfo.setReadyTime("-");
+            }
+            
+        } catch (Exception e) {
+            logger.error("Ошибка при извлечении дополнительной информации о поде: {}", e.getMessage(), e);
+        }
     }
+    
+    /**
+     * Форматирует длительность в секундах в читаемый формат (например, "5s", "2m 30s", "1h 15m")
+     * 
+     * @param seconds - количество секунд
+     * @return отформатированная строка
+     */
+    private String formatDuration(long seconds) {
+        if (seconds < 60) {
+            return seconds + "s";
+        } else if (seconds < 3600) {
+            long minutes = seconds / 60;
+            long remainingSeconds = seconds % 60;
+            if (remainingSeconds == 0) {
+                return minutes + "m";
+            } else {
+                return minutes + "m " + remainingSeconds + "s";
+            }
+        } else {
+            long hours = seconds / 3600;
+            long remainingMinutes = (seconds % 3600) / 60;
+            if (remainingMinutes == 0) {
+                return hours + "h";
+            } else {
+                return hours + "h " + remainingMinutes + "m";
+            }
+        }
+    }
+    
 }

@@ -13,12 +13,132 @@
         .card-header { background-color: #f8f9fa; }
         .navbar-brand { font-weight: bold; }
         .footer { margin-top: auto; }
+        
+        /* Адаптивность таблицы */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+            min-width: 100%;
+            table-layout: auto;
+        }
+        
+        .table th,
+        .table td {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        @media (min-width: 1400px) {
+            .table {
+                font-size: 0.95rem;
+            }
+        }
+        
+        @media (min-width: 1600px) {
+            .table {
+                font-size: 1rem;
+            }
+        }
+        
+        /* Улучшение отображения на широких экранах */
+        @media (min-width: 1920px) {
+            .container-fluid {
+                max-width: 95%;
+            }
+        }
+        
+        /* Адаптивность карточек статистики */
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 0.75rem;
+            }
+        }
+        
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1050;
+            overflow-y: auto;
+        }
+        
+        .sidebar.open {
+            right: 0;
+        }
+        
+        .sidebar-header {
+            background: #343a40;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sidebar-body {
+            padding: 1.5rem;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+        
+        .sidebar-overlay.show {
+            display: block;
+        }
+        
+        .btn-add-server {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1030;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .main-content {
+            transition: margin-right 0.3s ease;
+        }
+        
+        .main-content.sidebar-open {
+            margin-right: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .main-content.sidebar-open {
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
+        <div class="container-fluid px-4">
             <a class="navbar-brand" href="/">
                 <i class="fas fa-server me-2"></i>Version Dashboard
             </a>
@@ -48,15 +168,86 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="container my-4">
-        <div th:fragment="content">
+    <main class="main-content container-fluid px-4 py-3">
+        <div th:replace="~{::content}">
             <!-- Content will be inserted here -->
         </div>
     </main>
 
+    <!-- Floating Add Button -->
+    <button class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
+        <i class="fas fa-plus fa-lg"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Add Server Sidebar -->
+    <div class="sidebar" id="addServerSidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Добавить сервер</h5>
+            <button class="btn btn-sm btn-outline-light" onclick="closeSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-body">
+            <form id="addServerForm">
+                <div class="mb-3">
+                    <label for="serverName" class="form-label">Название сервера</label>
+                    <input type="text" class="form-control" id="serverName" required placeholder="Например: My Server">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverUrl" class="form-label">URL</label>
+                    <input type="text" class="form-control" id="serverUrl" required placeholder="example.com:8080 или https://example.com">
+                    <div class="form-text">Протокол будет добавлен автоматически в зависимости от типа сервера</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverType" class="form-label">Тип сервера</label>
+                    <select class="form-select" id="serverType" required onchange="toggleHealthcheck()">
+                        <option value="">Выберите тип</option>
+                        <option value="POSTGRES">PostgreSQL</option>
+                        <option value="REDIS">Redis</option>
+                        <option value="KAFKA">Kafka</option>
+                        <option value="ASTRA_LINUX">Astra Linux</option>
+                        <option value="OTHER">Другое</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="healthcheckField" style="display: none;">
+                    <label for="serverHealthcheck" class="form-label">Healthcheck endpoint</label>
+                    <input type="text" class="form-control" id="serverHealthcheck" placeholder="/health">
+                    <div class="form-text">Обязательно для типа "Другое"</div>
+                </div>
+                
+                <div class="mb-3" id="metricsEndpointField" style="display: none;">
+                    <label for="serverMetricsEndpoint" class="form-label">Metrics endpoint</label>
+                    <input type="text" class="form-control" id="serverMetricsEndpoint" placeholder="/metrics">
+                    <div class="form-text">Endpoint для получения метрик (например: /metrics, /api/version)</div>
+                </div>
+                
+                <div class="mb-3" id="versionRegexField" style="display: none;">
+                    <label for="serverVersionRegex" class="form-label">Version regex</label>
+                    <input type="text" class="form-control" id="serverVersionRegex" placeholder='version\\s*=\\s*"([^"]+)"'>
+                    <div class="form-text">Регулярное выражение для извлечения версии из метрик</div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Добавить сервер
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="closeSidebar()">
+                        <i class="fas fa-times me-1"></i>Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer bg-light text-center py-3 mt-auto">
-        <div class="container">
+        <div class="container-fluid px-4">
             <span class="text-muted">Version Dashboard v1.0.0 | 
                 <a href="/actuator/health" target="_blank">Health</a> | 
                 <a href="/actuator/metrics" target="_blank">Metrics</a>
@@ -65,5 +256,163 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add form submission handler
+            const addServerForm = document.getElementById('addServerForm');
+            if (addServerForm) {
+                addServerForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    addServer();
+                });
+            }
+            
+            // Add keyboard handler for Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Sidebar functions
+        function openSidebar() {
+            const sidebar = document.getElementById('addServerSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+            if (mainContent) mainContent.classList.add('sidebar-open');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('addServerSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.querySelector('.main-content');
+            const form = document.getElementById('addServerForm');
+            
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+            if (mainContent) mainContent.classList.remove('sidebar-open');
+            document.body.style.overflow = 'auto';
+            
+            // Reset form
+            if (form) {
+                form.reset();
+                toggleHealthcheck();
+            }
+        }
+        
+        // Toggle healthcheck field visibility
+        function toggleHealthcheck() {
+            const serverType = document.getElementById('serverType');
+            if (!serverType) return;
+            
+            const type = serverType.value;
+            const healthcheckField = document.getElementById('healthcheckField');
+            const healthcheckInput = document.getElementById('serverHealthcheck');
+            const metricsEndpointField = document.getElementById('metricsEndpointField');
+            const versionRegexField = document.getElementById('versionRegexField');
+            
+            if (type === 'OTHER') {
+                if (healthcheckField) healthcheckField.style.display = 'block';
+                if (healthcheckInput) healthcheckInput.required = true;
+                if (metricsEndpointField) metricsEndpointField.style.display = 'block';
+                if (versionRegexField) versionRegexField.style.display = 'block';
+            } else {
+                if (healthcheckField) healthcheckField.style.display = 'none';
+                if (healthcheckInput) healthcheckInput.required = false;
+                if (metricsEndpointField) metricsEndpointField.style.display = 'none';
+                if (versionRegexField) versionRegexField.style.display = 'none';
+            }
+        }
+
+        // Add server function
+        function addServer() {
+            const serverData = {
+                name: document.getElementById('serverName').value,
+                url: document.getElementById('serverUrl').value,
+                type: document.getElementById('serverType').value
+            };
+            
+            // Add healthcheck and custom metrics fields if type is OTHER
+            if (serverData.type === 'OTHER') {
+                serverData.healthcheck = document.getElementById('serverHealthcheck').value;
+                serverData.metricsEndpoint = document.getElementById('serverMetricsEndpoint').value;
+                serverData.versionRegex = document.getElementById('serverVersionRegex').value;
+            }
+            
+            fetch('/api/servers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(serverData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close sidebar
+                    closeSidebar();
+                    // Reload page to show new data
+                    location.reload();
+                    // Show success message
+                    showNotification('Сервер успешно добавлен!', 'success');
+                } else {
+                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Произошла ошибка при добавлении сервера', 'error');
+            });
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Delete server function
+        function deleteServer(serverId) {
+            if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
+                fetch('/api/servers/' + serverId, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                        showNotification('Сервер успешно удален!', 'success');
+                    } else {
+                        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Произошла ошибка при удалении сервера', 'error');
+                });
+            }
+        }
+    </script>
 </body>
 </html>

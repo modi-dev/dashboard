@@ -33,19 +33,20 @@ public class PodsController {
             List<PodInfo> pods = kubernetesService.getRunningPods();
 
             // Подсчеты статистики
-            int totalReplicas = pods.stream()
-                    .mapToInt(p -> p.getReplicas() != null ? p.getReplicas() : 1)
-                    .sum();
-            int uniquePods = pods.size();
-            long withReplicas = pods.stream()
-                    .filter(p -> (p.getReplicas() != null ? p.getReplicas() : 1) > 1)
+            int totalPods = pods.size();
+            
+            // Подсчет уникальных сервисов (уникальные значения поля name)
+            long uniqueServices = pods.stream()
+                    .map(PodInfo::getName)
+                    .filter(name -> name != null && !name.isEmpty())
+                    .distinct()
                     .count();
 
             model.addAttribute("pods", pods);
-            model.addAttribute("totalPods", totalReplicas); // всего подов (с учетом реплик)
-            model.addAttribute("uniquePods", uniquePods);   // уникальные записи
-            model.addAttribute("totalReplicas", totalReplicas);
-            model.addAttribute("withReplicas", withReplicas);
+            model.addAttribute("totalPods", totalPods); // всего подов
+            model.addAttribute("uniqueServices", uniqueServices);   // уникальные сервисы (по полю name)
+            model.addAttribute("totalReplicas", totalPods);
+            model.addAttribute("withReplicas", 0); // больше нет группировки
             model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
             return "pods";
         } catch (Exception e) {

@@ -13,9 +13,9 @@
         </div>
 
         <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card text-center">
+        <div class="row g-3 mb-4 justify-content-center">
+            <div class="col-md-6 col-lg-3 col-xl-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-server fa-2x text-primary mb-2"></i>
                         <h5 class="card-title">Всего серверов</h5>
@@ -23,8 +23,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-center">
+            <div class="col-md-6 col-lg-3 col-xl-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
                         <h5 class="card-title">Онлайн</h5>
@@ -32,8 +32,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-center">
+            <div class="col-md-6 col-lg-3 col-xl-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
                         <h5 class="card-title">Оффлайн</h5>
@@ -41,8 +41,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-center">
+            <div class="col-md-6 col-lg-3 col-xl-3">
+                <div class="card text-center h-100">
                     <div class="card-body">
                         <i class="fas fa-cube fa-2x text-info mb-2"></i>
                         <h5 class="card-title">Подов</h5>
@@ -55,18 +55,18 @@
         <!-- Servers Section -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-server me-2"></i>Серверы</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div th:if="${servers.empty}" class="text-center text-muted py-4">
                             <i class="fas fa-server fa-3x mb-3"></i>
                             <p>Нет добавленных серверов</p>
-                            <a href="/servers" class="btn btn-primary">Добавить сервер</a>
+                            <button class="btn btn-primary" onclick="openSidebar()">Добавить сервер</button>
                         </div>
-                        <div th:unless="${servers.empty}" class="table-responsive">
-                            <table class="table table-hover">
+                        <div th:unless="${servers.empty}" class="table-responsive p-3">
+                            <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>Название</th>
@@ -98,17 +98,17 @@
         <!-- Pods Section -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-cube me-2"></i>Kubernetes Pods</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0">
                         <div th:if="${pods.empty}" class="text-center text-muted py-4">
                             <i class="fas fa-cube fa-3x mb-3"></i>
                             <p>Нет доступных подов</p>
                         </div>
-                        <div th:unless="${pods.empty}" class="table-responsive">
-                            <table class="table table-hover">
+                        <div th:unless="${pods.empty}" class="table-responsive p-3">
+                            <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>Название</th>

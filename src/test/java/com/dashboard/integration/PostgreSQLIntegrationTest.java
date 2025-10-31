@@ -59,8 +59,8 @@ class PostgreSQLIntegrationTest {
         String version = serverVersionService.getServerVersion(postgresServer);
         
         // Поскольку у нас нет PostgreSQL exporter в контейнере,
-        // ожидаем мок-версию или null
-        assertThat(version).isNotNull();
+        // ожидаем null (без мок-версии)
+        assertThat(version).isNull();
     }
 
     @Test
@@ -72,8 +72,8 @@ class PostgreSQLIntegrationTest {
         invalidPostgresServer.setType(ServerType.POSTGRES);
 
         String version = serverVersionService.getServerVersion(invalidPostgresServer);
-        // Ожидаем мок-версию для PostgreSQL при ошибке подключения
-        assertThat(version).isNotNull();
+        // При ошибке подключения ожидаем null (без мок-версии)
+        assertThat(version).isNull();
     }
 
     @Test

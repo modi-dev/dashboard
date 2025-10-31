@@ -202,10 +202,13 @@ public class ServerController {
      * GET /api/servers/export/csv
      */
     @GetMapping("/export/csv")
-    public ResponseEntity<String> exportServersToCsv() {
+    public ResponseEntity<byte[]> exportServersToCsv() {
         try {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             String csv = csvExportService.exportServersToCsv(servers);
+            
+            // Конвертируем строку в байты с UTF-8 кодировкой (BOM уже включен в строку)
+            byte[] csvBytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             
             // Генерируем имя файла с текущей датой
             String filename = "servers_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
@@ -217,11 +220,11 @@ public class ServerController {
             
             return ResponseEntity.ok()
                 .headers(headers)
-                .body(csv);
+                .body(csvBytes);
                 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error exporting servers: " + e.getMessage());
+                .body(("Error exporting servers: " + e.getMessage()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
     }
     

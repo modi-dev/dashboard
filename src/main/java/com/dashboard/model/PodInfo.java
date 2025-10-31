@@ -18,14 +18,16 @@ public class PodInfo {
     private String port;           // Порты контейнера (все порты через запятую)
     private String cpuRequest;     // Запрошенные CPU ресурсы
     private String memoryRequest;  // Запрошенные RAM ресурсы
-    private Integer replicas;      // Количество реплик (одинаковых подов)
+    private Integer restarts;      // Количество рестартов контейнеров в поде (сумма)
+    private String podName;         // Полное имя пода (metadata.name)
+    private String readyTime;       // Время от создания до статуса Ready
     
     // Конструкторы
     public PodInfo() {}
     
     public PodInfo(String name, String version, String msBranch, String configBranch, 
                    String gcOptions, LocalDateTime creationDate, String port, 
-                   String cpuRequest, String memoryRequest, Integer replicas) {
+                   String cpuRequest, String memoryRequest) {
         this.name = name;
         this.version = version;
         this.msBranch = msBranch;
@@ -35,7 +37,6 @@ public class PodInfo {
         this.port = port;
         this.cpuRequest = cpuRequest;
         this.memoryRequest = memoryRequest;
-        this.replicas = replicas;
     }
     
     // Getters и Setters
@@ -112,12 +113,28 @@ public class PodInfo {
         this.memoryRequest = memoryRequest;
     }
     
-    public Integer getReplicas() {
-        return replicas;
+    public Integer getRestarts() {
+        return restarts;
     }
     
-    public void setReplicas(Integer replicas) {
-        this.replicas = replicas;
+    public void setRestarts(Integer restarts) {
+        this.restarts = restarts;
+    }
+    
+    public String getPodName() {
+        return podName;
+    }
+    
+    public void setPodName(String podName) {
+        this.podName = podName;
+    }
+    
+    public String getReadyTime() {
+        return readyTime;
+    }
+    
+    public void setReadyTime(String readyTime) {
+        this.readyTime = readyTime;
     }
     
     @Override
@@ -132,7 +149,9 @@ public class PodInfo {
                 ", port=" + port +
                 ", cpuRequest='" + cpuRequest + '\'' +
                 ", memoryRequest='" + memoryRequest + '\'' +
-                ", replicas=" + replicas +
+                ", restarts=" + restarts +
+                ", podName='" + podName + '\'' +
+                ", readyTime='" + readyTime + '\'' +
                 '}';
     }
 }

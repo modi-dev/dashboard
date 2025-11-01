@@ -54,6 +54,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        
+        <!-- Spring Security для аутентификации -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
 
         <!-- Database -->
         <dependency>
@@ -98,7 +109,7 @@
             <version>${tomcat.version}</version>
         </dependency>
 
-        <!-- Development Tools -->
+        <!-- Development Tools (только для dev профиля) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -139,6 +150,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludeDevtools>true</excludeDevtools>
+                </configuration>
             </plugin>
             
                    <!-- Плагин для копирования Linux kubectl в итоговый JAR -->
@@ -253,6 +267,16 @@
                         </reports>
                     </reportSet>
                 </reportSets>
+            </plugin>
+            
+            <!-- Отключаем стандартные отчеты project-info -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.9.0</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </reporting>

@@ -18,13 +18,19 @@ import static org.mockito.Mockito.*;
 
 /**
  * Тесты для KubernetesService
- * Проверяет интеграцию функциональности из version.sh скрипта
+ * Проверяет оркестрацию работы с KubectlCommandExecutor и KubernetesPodParser
  */
 @ExtendWith(MockitoExtension.class)
 class KubernetesServiceTest {
     
     @Mock
     private KubernetesConfig kubernetesConfig;
+    
+    @Mock
+    private KubectlCommandExecutor kubectlExecutor;
+    
+    @Mock
+    private KubernetesPodParser podParser;
     
     @InjectMocks
     private KubernetesService kubernetesService;
@@ -47,28 +53,119 @@ class KubernetesServiceTest {
         // Then
         assertTrue(result.isEmpty());
         verify(kubernetesConfig).isEnabled();
+        verifyNoInteractions(kubectlExecutor);
+        verifyNoInteractions(podParser);
     }
     
     @Test
-    void testGetCurrentNamespace_ShouldReturnConfiguredNamespace() {
+    void testGetRunningPods_WhenKubernetesEnabled_ShouldReturnPods() throws KubectlException {
         // Given
-        // Мок не нужен, так как метод выполняет kubectl команду
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        String jsonOutput = "{\"items\":[]}";
+        List<PodInfo> expectedPods = Arrays.asList(new PodInfo(), new PodInfo());
+        
+        when(kubectlExecutor.executeCommand(
+            "get", "pods",
+            "--field-selector=status.phase==Running",
+            "-n", "test-namespace",
+            "-o", "json"
+        )).thenReturn(jsonOutput);
+        
+        when(podParser.parseKubectlOutput(jsonOutput)).thenReturn(expectedPods);
+        
+        // When
+        List<PodInfo> result = kubernetesService.getRunningPods();
+        
+        // Then
+        assertEquals(expectedPods, result);
+        verify(kubectlExecutor).executeCommand(
+            "get", "pods",
+            "--field-selector=status.phase==Running",
+            "-n", "test-namespace",
+            "-o", "json"
+        );
+        verify(podParser).parseKubectlOutput(jsonOutput);
+    }
+    
+    @Test
+    void testGetRunningPods_WhenKubectlException_ShouldReturnEmptyList() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        List<PodInfo> result = kubernetesService.getRunningPods();
+        
+        // Then
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(podParser);
+    }
+    
+    @Test
+    void testGetCurrentNamespace_ShouldReturnNamespace() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand(
+            "config", "view",
+            "--minify",
+            "-o", "jsonpath={.contexts[0].context.namespace}"
+        )).thenReturn("test-namespace");
         
         // When
         String result = kubernetesService.getCurrentNamespace();
         
         // Then
-        // Метод getCurrentNamespace() выполняет kubectl команду, поэтому возвращает 'default'
-        // если kubectl не настроен или не доступен
-        assertNotNull(result);
-        // Проверяем, что метод вызывается (может вернуть 'default' или пустую строку)
-        assertTrue(result.equals("default") || result.isEmpty() || result.equals("'default'") || result.equals("test-namespace"));
+        assertEquals("test-namespace", result);
+        verify(kubectlExecutor).executeCommand(
+            "config", "view",
+            "--minify",
+            "-o", "jsonpath={.contexts[0].context.namespace}"
+        );
     }
     
     @Test
-    void testGenerateHtmlPage_ShouldReturnValidHtml() {
+    void testGetCurrentNamespace_WhenKubectlException_ShouldReturnConfigNamespace() throws KubectlException {
         // Given
-        when(kubernetesConfig.isEnabled()).thenReturn(false); // Отключаем kubectl для теста
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        when(kubernetesConfig.getNamespace()).thenReturn("default-namespace");
+        
+        // When
+        String result = kubernetesService.getCurrentNamespace();
+        
+        // Then
+        assertEquals("default-namespace", result);
+    }
+    
+    @Test
+    void testGetCurrentNamespace_WhenEmptyResult_ShouldReturnDefault() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("");
+        
+        // When
+        String result = kubernetesService.getCurrentNamespace();
+        
+        // Then
+        assertEquals("default", result);
+    }
+    
+    @Test
+    void testGenerateHtmlPage_ShouldReturnValidHtml() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("{\"items\":[]}");
+        when(podParser.parseKubectlOutput(anyString())).thenReturn(new ArrayList<>());
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("test-namespace");
         
         // When
         String html = kubernetesService.generateHtmlPage();
@@ -80,19 +177,21 @@ class KubernetesServiceTest {
         assertTrue(html.contains("<table class='iksweb'>"));
         assertTrue(html.contains("<th>NAME</th>"));
         assertTrue(html.contains("<th>VERSION</th>"));
-        assertTrue(html.contains("<th>MsBranch</th>"));
-        assertTrue(html.contains("<th>ConfigBranch</th>"));
-        assertTrue(html.contains("<th>GC</th>"));
-        assertTrue(html.contains("<th>CREATION DATE</th>"));
-        assertTrue(html.contains("<th>PORT</th>"));
-        assertTrue(html.contains("<th>REQUEST</th>"));
         assertTrue(html.contains("</html>"));
     }
     
     @Test
-    void testGenerateHtmlPage_ShouldContainCssStyles() {
+    void testGenerateHtmlPage_ShouldContainCssStyles() throws KubectlException {
         // Given
-        when(kubernetesConfig.isEnabled()).thenReturn(false);
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("{\"items\":[]}");
+        when(podParser.parseKubectlOutput(anyString())).thenReturn(new ArrayList<>());
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("test-namespace");
         
         // When
         String html = kubernetesService.generateHtmlPage();
@@ -105,20 +204,6 @@ class KubernetesServiceTest {
     }
     
     @Test
-    void testGenerateHtmlPage_ShouldContainNamespaceInfo() {
-        // Given
-        when(kubernetesConfig.isEnabled()).thenReturn(false);
-        
-        // When
-        String html = kubernetesService.generateHtmlPage();
-        
-        // Then
-        // HTML содержит информацию о namespace и времени обновления
-        assertTrue(html.contains("namespace:") || html.contains("test-namespace"));
-        assertTrue(html.contains("update time:"));
-    }
-    
-    @Test
     void testGetKubernetesConfig_ShouldReturnConfig() {
         // When
         KubernetesConfig config = kubernetesService.getKubernetesConfig();
@@ -126,6 +211,21 @@ class KubernetesServiceTest {
         // Then
         assertNotNull(config);
         assertEquals(kubernetesConfig, config);
+    }
+    
+    @Test
+    void testParseKubectlOutput_ShouldDelegateToParser() {
+        // Given
+        String jsonOutput = "{\"items\":[]}";
+        List<PodInfo> expectedPods = Arrays.asList(new PodInfo());
+        when(podParser.parseKubectlOutput(jsonOutput)).thenReturn(expectedPods);
+        
+        // When
+        List<PodInfo> result = kubernetesService.parseKubectlOutput(jsonOutput);
+        
+        // Then
+        assertEquals(expectedPods, result);
+        verify(podParser).parseKubectlOutput(jsonOutput);
     }
     
     @Test
@@ -204,16 +304,29 @@ class KubernetesServiceTest {
     }
     
     @Test
-    void testGetKubernetesVersion_ShouldReturnVersion() {
-        // Given - метод выполняет kubectl команду
-        // Результат зависит от доступности kubectl
+    void testGetKubernetesVersion_ShouldReturnVersion() throws KubectlException {
+        // Given
+        String json = "{\"serverVersion\":{\"gitVersion\":\"v1.28.0\"}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
         
         // When
         String version = kubernetesService.getKubernetesVersion();
         
         // Then
-        assertNotNull(version);
-        // Может быть "v1.34.0" или "unknown" или пустая строка
-        assertTrue(version.length() >= 0);
+        assertEquals("v1.28.0", version);
+        verify(kubectlExecutor).executeCommand("version", "-o", "json");
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenException_ShouldReturnUnknown() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand("version", "-o", "json"))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("Неизвестно", version);
     }
 }

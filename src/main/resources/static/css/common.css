@@ -1,0 +1,241 @@
+/* ============================================
+   Common Styles for Version Dashboard
+   ============================================ */
+
+/* Status Badges */
+.status-online {
+    color: #28a745;
+}
+
+.status-offline {
+    color: #dc3545;
+}
+
+.status-unknown {
+    color: #6c757d;
+}
+
+/* Card Header */
+.card-header {
+    background-color: #f8f9fa;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+}
+
+/* Theme Toggle Button */
+#themeToggle {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    cursor: pointer;
+    border: none !important;
+}
+
+#themeToggle:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    transition: all 0.2s ease;
+}
+
+/* Table Responsiveness */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    font-size: 0.9rem;
+    width: 100%;
+    table-layout: auto;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+/* Mobile: Allow text wrapping in tables */
+@media (max-width: 768px) {
+    .table th,
+    .table td {
+        white-space: normal;
+        word-wrap: break-word;
+    }
+}
+
+/* Desktop: Prevent text wrapping in tables */
+@media (min-width: 769px) {
+    .table th,
+    .table td {
+        white-space: nowrap;
+    }
+}
+
+/* Larger screens: Increase table font size */
+@media (min-width: 1400px) {
+    .table {
+        font-size: 0.95rem;
+    }
+}
+
+@media (min-width: 1600px) {
+    .table {
+        font-size: 1rem;
+    }
+}
+
+/* Wide screens: Limit container width */
+@media (min-width: 1920px) {
+    .container-fluid {
+        max-width: 95%;
+    }
+}
+
+/* Mobile: Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    /* Reduce horizontal padding on mobile */
+    .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    
+    /* Make input groups full width on mobile */
+    .input-group {
+        max-width: 100% !important;
+    }
+}
+
+/* Prevent horizontal scroll */
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease, background-color 0.3s ease;
+    z-index: 1050;
+    overflow-y: auto;
+}
+
+.sidebar.open {
+    right: 0;
+}
+
+.sidebar-header {
+    background: #343a40;
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-body {
+    padding: 1.5rem;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.sidebar-overlay.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Floating Add Server Button */
+.btn-add-server {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1030;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-add-server:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+}
+
+.btn-add-server:active {
+    transform: translateY(0);
+}
+
+/* Main Content */
+.main-content {
+    transition: margin-right 0.3s ease;
+}
+
+.main-content.sidebar-open {
+    margin-right: 400px;
+}
+
+/* Mobile: Sidebar adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .main-content.sidebar-open {
+        margin-right: 0;
+    }
+}
+
+/* Pods page specific: Allow wrapping for 6th column (GC Options) */
+.table td:nth-child(6) {
+    white-space: normal;
+    max-width: 300px;
+}
+
+@media (min-width: 1600px) {
+    .table td:nth-child(6) {
+        max-width: 400px;
+    }
+}
+
+/* Table hover effects */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badge size */
+.badge {
+    font-size: 0.8em;
+}
+

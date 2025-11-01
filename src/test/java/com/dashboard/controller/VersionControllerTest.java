@@ -7,25 +7,21 @@ import com.dashboard.config.KubernetesConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(VersionController.class)
+@WebMvcTest(value = VersionController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
+@TestPropertySource(properties = "security.enabled=false")
 class VersionControllerTest {
 
     @Autowired
@@ -143,7 +139,6 @@ class VersionControllerTest {
 
     @Test
     void testGetPodByName_Success() throws Exception {
-        PodInfo pod = testPods.get(0);
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
         mockMvc.perform(get("/api/pods/pods/nginx"))

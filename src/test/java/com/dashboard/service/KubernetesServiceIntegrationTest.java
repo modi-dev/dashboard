@@ -23,8 +23,36 @@ class KubernetesServiceIntegrationTest {
     @Mock
     private KubernetesConfig kubernetesConfig;
     
-    @InjectMocks
+    @Mock
+    private KubectlCommandExecutor kubectlExecutor;
+    
+    private KubernetesPodParser podParser;
+    
     private KubernetesService kubernetesService;
+    
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        // Используем реальный парсер для интеграционных тестов
+        podParser = new KubernetesPodParser();
+        kubernetesService = new KubernetesService();
+        
+        // Установим зависимости через рефлексию
+        try {
+            java.lang.reflect.Field configField = KubernetesService.class.getDeclaredField("kubernetesConfig");
+            configField.setAccessible(true);
+            configField.set(kubernetesService, kubernetesConfig);
+            
+            java.lang.reflect.Field executorField = KubernetesService.class.getDeclaredField("kubectlExecutor");
+            executorField.setAccessible(true);
+            executorField.set(kubernetesService, kubectlExecutor);
+            
+            java.lang.reflect.Field parserField = KubernetesService.class.getDeclaredField("podParser");
+            parserField.setAccessible(true);
+            parserField.set(kubernetesService, podParser);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set up KubernetesService for testing", e);
+        }
+    }
     
     @Test
     void testParseKubectlOutput_WithRealJson() {

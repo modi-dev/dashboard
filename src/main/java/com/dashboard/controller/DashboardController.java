@@ -6,6 +6,8 @@ import com.dashboard.service.KubernetesService;
 import com.dashboard.service.ServerVersionService;
 import com.dashboard.repository.ServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,6 +70,12 @@ public class DashboardController {
     @GetMapping("/")
     public String index(Model model) {
         try {
+            // Добавляем информацию об авторизации для Thymeleaf
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
+                                     !auth.getName().equals("anonymousUser");
+            model.addAttribute("isAuthenticated", isAuthenticated);
+            
             // Получаем список серверов
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
@@ -96,6 +104,13 @@ public class DashboardController {
             
         } catch (Exception e) {
             logger.error("Ошибка при загрузке главной страницы: {}", e.getMessage(), e);
+            // Убеждаемся, что isAuthenticated установлен даже при ошибке
+            if (!model.containsAttribute("isAuthenticated")) {
+                Authentication authForError = SecurityContextHolder.getContext().getAuthentication();
+                boolean isAuth = authForError != null && authForError.isAuthenticated() && 
+                               !authForError.getName().equals("anonymousUser");
+                model.addAttribute("isAuthenticated", isAuth);
+            }
             // В случае ошибки показываем пустые данные
             model.addAttribute("servers", new ArrayList<>());
             model.addAttribute("pods", new ArrayList<>());
@@ -123,6 +138,11 @@ public class DashboardController {
      */
     @GetMapping("/servers")
     public String servers(Model model) {
+        // Добавляем информацию об авторизации для Thymeleaf
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
+                                 !auth.getName().equals("anonymousUser");
+        model.addAttribute("isAuthenticated", isAuthenticated);
         try {
             // Получаем список серверов
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
@@ -139,6 +159,13 @@ public class DashboardController {
             
         } catch (Exception e) {
             logger.error("Ошибка при загрузке страницы серверов: {}", e.getMessage(), e);
+            // Убеждаемся, что isAuthenticated установлен даже при ошибке
+            if (!model.containsAttribute("isAuthenticated")) {
+                Authentication authForError = SecurityContextHolder.getContext().getAuthentication();
+                boolean isAuth = authForError != null && authForError.isAuthenticated() && 
+                               !authForError.getName().equals("anonymousUser");
+                model.addAttribute("isAuthenticated", isAuth);
+            }
             model.addAttribute("servers", new ArrayList<>());
             setEmptyServerStatistics(model);
             model.addAttribute("error", "Ошибка при загрузке данных: " + e.getMessage());

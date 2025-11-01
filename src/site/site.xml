@@ -32,8 +32,6 @@
             <item name="Отчеты о тестах" href="surefire-report.html"/>
             <item name="Покрытие кода" href="jacoco/index.html"/>
         </menu>
-        
-        <menu ref="reports"/>
     </body>
 </project>
 

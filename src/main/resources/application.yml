@@ -71,6 +71,14 @@ kubernetes:
   kubectl:
     path: ${KUBERNETES_KUBECTL_PATH:kubectl}
   enabled: ${KUBERNETES_ENABLED:true}
+  command:
+    timeout: ${KUBERNETES_COMMAND_TIMEOUT:30}  # Timeout in seconds for kubectl commands (default: 30 seconds)
+
+# Настройки безопасности
+security:
+  enabled: ${SECURITY_ENABLED:true}  # Включить/выключить аутентификацию
+  username: ${SECURITY_USERNAME}  # Имя пользователя (по умолчанию: admin)
+  password: ${SECURITY_PASSWORD}  # Пароль (по умолчанию: admin, рекомендуется изменить через переменную окружения) 
 
 # Custom monitoring configuration (kept also in application.properties for env-only overrides)
 # Values are in MINUTES (converted to milliseconds/seconds internally)

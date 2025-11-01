@@ -23,9 +23,20 @@ function showNotification(message, type = 'info') {
 function deleteServer(serverId) {
   if (!serverId) return;
   if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
-    fetch('/api/servers/' + serverId, { method: 'DELETE' })
-      .then(response => response.json())
+    fetch('/api/servers/' + serverId, { 
+      method: 'DELETE',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (response.status === 401 || response.status === 403) {
+          // Перенаправляем на страницу логина при отсутствии авторизации
+          window.location.href = '/login';
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
+        if (!data) return; // Если был редирект
         if (data.success) {
           location.reload();
           showNotification('Сервер успешно удален!', 'success');
@@ -51,10 +62,18 @@ function refreshServers() {
 
   fetch('/api/servers/refresh', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
   })
-    .then(response => response.json())
+    .then(response => {
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return null;
+      }
+      return response.json();
+    })
     .then(data => {
+      if (!data) return;
       if (data.success) {
         showNotification('Статус серверов успешно обновлен!', 'success');
         setTimeout(() => { location.reload(); }, 500);

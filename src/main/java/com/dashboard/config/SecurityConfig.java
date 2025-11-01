@@ -68,12 +68,15 @@ public class SecurityConfig {
                 // GET запросы к серверам доступны всем
                 .requestMatchers(HttpMethod.GET, "/api/servers/**").permitAll()
                 
+                // Обновление статуса серверов доступно всем (только чтение данных)
+                .requestMatchers(HttpMethod.POST, "/api/servers/refresh").permitAll()
+                
                 // Защищенные операции - требуют аутентификации (POST, PUT, DELETE)
+                // ВАЖНО: Специфичные паттерны должны быть ДО общих паттернов с **
                 .requestMatchers(HttpMethod.POST, "/api/servers").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/servers/*/check").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/servers/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/servers/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/servers/**/check").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/servers/refresh").authenticated()
                 
                 // Страница логина доступна всем
                 .requestMatchers("/login", "/login-error").permitAll()
@@ -86,6 +89,19 @@ public class SecurityConfig {
                 .defaultSuccessUrl("/dashboard", true)
                 .failureUrl("/login-error")
                 .permitAll()
+            )
+            .exceptionHandling(exceptions -> exceptions
+                // Для API запросов возвращаем 401 вместо редиректа на /login
+                .authenticationEntryPoint((request, response, authException) -> {
+                    String requestPath = request.getRequestURI();
+                    if (requestPath.startsWith("/api/")) {
+                        response.setStatus(401);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"success\":false,\"error\":\"Unauthorized\"}");
+                    } else {
+                        response.sendRedirect("/login");
+                    }
+                })
             )
             .logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))

@@ -329,4 +329,124 @@ class KubernetesServiceTest {
         // Then
         assertEquals("Неизвестно", version);
     }
+    
+    @Test
+    void testGetKubernetesVersion_WhenNullResponse_ShouldReturnUnknown() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(null);
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("Неизвестно", version);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenEmptyResponse_ShouldReturnUnknown() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn("");
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("Неизвестно", version);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenOnlyClientVersion_ShouldReturnClientVersion() throws KubectlException {
+        // Given
+        String json = "{\"clientVersion\":{\"gitVersion\":\"v1.28.0\"}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("v1.28.0", version);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenServerVersionBlank_ShouldUseClientVersion() throws KubectlException {
+        // Given
+        String json = "{\"serverVersion\":{\"gitVersion\":\"\"},\"clientVersion\":{\"gitVersion\":\"v1.28.0\"}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("v1.28.0", version);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenNoGitVersion_ShouldReturnUnknown() throws KubectlException {
+        // Given
+        String json = "{\"serverVersion\":{},\"clientVersion\":{}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("Неизвестно", version);
+    }
+    
+    @Test
+    void testGetKubernetesVersion_WhenJsonParseException_ShouldReturnUnknown() throws KubectlException {
+        // Given
+        String invalidJson = "invalid json";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(invalidJson);
+        
+        // When
+        String version = kubernetesService.getKubernetesVersion();
+        
+        // Then
+        assertEquals("Неизвестно", version);
+    }
+    
+    @Test
+    void testGetRunningPods_WhenGenericException_ShouldReturnEmptyList() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        
+        // When
+        List<PodInfo> result = kubernetesService.getRunningPods();
+        
+        // Then
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(podParser);
+    }
+    
+    @Test
+    void testGetCurrentNamespace_WhenGenericException_ShouldReturnConfigNamespace() throws KubectlException {
+        // Given - simulate exception from kubectl
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        lenient().when(kubernetesConfig.getNamespace()).thenReturn("default-namespace");
+        
+        // When
+        String result = kubernetesService.getCurrentNamespace();
+        
+        // Then - should fall back to config namespace
+        assertEquals("default-namespace", result);
+    }
+    
+    @Test
+    void testGetCurrentNamespace_WhenWhitespaceResult_ShouldReturnDefault() throws KubectlException {
+        // Given
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("   ");
+        
+        // When
+        String result = kubernetesService.getCurrentNamespace();
+        
+        // Then
+        assertEquals("default", result);
+    }
 }

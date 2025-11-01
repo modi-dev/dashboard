@@ -239,3 +239,16 @@ html, body {
     font-size: 0.8em;
 }
 
+/* Type badge - темно-синий цвет для типа серверов */
+.badge.type-badge {
+    background-color: #1f8188 !important;
+    color: #fff;
+    font-weight: 500;
+}
+
+/* Type badge in dark theme */
+.theme-dark .badge.type-badge {
+    background-color: #2c5282 !important;
+    color: #fff;
+}
+

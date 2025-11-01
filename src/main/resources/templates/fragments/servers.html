@@ -22,9 +22,9 @@
                 <tr th:each="server : ${servers}">
                     <td><strong th:text="${server.name}">-</strong></td>
                     <td th:text="${server.url}">-</td>
-                    <td><span class="badge bg-info" th:text="${server.type}">-</span></td>
+                    <td><span class="badge type-badge" th:text="${server.type}">-</span></td>
                     <td>
-                        <span th:if="${server.version != null}" class="badge bg-secondary" th:text="${server.version}">-</span>
+                        <span th:if="${server.version != null}" class="badge version-badge" th:text="${server.version}">-</span>
                         <span th:if="${server.version == null}" class="text-muted">-</span>
                     </td>
                     <td>

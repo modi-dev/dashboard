@@ -25,6 +25,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Override vulnerable transitive versions -->
         <tomcat.version>10.1.45</tomcat.version>
+        <!-- Update Spring Security to latest stable version for Spring Boot 3.2.0 -->
+        <spring-security.version>6.3.8</spring-security.version>
     </properties>
 
     <dependencies>
@@ -59,6 +61,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
+        <!-- Override Spring Security version to latest stable (6.3.8) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
         </dependency>
         
         <dependency>

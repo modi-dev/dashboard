@@ -9,40 +9,37 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Сервис для работы с Kubernetes API
- * Интегрирует функциональность из version.sh скрипта
+ * Сервис для работы с Kubernetes API (оркестрационный слой)
+ * 
+ * Делегирует выполнение команд kubectl в KubectlCommandExecutor,
+ * парсинг JSON в KubernetesPodParser и утилитные операции в KubernetesUtils.
  * 
  * Основные функции:
  * - Получение информации о запущенных подах в Kubernetes кластере
- * - Парсинг JSON ответов от kubectl команд
  * - Генерация HTML страниц с информацией о подах
  * - Работа с namespace и конфигурацией кластера
+ * - Получение версии Kubernetes
  */
 @Service
 public class KubernetesService {
     
-    // Логгер для записи отладочной информации и ошибок
     private static final Logger logger = LoggerFactory.getLogger(KubernetesService.class);
     
-    // Конфигурация Kubernetes (путь к kubectl, namespace, включение/отключение)
     @Autowired
     private KubernetesConfig kubernetesConfig;
     
-    // Встроенный kubectl сервис
     @Autowired
-    private EmbeddedKubectlService embeddedKubectlService;
+    private KubectlCommandExecutor kubectlExecutor;
     
-    // Jackson ObjectMapper для парсинга JSON ответов от kubectl
+    @Autowired
+    private KubernetesPodParser podParser;
+    
     private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
@@ -53,33 +50,12 @@ public class KubernetesService {
     }
     
     /**
-     * Получает путь к kubectl с приоритетом встроенного
-     * 
-     * @return путь к kubectl (встроенный или из конфигурации)
-     */
-    private String getKubectlPath() {
-        // Сначала пытаемся использовать встроенный kubectl (инициализация по требованию)
-        String embeddedPath = embeddedKubectlService.getKubectlPath();
-        if (embeddedPath != null && embeddedKubectlService.isInitialized()) {
-            logger.debug("Используем встроенный kubectl: {}", embeddedPath);
-            return embeddedPath;
-        }
-
-        // Если встроенный недоступен, используем путь из конфигурации
-        String configPath = kubernetesConfig.getKubectlPath();
-        logger.debug("Используем kubectl из конфигурации: {}", configPath);
-        return configPath;
-    }
-    
-    /**
      * Получает информацию о всех запущенных подах в namespace
      * 
      * Алгоритм работы:
      * 1. Проверяет, включена ли интеграция с Kubernetes
-     * 2. Формирует команду kubectl для получения запущенных подов
-     * 3. Выполняет команду через ProcessBuilder (современная замена Runtime.exec)
-     * 4. Читает JSON ответ и ошибки из потоков процесса
-     * 5. Парсит JSON и извлекает информацию о подах
+     * 2. Выполняет команду kubectl через KubectlCommandExecutor
+     * 3. Парсит JSON ответ через KubernetesPodParser
      * 
      * @return список информации о подах
      */
@@ -94,58 +70,23 @@ public class KubernetesService {
             }
             
             logger.info("Получение информации о подах в namespace: {}", kubernetesConfig.getNamespace());
-            logger.info("Используется kubectl: {}", getKubectlPath());
             
-            // Формируем команду kubectl для получения только запущенных подов в JSON формате
+            // Выполняем команду kubectl для получения только запущенных подов в JSON формате
             // --field-selector=status.phase==Running - фильтрует только запущенные поды
             // -o json - выводит результат в JSON формате для удобного парсинга
-            String command = String.format("%s get pods --field-selector=status.phase==Running -n %s -o json", 
-                                         getKubectlPath(), kubernetesConfig.getNamespace());
+            String jsonOutput = kubectlExecutor.executeCommand(
+                "get", "pods",
+                "--field-selector=status.phase==Running",
+                "-n", kubernetesConfig.getNamespace(),
+                "-o", "json"
+            );
             
-            logger.debug("Выполняем команду: {}", command);
+            // Парсим JSON и извлекаем информацию о подах
+            pods = podParser.parseKubectlOutput(jsonOutput);
+            logger.info("Успешно получена информация о {} подах", pods.size());
             
-            // Используем ProcessBuilder вместо устаревшего Runtime.exec для выполнения команды
-            Process process = new ProcessBuilder(command.split("\\s+")).start();
-            // Создаем читателей для стандартного вывода и потока ошибок
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            
-            // Буферы для накопления вывода команды
-            StringBuilder jsonOutput = new StringBuilder();
-            StringBuilder errorOutput = new StringBuilder();
-            
-            // Читаем стандартный вывод команды (JSON ответ)
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonOutput.append(line);
-            }
-            
-            // Читаем поток ошибок команды
-            while ((line = errorReader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
-            }
-            
-            // Ждем завершения процесса и получаем код выхода
-            int exitCode = process.waitFor();
-            logger.debug("kubectl exit code: {}", exitCode);
-            logger.debug("kubectl output: {}", jsonOutput.toString());
-            
-            // Логируем ошибки, если они есть
-            if (errorOutput.length() > 0) {
-                logger.warn("kubectl stderr: {}", errorOutput.toString());
-            }
-            
-            // Обрабатываем результат выполнения команды
-            if (exitCode == 0) {
-                // Команда выполнена успешно - парсим JSON и извлекаем информацию о подах
-                pods = parseKubectlOutput(jsonOutput.toString());
-                logger.info("Успешно получена информация о {} подах", pods.size());
-            } else {
-                // Команда завершилась с ошибкой - логируем детали
-                logger.error("Ошибка выполнения kubectl команды. Код выхода: {}. Ошибка: {}", 
-                           exitCode, errorOutput.toString());
-            }
-            
+        } catch (KubectlException e) {
+            logger.error("Ошибка выполнения kubectl команды: {}", e.getMessage(), e);
         } catch (Exception e) {
             logger.error("Ошибка при получении информации о подах: {}", e.getMessage(), e);
         }
@@ -155,247 +96,43 @@ public class KubernetesService {
     
     /**
      * Парсит JSON вывод kubectl и извлекает информацию о подах
-     * Группирует одинаковые поды и подсчитывает количество реплик
      * 
-     * Структура JSON ответа kubectl:
-     * {
-     *   "items": [
-     *     {
-     *       "kind": "Pod",
-     *       "metadata": { ... },
-     *       "spec": { ... }
-     *     }
-     *   ]
-     * }
+     * Делегирует парсинг в KubernetesPodParser для обратной совместимости
      * 
      * @param jsonOutput - JSON строка от kubectl команды
-     * @return список объектов PodInfo с извлеченной информацией (сгруппированные по уникальности)
+     * @return список объектов PodInfo с извлеченной информацией
      */
     public List<PodInfo> parseKubectlOutput(String jsonOutput) {
-        List<PodInfo> pods = new ArrayList<>();
-        
-        try {
-            logger.debug("Парсинг JSON kubectl output, длина: {}", jsonOutput.length());
-            
-            // Парсим JSON с помощью Jackson
-            JsonNode rootNode = objectMapper.readTree(jsonOutput);
-            // Извлекаем массив items, который содержит информацию о подах
-            JsonNode itemsNode = rootNode.get("items");
-            
-            if (itemsNode != null && itemsNode.isArray()) {
-                logger.debug("Найден массив items с {} элементами", itemsNode.size());
-                
-                // Проходим по каждому элементу массива и добавляем каждый под отдельно (без группировки)
-                for (JsonNode itemNode : itemsNode) {
-                    PodInfo podInfo = parsePodJson(itemNode);
-                    if (podInfo != null) {
-                        // Извлекаем дополнительную информацию: POD_NAME, рестарты, время до Ready
-                        extractAdditionalPodInfo(itemNode, podInfo);
-                        
-                        pods.add(podInfo);
-                        logger.debug("Добавлен под: {} (POD_NAME: {})", podInfo.getName(), podInfo.getPodName());
-                    }
-                }
-                
-                logger.info("Успешно распарсено {} подов", pods.size());
-                
-            } else {
-                logger.warn("Не найден массив items в JSON");
-            }
-            
-        } catch (Exception e) {
-            logger.error("Ошибка при парсинге JSON kubectl: {}", e.getMessage(), e);
-        }
-        
-        return pods;
+        return podParser.parseKubectlOutput(jsonOutput);
     }
-    
-    /**
-     * Парсит JSON отдельного пода и извлекает всю необходимую информацию
-     * 
-     * Извлекаемые данные:
-     * - Имя приложения из labels.app
-     * - Дата создания из creationTimestamp
-     * - Ветки из аннотаций (ms-branch, config-branch)
-     * - Версия образа из spec.containers[0].image
-     * - Порты из spec.containers[0].ports[].containerPort (все порты через запятую)
-     * - GC опции из переменных окружения JAVA_TOOL_OPTIONS
-     * - Ресурсы (CPU, память) из spec.containers[0].resources.requests
-     * 
-     * @param podNode - JSON узел с информацией о поде
-     * @return объект PodInfo с извлеченными данными или null при ошибке
-     */
-    private PodInfo parsePodJson(JsonNode podNode) {
-        try {
-            PodInfo podInfo = new PodInfo();
-            
-            // === ИЗВЛЕЧЕНИЕ МЕТАДАННЫХ ===
-            JsonNode metadataNode = podNode.get("metadata");
-            if (metadataNode != null) {
-                // Извлекаем имя приложения из labels.app
-                JsonNode labelsNode = metadataNode.get("labels");
-                if (labelsNode != null && labelsNode.has("app")) {
-                    podInfo.setName(labelsNode.get("app").asText());
-                }
-                
-                // Извлекаем дату создания пода
-                if (metadataNode.has("creationTimestamp")) {
-                    String creationTimestamp = metadataNode.get("creationTimestamp").asText();
-                    try {
-                        // Парсим ISO 8601 формат (убираем Z и парсим)
-                        creationTimestamp = creationTimestamp.replace("Z", "");
-                        LocalDateTime creationDate = LocalDateTime.parse(creationTimestamp, 
-                            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-                        podInfo.setCreationDate(creationDate);
-                    } catch (Exception e) {
-                        logger.warn("Не удалось распарсить дату создания: {}", creationTimestamp);
-                    }
-                }
-                
-                // Извлекаем аннотации (ветки микросервиса и конфигурации)
-                JsonNode annotationsNode = metadataNode.get("annotations");
-                if (annotationsNode != null) {
-                    if (annotationsNode.has("ms-branch")) {
-                        podInfo.setMsBranch(annotationsNode.get("ms-branch").asText());
-                    }
-                    if (annotationsNode.has("config-branch")) {
-                        podInfo.setConfigBranch(annotationsNode.get("config-branch").asText());
-                    }
-                }
-            }
-            
-            // === ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ ИЗ КОНТЕЙНЕРОВ ===
-            JsonNode specNode = podNode.get("spec");
-            if (specNode != null) {
-                JsonNode containersNode = specNode.get("containers");
-                if (containersNode != null && containersNode.isArray() && containersNode.size() > 0) {
-                    // Берем первый контейнер (обычно в поде один контейнер)
-                    JsonNode mainContainer = null;
-                    for (JsonNode container : containersNode) {
-                        if ("main".equals(container.get("name").asText())) {
-                            mainContainer = container;
-                            break;
-                        }
-                    }
-                    JsonNode infoContainer = (mainContainer != null) ? mainContainer : containersNode.get(0);
-                    
-                    // Извлекаем версию образа Docker
-                    String image = infoContainer.get("image").asText();
-                    // Очищаем имя образа от registry префиксов (как в оригинальном скрипте)
-                    // Удаляем различные registry: pcss-prod, nexus, docker
-                    image = image.replaceAll("pcss-prod[^:]*:", "")
-                                .replaceAll("nexus[^:]*:", "")
-                                .replaceAll("docker[^:]*:", "");
-                    podInfo.setVersion(image);
-                    
-                    // Извлекаем все порты контейнера
-                    if (infoContainer.has("ports")) {
-                        JsonNode portsNode = infoContainer.get("ports");
-                        if (portsNode.isArray() && portsNode.size() > 0) {
-                            StringBuilder portsBuilder = new StringBuilder();
-                            for (int i = 0; i < portsNode.size(); i++) {
-                                JsonNode portNode = portsNode.get(i);
-                                if (portNode.has("containerPort")) {
-                                    if (i > 0) {
-                                        portsBuilder.append(", ");
-                                    }
-                                    portsBuilder.append(portNode.get("containerPort").asText());
-                                }
-                            }
-                            if (portsBuilder.length() > 0) {
-                                podInfo.setPort(portsBuilder.toString());
-                            }
-                        }
-                    }
-                    
-                    // Извлекаем переменные окружения (ищем JAVA_TOOL_OPTIONS для GC настроек)
-                    if (infoContainer.has("env")) {
-                        JsonNode envNode = infoContainer.get("env");
-                        if (envNode.isArray()) {
-                            for (JsonNode envVar : envNode) {
-                                if (envVar.has("name") && "JAVA_TOOL_OPTIONS".equals(envVar.get("name").asText())) {
-                                    if (envVar.has("value")) {
-                                        String javaToolOptions = envVar.get("value").asText();
-                                        // Извлекаем только GC-связанные опции с помощью регулярного выражения
-                                        String gcOptions = extractGcOptions(javaToolOptions);
-                                        podInfo.setGcOptions(gcOptions);
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Извлекаем ресурсы (CPU и память) из requests
-                    if (infoContainer.has("resources")) {
-                        JsonNode resourcesNode = infoContainer.get("resources");
-                        if (resourcesNode.has("requests")) {
-                            JsonNode requestsNode = resourcesNode.get("requests");
-                            if (requestsNode.has("cpu")) {
-                                podInfo.setCpuRequest(requestsNode.get("cpu").asText());
-                            }
-                            if (requestsNode.has("memory")) {
-                                podInfo.setMemoryRequest(requestsNode.get("memory").asText());
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // === ИЗВЛЕЧЕНИЕ СТАТУСА (рестарты) ===
-            JsonNode statusNode = podNode.get("status");
-            if (statusNode != null) {
-                // Суммарное количество рестартов по всем контейнерам
-                if (statusNode.has("containerStatuses") && statusNode.get("containerStatuses").isArray()) {
-                    int restartSum = 0;
-                    for (JsonNode cs : statusNode.get("containerStatuses")) {
-                        if (cs.has("restartCount")) {
-                            restartSum += cs.get("restartCount").asInt(0);
-                        }
-                    }
-                    podInfo.setRestarts(restartSum);
-                }
-            }
-            
-            logger.debug("Распарсен под: name={}, version={}, port={}", 
-                        podInfo.getName(), podInfo.getVersion(), podInfo.getPort());
-            
-            return podInfo;
-            
-        } catch (Exception e) {
-            logger.error("Ошибка при парсинге пода: {}", e.getMessage(), e);
-            return null;
-        }
-    }
-    
     
     /**
      * Получает текущий активный namespace из конфигурации kubectl
      * 
      * Использует команду: kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}'
-     * Эта команда извлекает namespace из текущего контекста kubectl
      * 
      * @return имя текущего namespace или "default" если не удалось определить
      */
     public String getCurrentNamespace() {
         try {
-            // Команда для получения текущего namespace из kubectl конфигурации
-            String command = String.format("%s config view --minify -o jsonpath='{.contexts[0].context.namespace}'", getKubectlPath());
-            Process process = new ProcessBuilder(command.split("\\s+")).start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String namespace = kubectlExecutor.executeCommand(
+                "config", "view",
+                "--minify",
+                "-o", "jsonpath={.contexts[0].context.namespace}"
+            );
             
-            // Читаем результат команды
-            String namespace = reader.readLine();
             if (namespace == null || namespace.trim().isEmpty()) {
-                // Если namespace не определен, возвращаем "default"
                 return "default";
             }
             
             return namespace.trim();
             
-        } catch (Exception e) {
+        } catch (KubectlException e) {
             logger.warn("Не удалось получить текущий namespace: {}", e.getMessage());
             // В случае ошибки возвращаем namespace из конфигурации
+            return kubernetesConfig.getNamespace();
+        } catch (Exception e) {
+            logger.warn("Не удалось получить текущий namespace: {}", e.getMessage());
             return kubernetesConfig.getNamespace();
         }
     }
@@ -418,42 +155,18 @@ public class KubernetesService {
     /**
      * Получает версию Kubernetes кластера
      * 
-     * Использует команду: kubectl version
-     * Эта команда возвращает версию клиента kubectl и сервера
+     * Использует команду: kubectl version -o json
      * 
      * @return версия Kubernetes или "Неизвестно" если не удалось определить
      */
     public String getKubernetesVersion() {
         try {
-            // Надежный способ: JSON-вывод, из которого достаем serverVersion.gitVersion
-            String command = String.format("%s version -o json", getKubectlPath());
-            Process process = new ProcessBuilder(command.split("\\s+")).start();
-
-            BufferedReader outReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            BufferedReader errReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-            StringBuilder output = new StringBuilder();
-            StringBuilder error = new StringBuilder();
-
-            String line;
-            while ((line = outReader.readLine()) != null) {
-                output.append(line);
-            }
-            while ((line = errReader.readLine()) != null) {
-                error.append(line).append("\n");
-            }
-
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                logger.warn("kubectl version exited with code {}: {}", exitCode, error.toString());
+            String json = kubectlExecutor.executeCommand("version", "-o", "json");
+            
+            if (json == null || json.trim().isEmpty()) {
                 return "Неизвестно";
             }
-
-            String json = output.toString();
-            if (json.isEmpty()) {
-                return "Неизвестно";
-            }
-
+            
             JsonNode root = objectMapper.readTree(json);
             // Пытаемся взять версию сервера, иначе клиента
             JsonNode server = root.get("serverVersion");
@@ -470,6 +183,9 @@ public class KubernetesService {
                     return gitVersion.asText();
                 }
             }
+            return "Неизвестно";
+        } catch (KubectlException e) {
+            logger.warn("Не удалось получить версию Kubernetes: {}", e.getMessage());
             return "Неизвестно";
         } catch (Exception e) {
             logger.warn("Не удалось получить версию Kubernetes: {}", e.getMessage());
@@ -557,149 +273,4 @@ public class KubernetesService {
         
         return html.toString();
     }
-    
-    /**
-     * Извлекает GC-связанные опции из строки JAVA_TOOL_OPTIONS
-     * 
-     * Регулярное выражение ищет опции, содержащие:
-     * - GC в любом регистре (gc, GC, Gc)
-     * - Опции начинающиеся с -XX: и содержащие GC
-     * - Опции начинающиеся с -X и содержащие GC
-     * - Опции начинающиеся с -XX:+Use и содержащие GC
-     * - Опции начинающиеся с -XX:-Use и содержащие GC
-     * 
-     * @param javaToolOptions - строка с JAVA_TOOL_OPTIONS
-     * @return строка с GC опциями, разделенными переносами строк
-     */
-    private String extractGcOptions(String javaToolOptions) {
-        if (javaToolOptions == null || javaToolOptions.trim().isEmpty()) {
-            return "";
-        }
-        
-        // Регулярное выражение для поиска GC-связанных опций
-        // Ищем опции, которые содержат "GC" в любом регистре или связаны с garbage collection
-        Pattern gcPattern = Pattern.compile(
-            "-XX:[+-]?[^\\s]*[Gg][Cc][^\\s]*|" +  // -XX: опции с GC
-            "-X[^\\s]*[Gg][Cc][^\\s]*|" +        // -X опции с GC  
-            "-XX:[+-]?Use[^\\s]*[Gg][Cc][^\\s]*|" + // -XX:+UseGC, -XX:-UseGC
-            "-XX:[+-]?[Gg][Cc][^\\s]*|" +        // -XX:GC опции
-            "-XX:[+-]?[^\\s]*[Gg][Cc]|" +        // опции заканчивающиеся на GC
-            "-XX:[+-]?[^\\s]*[Gg]arbage[^\\s]*"  // garbage collection опции
-        );
-        
-        Matcher matcher = gcPattern.matcher(javaToolOptions);
-        StringBuilder gcOptions = new StringBuilder();
-        
-        while (matcher.find()) {
-            String option = matcher.group().trim();
-            if (!option.isEmpty()) {
-                if (gcOptions.length() > 0) {
-                    gcOptions.append("\n");
-                }
-                gcOptions.append(option);
-            }
-        }
-        
-        return gcOptions.toString();
-    }
-    
-    /**
-     * Извлекает дополнительную информацию о поде и устанавливает её напрямую в PodInfo
-     * 
-     * Извлекает:
-     * - Полное имя пода из metadata.name
-     * - Количество рестартов из status.containerStatuses[].restartCount
-     * - Время от создания до статуса Ready (разница между creationTimestamp и Ready condition lastTransitionTime)
-     * 
-     * @param podNode - JSON узел с информацией о поде
-     * @param podInfo - объект PodInfo для заполнения данными
-     */
-    private void extractAdditionalPodInfo(JsonNode podNode, PodInfo podInfo) {
-        try {
-            JsonNode metadataNode = podNode.get("metadata");
-            
-            // Извлекаем полное имя пода из metadata.name
-            if (metadataNode != null && metadataNode.has("name")) {
-                podInfo.setPodName(metadataNode.get("name").asText());
-            }
-            
-            // Извлекаем время создания пода
-            LocalDateTime creationTime = null;
-            if (metadataNode != null && metadataNode.has("creationTimestamp")) {
-                try {
-                    String creationTimestamp = metadataNode.get("creationTimestamp").asText();
-                    creationTimestamp = creationTimestamp.replace("Z", "");
-                    creationTime = LocalDateTime.parse(creationTimestamp,
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-                } catch (Exception e) {
-                    logger.warn("Не удалось распарсить creationTimestamp: {}", e.getMessage());
-                }
-            }
-            
-            // Извлекаем время когда под стал Ready (из conditions)
-            JsonNode statusNode = podNode.get("status");
-            LocalDateTime readyTime = null;
-            if (statusNode != null && statusNode.has("conditions") && 
-                statusNode.get("conditions").isArray()) {
-                
-                for (JsonNode condition : statusNode.get("conditions")) {
-                    if (condition.has("type") && "Ready".equals(condition.get("type").asText()) &&
-                        condition.has("status") && "True".equals(condition.get("status").asText()) &&
-                        condition.has("lastTransitionTime")) {
-                        
-                        try {
-                            String lastTransitionTimeStr = condition.get("lastTransitionTime").asText();
-                            lastTransitionTimeStr = lastTransitionTimeStr.replace("Z", "");
-                            readyTime = LocalDateTime.parse(lastTransitionTimeStr,
-                                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-                            break; // Нашли условие Ready
-                        } catch (Exception e) {
-                            logger.warn("Не удалось распарсить lastTransitionTime: {}", e.getMessage());
-                        }
-                    }
-                }
-            }
-            
-            // Вычисляем разницу между созданием и статусом Ready
-            if (creationTime != null && readyTime != null) {
-                long seconds = java.time.Duration.between(creationTime, readyTime).getSeconds();
-                String readyTimeStr = formatDuration(seconds);
-                podInfo.setReadyTime(readyTimeStr);
-            } else {
-                podInfo.setReadyTime("-");
-            }
-            
-        } catch (Exception e) {
-            logger.error("Ошибка при извлечении дополнительной информации о поде: {}", e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Форматирует длительность в секундах в читаемый формат (например, "5s", "2m 30s", "1h 15m")
-     * 
-     * @param seconds - количество секунд
-     * @return отформатированная строка
-     */
-    private String formatDuration(long seconds) {
-        if (seconds < 60) {
-            return seconds + "s";
-        } else if (seconds < 3600) {
-            long minutes = seconds / 60;
-            long remainingSeconds = seconds % 60;
-            if (remainingSeconds == 0) {
-                return minutes + "m";
-            } else {
-                return minutes + "m " + remainingSeconds + "s";
-            }
-        } else {
-            long hours = seconds / 3600;
-            long remainingMinutes = (seconds % 3600) / 60;
-            if (remainingMinutes == 0) {
-                return hours + "h";
-            } else {
-                return hours + "h " + remainingMinutes + "m";
-            }
-        }
-    }
-    
 }

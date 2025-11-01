@@ -23,9 +23,20 @@ function showNotification(message, type = 'info') {
 function deleteServer(serverId) {
   if (!serverId) return;
   if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
-    fetch('/api/servers/' + serverId, { method: 'DELETE' })
-      .then(response => response.json())
+    fetch('/api/servers/' + serverId, { 
+      method: 'DELETE',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (response.status === 401 || response.status === 403) {
+          // Перенаправляем на страницу логина при отсутствии авторизации
+          window.location.href = '/login';
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
+        if (!data) return; // Если был редирект
         if (data.success) {
           location.reload();
           showNotification('Сервер успешно удален!', 'success');
@@ -51,10 +62,18 @@ function refreshServers() {
 
   fetch('/api/servers/refresh', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
   })
-    .then(response => response.json())
+    .then(response => {
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return null;
+      }
+      return response.json();
+    })
     .then(data => {
+      if (!data) return;
       if (data.success) {
         showNotification('Статус серверов успешно обновлен!', 'success');
         setTimeout(() => { location.reload(); }, 500);
@@ -98,4 +117,73 @@ function refreshPods() {
       showNotification('Произошла ошибка при обновлении информации о подах', 'error');
       if (btn) { btn.disabled = false; btn.innerHTML = originalContent; }
     });
+}
+
+// Theme toggle function
+function toggleTheme() {
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+  const isDark = htmlRoot.classList.contains('theme-dark');
+
+  if (isDark) {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+    localStorage.setItem('theme', 'light');
+  } else {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+    localStorage.setItem('theme', 'dark');
+  }
+}
+
+// Initialize theme on page load
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+
+  if (savedTheme === 'dark') {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+  } else {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+  }
+}
+
+// Call initTheme when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTheme);
+} else {
+  initTheme();
 }

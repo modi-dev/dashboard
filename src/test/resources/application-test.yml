@@ -47,6 +47,10 @@ monitoring:
   interval: 1    # 1 minute (for tests, but scheduling is disabled)
   timeout: 0.17  # ~10 seconds (for tests)
 
+# Отключаем Security для тестов
+security:
+  enabled: false
+
 management:
   server:
     port: 0

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot" th:fragment="layout">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,134 +18,8 @@
     
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-online { color: #28a745; }
-        .status-offline { color: #dc3545; }
-        .status-unknown { color: #6c757d; }
-        .card-header { background-color: #f8f9fa; }
-        .navbar-brand { font-weight: bold; }
-        .footer { margin-top: auto; }
-        
-        /* Адаптивность таблицы */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .table {
-            font-size: 0.9rem;
-            min-width: 100%;
-            table-layout: auto;
-        }
-        
-        .table th,
-        .table td {
-            white-space: nowrap;
-            vertical-align: middle;
-        }
-        
-        @media (min-width: 1400px) {
-            .table {
-                font-size: 0.95rem;
-            }
-        }
-        
-        @media (min-width: 1600px) {
-            .table {
-                font-size: 1rem;
-            }
-        }
-        
-        /* Улучшение отображения на широких экранах */
-        @media (min-width: 1920px) {
-            .container-fluid {
-                max-width: 95%;
-            }
-        }
-        
-        /* Адаптивность карточек статистики */
-        @media (max-width: 768px) {
-            .card-body {
-                padding: 0.75rem;
-            }
-        }
-        
-        /* Sidebar styles */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background: #fff;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-            transition: right 0.3s ease;
-            z-index: 1050;
-            overflow-y: auto;
-        }
-        
-        .sidebar.open {
-            right: 0;
-        }
-        
-        .sidebar-header {
-            background: #343a40;
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .sidebar-body {
-            padding: 1.5rem;
-        }
-        
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1040;
-            display: none;
-        }
-        
-        .sidebar-overlay.show {
-            display: block;
-        }
-        
-        .btn-add-server {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 1030;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        
-        .main-content {
-            transition: margin-right 0.3s ease;
-        }
-        
-        .main-content.sidebar-open {
-            margin-right: 400px;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                right: -100%;
-            }
-            
-            .main-content.sidebar-open {
-                margin-right: 0;
-            }
-        }
-    </style>
+    <link href="/css/theme-dark.css" rel="stylesheet">
+    <link href="/css/common.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
@@ -154,9 +28,14 @@
             <a class="navbar-brand" href="/">
                 <i class="fas fa-server me-2"></i>Version Dashboard
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-white d-lg-none me-2" id="themeToggleMobile" onclick="toggleTheme()" title="Переключить тему" style="text-decoration: none; padding: 0.5rem;">
+                    <i class="fas fa-moon" id="themeIconMobile"></i>
+                </button>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -175,6 +54,25 @@
                         </a>
                     </li>
                 </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-light btn-sm nav-link border-0" id="themeToggle" onclick="toggleTheme()" title="Переключить тему" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;">
+                            <i class="fas fa-moon" id="themeIcon"></i> <span class="ms-1">Тема</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
+                        <a class="nav-link" href="/login" title="Войти в систему">
+                            <i class="fas fa-sign-in-alt me-1"></i>Войти
+                        </a>
+                    </li>
+                    <li class="nav-item" th:if="${isAuthenticated == true}">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-link nav-link border-0" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;" title="Выйти из системы">
+                                <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
@@ -186,8 +84,8 @@
         </div>
     </main>
 
-    <!-- Floating Add Button -->
-    <button class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
+    <!-- Floating Add Button (только для авторизованных пользователей) -->
+    <button th:if="${isAuthenticated == true}" class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
         <i class="fas fa-plus fa-lg"></i>
     </button>
 
@@ -363,10 +261,19 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(serverData)
+                body: JSON.stringify(serverData),
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401 || response.status === 403) {
+                    // Перенаправляем на страницу логина при отсутствии авторизации
+                    window.location.href = '/login';
+                    return null;
+                }
+                return response.json();
+            })
             .then(data => {
+                if (!data) return; // Если был редирект
                 if (data.success) {
                     // Close sidebar
                     closeSidebar();
@@ -384,234 +291,7 @@
             });
         }
 
-        // Notification function
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
-            notification.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-
-        // Delete server function
-        function deleteServer(serverId) {
-            if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
-                fetch('/api/servers/' + serverId, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                        showNotification('Сервер успешно удален!', 'success');
-                    } else {
-                        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Произошла ошибка при удалении сервера', 'error');
-                });
-            }
-        }
-
-        // Refresh servers function
-        function refreshServers() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/servers/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Статус серверов успешно обновлен!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении статуса серверов', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
-
-        // Refresh pods function
-        function refreshPods() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/pods/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Информация о подах успешно обновлена!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении информации о подах', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
-    </script>
-    
-    <!-- Common JavaScript functions (used in layout and available as fragment for other templates) -->
-    <script th:fragment="common-js">
-        // Notification function
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
-            notification.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
-
-        // Delete server function
-        function deleteServer(serverId) {
-            if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
-                fetch('/api/servers/' + serverId, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                        showNotification('Сервер успешно удален!', 'success');
-                    } else {
-                        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Произошла ошибка при удалении сервера', 'error');
-                });
-            }
-        }
-
-        // Refresh servers function
-        function refreshServers() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/servers/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Статус серверов успешно обновлен!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении статуса серверов', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
-
-        // Refresh pods function
-        function refreshPods() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/pods/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Информация о подах успешно обновлена!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении информации о подах', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
+        // Functions showNotification, deleteServer, refreshServers, refreshPods are in app.js
     </script>
 </body>
 </html>

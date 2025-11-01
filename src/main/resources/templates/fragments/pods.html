@@ -7,29 +7,31 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="badge bg-info" th:text="${kubernetesVersion ?: 'Неизвестно'}">v1.28.0</span>
         </div>
-        <table class="table table-hover mb-0">
+        <table id="podsTable" class="table table-hover mb-0">
             <thead>
                 <tr>
+                    <th style="width: 30px;"></th>
                     <th>Название</th>
-                    <th>POD_NAME</th>
+                    <th class="pod-detail-col">POD_NAME</th>
                     <th>Версия</th>
                     <th>Ветка сервиса</th>
                     <th>Ветка SD</th>
                     <th>GC Options</th>
                     <th>Порт</th>
-                    <th>Рестарты</th>
-                    <th>Время до Ready</th>
+                    <th class="pod-detail-col">Рестарты</th>
+                    <th class="pod-detail-col">Время до Ready</th>
                     <th>CPU</th>
                     <th>Память</th>
-                    <th>Дата создания</th>
+                    <th class="pod-detail-col">Дата создания</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="pod : ${pods}">
+                <tr th:each="pod : ${pods}" th:attr="data-pod-name=${pod.name},data-is-grouped=false">
+                    <td></td>
                     <td>
                         <strong th:text="${pod.name}">-</strong>
                     </td>
-                    <td>
+                    <td class="pod-detail-col">
                         <code th:text="${pod.podName ?: '-'}">-</code>
                     </td>
                     <td><span class="badge bg-info" th:text="${pod.version}">-</span></td>
@@ -39,14 +41,14 @@
                         <pre class="m-0" style="white-space: pre-wrap; font-size: 0.85em;" th:text="${pod.gcOptions ?: '-'}">-</pre>
                     </td>
                     <td><span class="badge bg-secondary" th:text="${pod.port ?: '-'}">-</span></td>
-                    <td>
+                    <td class="pod-detail-col">
                         <span th:class="${(pod.restarts != null and pod.restarts > 0) ? 'badge bg-danger' : 'badge bg-dark'}"
                               th:text="${pod.restarts ?: 0}">0</span>
                     </td>
-                    <td><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
+                    <td class="pod-detail-col"><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
                     <td th:text="${pod.cpuRequest ?: '-'}">-</td>
                     <td th:text="${pod.memoryRequest ?: '-'}">-</td>
-                    <td th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
+                    <td class="pod-detail-col" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
                 </tr>
             </tbody>
         </table>

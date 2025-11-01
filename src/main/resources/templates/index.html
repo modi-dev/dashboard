@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,134 +10,8 @@
     
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/all.min.css" rel="stylesheet">
-    <style>
-        .status-online { color: #28a745; }
-        .status-offline { color: #dc3545; }
-        .status-unknown { color: #6c757d; }
-        .card-header { background-color: #f8f9fa; }
-        .navbar-brand { font-weight: bold; }
-        .footer { margin-top: auto; }
-        
-        /* Адаптивность таблицы */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .table {
-            font-size: 0.9rem;
-            min-width: 100%;
-            table-layout: auto;
-        }
-        
-        .table th,
-        .table td {
-            white-space: nowrap;
-            vertical-align: middle;
-        }
-        
-        @media (min-width: 1400px) {
-            .table {
-                font-size: 0.95rem;
-            }
-        }
-        
-        @media (min-width: 1600px) {
-            .table {
-                font-size: 1rem;
-            }
-        }
-        
-        /* Улучшение отображения на широких экранах */
-        @media (min-width: 1920px) {
-            .container-fluid {
-                max-width: 95%;
-            }
-        }
-        
-        /* Адаптивность карточек статистики */
-        @media (max-width: 768px) {
-            .card-body {
-                padding: 0.75rem;
-            }
-        }
-        
-        /* Sidebar styles */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background: #fff;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-            transition: right 0.3s ease;
-            z-index: 1050;
-            overflow-y: auto;
-        }
-        
-        .sidebar.open {
-            right: 0;
-        }
-        
-        .sidebar-header {
-            background: #343a40;
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .sidebar-body {
-            padding: 1.5rem;
-        }
-        
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1040;
-            display: none;
-        }
-        
-        .sidebar-overlay.show {
-            display: block;
-        }
-        
-        .btn-add-server {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 1030;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        
-        .main-content {
-            transition: margin-right 0.3s ease;
-        }
-        
-        .main-content.sidebar-open {
-            margin-right: 400px;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                right: -100%;
-            }
-            
-            .main-content.sidebar-open {
-                margin-right: 0;
-            }
-        }
-    </style>
+    <link href="/css/theme-dark.css" rel="stylesheet">
+    <link href="/css/common.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
@@ -146,9 +20,14 @@
             <a class="navbar-brand" href="/">
                 <i class="fas fa-server me-2"></i>Version Dashboard
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-white d-lg-none me-2" id="themeToggleMobile" onclick="toggleTheme()" title="Переключить тему" style="text-decoration: none; padding: 0.5rem;">
+                    <i class="fas fa-moon" id="themeIconMobile"></i>
+                </button>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -167,19 +46,31 @@
                         </a>
                     </li>
                 </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-light btn-sm nav-link border-0" id="themeToggle" onclick="toggleTheme()" title="Переключить тему" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;">
+                            <i class="fas fa-moon" id="themeIcon"></i> <span class="ms-1">Тема</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
+                        <a class="nav-link" href="/login" title="Войти в систему">
+                            <i class="fas fa-sign-in-alt me-1"></i>Войти
+                        </a>
+                    </li>
+                    <li class="nav-item" th:if="${isAuthenticated == true}">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-link nav-link border-0" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;" title="Выйти из системы">
+                                <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content container-fluid px-4 py-3">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
-                <p class="text-muted">Дашборд серверов и подов K8s</p>
-            </div>
-        </div>
-
         <!-- Error Message -->
         <div th:if="${error}" class="alert alert-danger" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -239,9 +130,15 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="mb-0"><i class="fas fa-server me-2"></i>Серверы</h5>
-                        <div class="d-flex gap-2">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                            <h5 class="mb-0"><i class="fas fa-server me-2"></i>Серверы</h5>
+                            <div class="input-group input-group-sm" style="min-width: 200px; max-width: 240px; width: 100%;">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="serversFilter" class="form-control" placeholder="Фильтр..." aria-label="Фильтр по таблице">
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <button onclick="refreshServers()" class="btn btn-sm btn-outline-primary" title="Обновить статус серверов">
                                 <i class="fas fa-sync-alt me-1"></i>Обновить
                             </button>
@@ -250,7 +147,7 @@
                             </a>
                         </div>
                     </div>
-                    <div class="card-body p-0" th:replace="~{fragments/servers :: serversTable(${servers})}"></div>
+                    <div class="card-body p-0" th:replace="~{fragments/servers :: serversTable(${servers}, ${isAuthenticated})}"></div>
                 </div>
             </div>
         </div>
@@ -259,9 +156,15 @@
         <div class="row">
             <div class="col-12">
                 <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="mb-0"><i class="fas fa-cube me-2"></i>K8s Pods</h5>
-                        <div class="d-flex gap-2">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                            <h5 class="mb-0"><i class="fas fa-cube me-2"></i>K8s Pods</h5>
+                            <div class="input-group input-group-sm" style="min-width: 200px; max-width: 240px; width: 100%;">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="podsFilter" class="form-control" placeholder="Фильтр..." aria-label="Фильтр по таблице">
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <button onclick="refreshPods()" class="btn btn-sm btn-outline-primary" title="Обновить информацию о подах">
                                 <i class="fas fa-sync-alt me-1"></i>Обновить
                             </button>
@@ -277,7 +180,7 @@
     </main>
 
     <!-- Floating Add Button -->
-    <button class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
+    <button th:if="${isAuthenticated == true}" class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
         <i class="fas fa-plus fa-lg"></i>
     </button>
 
@@ -358,6 +261,7 @@
     </footer>
 
     <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
     <script>
         // Load data on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -434,10 +338,18 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(serverData)
+                body: JSON.stringify(serverData),
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/login';
+                    return null;
+                }
+                return response.json();
+            })
             .then(data => {
+                if (!data) return;
                 if (data.success) {
                     // Close sidebar
                     closeSidebar();
@@ -455,118 +367,211 @@
             });
         }
 
-        // Notification function
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
-            notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
-            notification.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-        }
+        // Functions showNotification, deleteServer, refreshServers, refreshPods are in app.js
 
-        // Delete server function
-        function deleteServer(serverId) {
-            if (confirm('Вы уверены, что хотите удалить этот сервер?')) {
-                fetch('/api/servers/' + serverId, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                        showNotification('Сервер успешно удален!', 'success');
-                    } else {
-                        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Произошла ошибка при удалении сервера', 'error');
+        // Table filter for servers on main page
+        (function initServersFilter() {
+            const input = document.getElementById('serversFilter');
+            if (!input) return;
+            input.addEventListener('input', function() {
+                const query = input.value.trim().toLowerCase();
+                const table = document.getElementById('serversTable');
+                if (!table) return;
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(query) ? '' : 'none';
                 });
+            });
+        })();
+
+        // Table filter for pods on main page (works with grouped rows)
+        (function initPodsFilter() {
+            const input = document.getElementById('podsFilter');
+            if (!input) return;
+            input.addEventListener('input', function() {
+                const query = input.value.trim().toLowerCase();
+                const table = document.getElementById('podsTable');
+                if (!table) return;
+                const rows = table.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const isGroup = row.getAttribute('data-is-group') === 'true';
+                    const isGroupItem = row.getAttribute('data-is-group-item') === 'true';
+                    const text = row.innerText.toLowerCase();
+                    const matches = text.includes(query);
+                    
+                    if (isGroup) {
+                        // For grouped rows, check if any child matches
+                        const groupName = row.getAttribute('data-group-name');
+                        const groupItems = table.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+                        let anyChildMatches = matches;
+                        
+                        groupItems.forEach(item => {
+                            if (item.innerText.toLowerCase().includes(query)) {
+                                anyChildMatches = true;
+                            }
+                        });
+                        
+                        if (anyChildMatches) {
+                            row.style.display = '';
+                            // Show matching child items if group is expanded
+                            if (row.getAttribute('data-expanded') === 'true') {
+                                groupItems.forEach(item => {
+                                    if (item.innerText.toLowerCase().includes(query)) {
+                                        item.style.display = '';
+                                    } else {
+                                        item.style.display = 'none';
+                                    }
+                                });
+                            }
+                        } else {
+                            row.style.display = 'none';
+                            groupItems.forEach(item => item.style.display = 'none');
+                        }
+                    } else if (isGroupItem) {
+                        // Group items are handled by parent group
+                        const groupName = row.getAttribute('data-group-name');
+                        const groupRow = table.querySelector(`tr[data-group-name="${groupName}"][data-is-group="true"]`);
+                        if (groupRow && groupRow.getAttribute('data-expanded') === 'true' && matches) {
+                            row.style.display = '';
+                        }
+                    } else {
+                        // Regular row
+                        row.style.display = matches ? '' : 'none';
+                    }
+                });
+            });
+        })();
+
+        // Group pods by name on main page
+        (function groupPods() {
+            const table = document.getElementById('podsTable');
+            if (!table) return;
+            
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Group rows by pod name
+            const groups = {};
+            rows.forEach(row => {
+                const podName = row.getAttribute('data-pod-name');
+                if (!groups[podName]) {
+                    groups[podName] = [];
+                }
+                groups[podName].push(row);
+            });
+            
+            // Clear tbody
+            tbody.innerHTML = '';
+            
+            // Process each group
+            Object.keys(groups).sort().forEach(name => {
+                const groupRows = groups[name];
+                
+                if (groupRows.length > 1) {
+                    // Create grouped row (using first pod as template)
+                    const firstRow = groupRows[0];
+                    const groupedRow = firstRow.cloneNode(true);
+                    groupedRow.setAttribute('data-group-name', name);
+                    groupedRow.setAttribute('data-is-group', 'true');
+                    groupedRow.setAttribute('data-expanded', 'false');
+                    
+                    // Add expand/collapse button
+                    const firstCell = groupedRow.querySelector('td:first-child');
+                    firstCell.innerHTML = '<button class="btn btn-sm btn-link p-0" onclick="togglePodGroup(this)" style="min-width: 20px;"><i class="fas fa-chevron-right"></i></button>';
+                    
+                    // Clear detail columns content but keep structure
+                    const detailCells = Array.from(groupedRow.querySelectorAll('.pod-detail-col'));
+                    detailCells.forEach(cell => {
+                        // Store original content for potential future use
+                        cell.setAttribute('data-original-html', cell.innerHTML);
+                        // Clear content but keep the cell to maintain table structure
+                        cell.innerHTML = '';
+                        // Hide the cell visually but keep it in DOM
+                        cell.style.visibility = 'hidden';
+                        cell.style.width = '0';
+                        cell.style.padding = '0';
+                        cell.style.border = 'none';
+                    });
+                    
+                    // Mark individual rows
+                    groupRows.forEach(row => {
+                        row.setAttribute('data-group-name', name);
+                        row.setAttribute('data-is-group-item', 'true');
+                        row.style.display = 'none';
+                        row.querySelectorAll('td:first-child').forEach(cell => {
+                            cell.innerHTML = '';
+                        });
+                    });
+                    
+                    // Add count badge to name
+                    const nameCell = groupedRow.querySelector('td:nth-child(2)');
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-primary ms-2';
+                    badge.textContent = groupRows.length;
+                    nameCell.querySelector('strong').appendChild(badge);
+                    
+                    // Append grouped row and all individual rows
+                    tbody.appendChild(groupedRow);
+                    groupRows.forEach(row => tbody.appendChild(row));
+                } else {
+                    // Single pod, no grouping needed
+                    const row = groupRows[0];
+                    row.querySelector('td:first-child').innerHTML = '';
+                    tbody.appendChild(row);
+                }
+            });
+        })();
+
+        // Toggle pod group expand/collapse (for main page)
+        function togglePodGroup(button) {
+            const row = button.closest('tr');
+            const groupName = row.getAttribute('data-group-name');
+            const isExpanded = row.getAttribute('data-expanded') === 'true';
+            
+            // Update icon
+            const icon = button.querySelector('i');
+            if (isExpanded) {
+                icon.className = 'fas fa-chevron-right';
+                row.setAttribute('data-expanded', 'false');
+                
+                // Hide detail columns in grouped row (clear content and hide visually)
+                const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
+                detailCells.forEach(cell => {
+                    cell.setAttribute('data-original-html', cell.innerHTML);
+                    cell.innerHTML = '';
+                    cell.style.visibility = 'hidden';
+                    cell.style.width = '0';
+                    cell.style.padding = '0';
+                    cell.style.border = 'none';
+                });
+                
+                // Hide individual rows
+                const allRows = document.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+                allRows.forEach(r => r.style.display = 'none');
+            } else {
+                icon.className = 'fas fa-chevron-down';
+                row.setAttribute('data-expanded', 'true');
+                
+                // Show detail columns in grouped row (with placeholder values)
+                const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
+                detailCells.forEach(cell => {
+                    cell.innerHTML = '-';
+                    cell.style.visibility = '';
+                    cell.style.width = '';
+                    cell.style.padding = '';
+                    cell.style.border = '';
+                });
+                
+                // Show individual rows
+                const allRows = document.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+                allRows.forEach(r => r.style.display = '');
             }
         }
-
-        // Refresh servers function
-        function refreshServers() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/servers/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Статус серверов успешно обновлен!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении статуса серверов', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
-
-        // Refresh pods function
-        function refreshPods() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
-            
-            fetch('/api/pods/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Информация о подах успешно обновлена!', 'success');
-                    // Перезагружаем страницу через небольшую задержку
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Произошла ошибка при обновлении информации о подах', 'error');
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            });
-        }
+        
+        // Make togglePodGroup globally available
+        window.togglePodGroup = togglePodGroup;
     </script>
 </body>
 </html>

@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,10 +15,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * Тесты для SecurityConfig
  */
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
     "security.enabled=true",
     "security.username=testuser",
-    "security.password=testpass"
+    "security.password=testpass",
+    "spring.task.scheduling.enabled=false",
+    "kubernetes.enabled=false"
 })
 class SecurityConfigTest {
     

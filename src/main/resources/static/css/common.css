@@ -252,3 +252,45 @@ html, body {
     color: #fff;
 }
 
+.pods-table-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    scrollbar-gutter: stable both-edges;
+    padding-bottom: 0.75rem;
+}
+
+.pods-table-wrapper::-webkit-scrollbar {
+    height: 10px;
+}
+
+.pods-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.6);
+    border-radius: 999px;
+}
+
+.pods-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(71, 85, 105, 0.8);
+}
+
+.theme-dark .pods-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.5);
+}
+
+.pods-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--bs-secondary-color);
+}
+
+.pods-scroll-hint i {
+    font-size: 0.9em;
+}
+
+@media (max-width: 1400px) {
+    #podsTable .pod-detail-col {
+        display: none;
+    }
+}
+

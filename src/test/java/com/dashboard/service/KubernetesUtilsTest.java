@@ -101,25 +101,20 @@ class KubernetesUtilsTest {
     
     @Test
     void testCleanImageName_WithRegistry() {
-        // Очистка удаляет префиксы до первого /, но сохраняет путь образа
-        assertEquals("image:tag", KubernetesUtils.cleanImageName("pcss-prod.example.com/image:tag"));
-        assertEquals("image:tag", KubernetesUtils.cleanImageName("nexus.example.com/image:tag"));
-        assertEquals("image:tag", KubernetesUtils.cleanImageName("docker.example.com/image:tag"));
+        assertEquals("tag", KubernetesUtils.cleanImageName("pcss-prod.example.com/image:tag"));
+        assertEquals("tag", KubernetesUtils.cleanImageName("nexus.example.com/image:tag"));
+        assertEquals("tag", KubernetesUtils.cleanImageName("docker.example.com/image:tag"));
     }
     
     @Test
     void testCleanImageName_WithRegistryAndPort() {
-        // Текущая реализация удаляет префиксы до :, но сохраняет порт
-        // Это ожидаемое поведение для текущей реализации
-        String result = KubernetesUtils.cleanImageName("pcss-prod.example.com:5000/image:tag");
-        // После удаления pcss-prod.example.com: остается 5000/image:tag
-        assertEquals("5000/image:tag", result);
+        assertEquals("tag", KubernetesUtils.cleanImageName("pcss-prod.example.com:5000/image:tag"));
     }
     
     @Test
     void testCleanImageName_WithoutRegistry() {
-        assertEquals("image:tag", KubernetesUtils.cleanImageName("image:tag"));
-        assertEquals("nginx:latest", KubernetesUtils.cleanImageName("nginx:latest"));
+        assertEquals("tag", KubernetesUtils.cleanImageName("image:tag"));
+        assertEquals("latest", KubernetesUtils.cleanImageName("nginx:latest"));
     }
     
     @Test
@@ -130,6 +125,16 @@ class KubernetesUtilsTest {
     @Test
     void testCleanImageName_Empty() {
         assertEquals("", KubernetesUtils.cleanImageName(""));
+    }
+
+    @Test
+    void testCleanImageName_NoTag() {
+        assertEquals("image", KubernetesUtils.cleanImageName("image"));
+    }
+
+    @Test
+    void testCleanImageName_TrailingColon() {
+        assertEquals("", KubernetesUtils.cleanImageName("image:"));
     }
 }
 

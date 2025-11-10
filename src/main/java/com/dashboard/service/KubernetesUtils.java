@@ -116,34 +116,28 @@ public final class KubernetesUtils {
     }
     
     /**
-     * Очищает имя Docker образа от registry префиксов
-     * 
-     * Удаляет префиксы:
-     * - pcss-prod*:
-     * - nexus*:
-     * - docker*:
-     * 
+     * Извлекает тег Docker-образа (часть после последнего двоеточия)
+     *
      * @param image полное имя образа с registry
-     * @return очищенное имя образа
+     * @return тег образа или исходная строка, если тег не найден
      */
     public static String cleanImageName(String image) {
         if (image == null || image.trim().isEmpty()) {
             return image;
         }
-        
-        // Удаляем registry префиксы до первого / или до :
-        // Для pcss-prod.example.com:5000/image:tag -> image:tag
-        // Для nexus.example.com/image:tag -> image:tag
-        String result = image.replaceAll("^pcss-prod[^/:]*[:/]", "/")
-                           .replaceAll("^nexus[^/:]*[:/]", "/")
-                           .replaceAll("^docker[^/:]*[:/]", "/");
-        
-        // Убираем ведущий слэш, если он остался
-        if (result.startsWith("/")) {
-            result = result.substring(1);
+
+        String trimmed = image.trim();
+        int lastColonIndex = trimmed.lastIndexOf(':');
+
+        if (lastColonIndex == -1) {
+            return trimmed;
         }
-        
-        return result;
+
+        if (lastColonIndex == trimmed.length() - 1) {
+            return "";
+        }
+
+        return trimmed.substring(lastColonIndex + 1);
     }
 }
 

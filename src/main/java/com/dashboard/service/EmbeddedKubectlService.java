@@ -26,6 +26,7 @@ public class EmbeddedKubectlService {
     
     private String kubectlPath;
     private boolean initialized = false;
+    private boolean initializationAttempted = false;
 
     /**
      * Получает путь к kubectl бинарнику
@@ -33,7 +34,7 @@ public class EmbeddedKubectlService {
      * @return путь к kubectl или null если не удалось инициализировать
      */
     public String getKubectlPath() {
-        if (!initialized) {
+        if (!initializationAttempted) {
             initializeKubectl();
         }
         return kubectlPath;
@@ -43,6 +44,16 @@ public class EmbeddedKubectlService {
      * Инициализирует kubectl (Linux only)
      */
     private void initializeKubectl() {
+        initializationAttempted = true;
+        initialized = false;
+        kubectlPath = null;
+
+        String osName = System.getProperty("os.name", "unknown").toLowerCase();
+        if (!osName.contains("linux")) {
+            logger.debug("Embedded kubectl поддерживается только на Linux. Текущая ОС: {}", osName);
+            return;
+        }
+
         try {
             String kubectlFileName = "kubectl-linux-amd64";
             logger.info("Используем Linux kubectl v1.34.1: {}", kubectlFileName);
@@ -58,12 +69,13 @@ public class EmbeddedKubectlService {
                 initialized = true;
                 logger.info("kubectl v1.34.1 (Linux) успешно инициализирован: {}", kubectlPath);
             } else {
-                logger.error("kubectl не работает после инициализации");
+                logger.warn("kubectl не прошел проверку после инициализации");
                 kubectlPath = null;
             }
             
         } catch (Exception e) {
-            logger.error("Ошибка при инициализации kubectl: {}", e.getMessage(), e);
+            logger.warn("Не удалось инициализировать встроенный kubectl: {}", e.getMessage());
+            logger.debug("Детали ошибки инициализации kubectl", e);
             kubectlPath = null;
         }
     }

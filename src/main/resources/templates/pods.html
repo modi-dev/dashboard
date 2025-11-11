@@ -562,6 +562,44 @@
             });
         }
 
+        function ensureTableWidthLock(table, settings) {
+            if (table.dataset.columnWidthsLocked === 'true') {
+                return;
+            }
+
+            const headerCells = Array.from(table.querySelectorAll('thead th[data-column-key]'));
+            headerCells.forEach(headerCell => {
+                const columnKey = headerCell.dataset.columnKey;
+                if (!columnKey) {
+                    return;
+                }
+                if (headerCell.classList.contains('column-hidden')) {
+                    return;
+                }
+
+                if (settings.widths && Object.prototype.hasOwnProperty.call(settings.widths, columnKey)) {
+                    applyColumnWidth(table, columnKey, settings.widths[columnKey]);
+                    return;
+                }
+
+                const rectWidth = headerCell.getBoundingClientRect().width || headerCell.offsetWidth;
+                if (!rectWidth) {
+                    return;
+                }
+                const computedWidth = Math.round(rectWidth);
+                const widthPx = `${computedWidth}px`;
+                const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+                cells.forEach(cell => {
+                    cell.style.width = widthPx;
+                    cell.style.minWidth = widthPx;
+                    cell.style.maxWidth = widthPx;
+                });
+            });
+
+            table.classList.add('pods-table-fixed');
+            table.dataset.columnWidthsLocked = 'true';
+        }
+
         function attachColumnResizer(table, headerCell, columnKey, settings) {
             if (!headerCell || !columnKey) {
                 return;
@@ -601,6 +639,7 @@
             resizer.addEventListener('mousedown', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
+                ensureTableWidthLock(table, settings);
                 startX = event.clientX;
                 startWidth = headerCell.offsetWidth;
                 lastWidth = startWidth;
@@ -664,10 +703,15 @@
                         clearColumnWidth(table, key);
                     });
                     table.classList.remove('pods-table-fixed');
+                     delete table.dataset.columnWidthsLocked;
                     settings.visibility = {};
                     settings.widths = {};
                     savePodsColumnSettings(settings);
                 });
+            }
+
+            if (Object.keys(settings.widths || {}).length > 0) {
+                ensureTableWidthLock(table, settings);
             }
         })();
 

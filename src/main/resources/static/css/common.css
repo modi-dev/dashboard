@@ -360,9 +360,3 @@ body.column-resize-active {
     font-size: 0.9em;
 }
 
-@media (max-width: 1400px) {
-    #podsTable .pod-detail-col {
-        display: none;
-    }
-}
-

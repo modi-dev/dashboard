@@ -128,7 +128,7 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <button onclick="refreshServers()" class="btn btn-sm btn-outline-primary" title="Обновить статус серверов">
+                            <button onclick="refreshServers(event)" class="btn btn-sm btn-outline-primary" title="Обновить статус серверов">
                                 <i class="fas fa-sync-alt me-1"></i>Обновить
                             </button>
                             <a href="/api/servers/export/csv" class="btn btn-sm btn-outline-success" title="Экспорт в CSV">
@@ -173,7 +173,7 @@
                 
                 <div class="mb-3">
                     <label for="serverType" class="form-label">Тип сервера</label>
-                    <select class="form-select" id="serverType" required onchange="toggleHealthcheck()">
+                    <select class="form-select" id="serverType" required>
                         <option value="">Выберите тип</option>
                         <option value="POSTGRES">PostgreSQL</option>
                         <option value="REDIS">Redis</option>
@@ -225,128 +225,5 @@
 
     <script src="/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
-    <script>
-        // Load data on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add form submission handler
-            document.getElementById('addServerForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                addServer();
-            });
-            
-            // Add keyboard handler for Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeSidebar();
-                }
-            });
-        });
-
-        // Sidebar functions
-        function openSidebar() {
-            document.getElementById('addServerSidebar').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('show');
-            document.querySelector('.main-content').classList.add('sidebar-open');
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function closeSidebar() {
-            document.getElementById('addServerSidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('show');
-            document.querySelector('.main-content').classList.remove('sidebar-open');
-            document.body.style.overflow = 'auto';
-            // Reset form
-            document.getElementById('addServerForm').reset();
-            toggleHealthcheck();
-        }
-        
-        // Toggle healthcheck field visibility
-        function toggleHealthcheck() {
-            const serverType = document.getElementById('serverType').value;
-            const healthcheckField = document.getElementById('healthcheckField');
-            const healthcheckInput = document.getElementById('serverHealthcheck');
-            const metricsEndpointField = document.getElementById('metricsEndpointField');
-            const versionRegexField = document.getElementById('versionRegexField');
-            
-            if (serverType === 'OTHER') {
-                healthcheckField.style.display = 'block';
-                healthcheckInput.required = true;
-                metricsEndpointField.style.display = 'block';
-                versionRegexField.style.display = 'block';
-            } else {
-                healthcheckField.style.display = 'none';
-                healthcheckInput.required = false;
-                metricsEndpointField.style.display = 'none';
-                versionRegexField.style.display = 'none';
-            }
-        }
-
-        // Add server function
-        function addServer() {
-            const serverData = {
-                name: document.getElementById('serverName').value,
-                url: document.getElementById('serverUrl').value,
-                type: document.getElementById('serverType').value
-            };
-            
-            // Add healthcheck and custom metrics fields if type is OTHER
-            if (serverData.type === 'OTHER') {
-                serverData.healthcheck = document.getElementById('serverHealthcheck').value;
-                serverData.metricsEndpoint = document.getElementById('serverMetricsEndpoint').value;
-                serverData.versionRegex = document.getElementById('serverVersionRegex').value;
-            }
-            
-            fetch('/api/servers', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(serverData),
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (response.status === 401 || response.status === 403) {
-                    window.location.href = '/login';
-                    return null;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data) return;
-                if (data.success) {
-                    // Close sidebar
-                    closeSidebar();
-                    // Reload page to show new data
-                    location.reload();
-                    // Show success message
-                    showNotification('Сервер успешно добавлен!', 'success');
-                } else {
-                    showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при добавлении сервера');
-            });
-        }
-
-        // Functions showNotification, deleteServer, refreshServers, refreshPods are in app.js
-
-        // Table filter for servers
-        (function initServersFilter() {
-            const input = document.getElementById('serversFilter');
-            if (!input) return;
-            input.addEventListener('input', function() {
-                const query = input.value.trim().toLowerCase();
-                const table = document.getElementById('serversTable');
-                if (!table) return;
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const text = row.innerText.toLowerCase();
-                    row.style.display = text.includes(query) ? '' : 'none';
-                });
-            });
-        })();
-    </script>
 </body>
 </html>

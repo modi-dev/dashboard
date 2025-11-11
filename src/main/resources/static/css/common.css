@@ -360,6 +360,11 @@ body.column-resize-active {
     font-size: 0.9em;
 }
 
+.column-header-text {
+    display: inline-block;
+    line-height: 1.2;
+}
+
 .pod-wrap-cell {
     white-space: normal !important;
     word-break: break-word;

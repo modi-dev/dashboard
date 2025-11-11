@@ -520,6 +520,34 @@
             localStorage.setItem(PODS_COLUMN_SETTINGS_KEY, JSON.stringify(settings));
         }
 
+        function calculateHeaderContentWidth(headerCell) {
+            const label = headerCell.querySelector('.column-header-text');
+            const labelRect = label ? label.getBoundingClientRect() : null;
+            const labelWidth = labelRect ? labelRect.width : (headerCell.scrollWidth || 0);
+
+            const styles = window.getComputedStyle(headerCell);
+            const paddingLeft = parseFloat(styles.paddingLeft || '0');
+            const paddingRight = parseFloat(styles.paddingRight || '0');
+            const gap = 2; // space for resizer and breathing room
+
+            return Math.ceil(labelWidth + paddingLeft + paddingRight + gap);
+        }
+
+        function getHeaderMinWidth(headerCell) {
+            if (!headerCell) {
+                return 0;
+            }
+            const stored = parseInt(headerCell.dataset.minWidth || '', 10);
+            if (!Number.isNaN(stored) && stored > 0) {
+                return stored;
+            }
+
+            const measured = calculateHeaderContentWidth(headerCell);
+            const normalized = Math.max(60, measured);
+            headerCell.dataset.minWidth = String(normalized);
+            return normalized;
+        }
+
         function applyColumnVisibility(table, columnKey, visible) {
             const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
             cells.forEach(cell => {
@@ -539,7 +567,10 @@
             if (Number.isNaN(numericWidth) || numericWidth <= 0) {
                 return;
             }
-            const widthPx = `${numericWidth}px`;
+            const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+            const minWidth = Math.max(60, getHeaderMinWidth(headerCell));
+            const finalWidth = Math.max(numericWidth, minWidth);
+            const widthPx = `${finalWidth}px`;
             const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
             if (cells.length === 0) {
                 return;
@@ -587,7 +618,8 @@
                     return;
                 }
                 const computedWidth = Math.round(rectWidth);
-                const widthPx = `${computedWidth}px`;
+                const normalized = Math.max(60, getHeaderMinWidth(headerCell));
+                const widthPx = `${Math.max(computedWidth, normalized)}px`;
                 const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
                 cells.forEach(cell => {
                     cell.style.width = widthPx;
@@ -619,8 +651,9 @@
             const onMouseMove = (event) => {
                 const delta = event.clientX - startX;
                 let newWidth = startWidth + delta;
-                if (newWidth < 60) {
-                    newWidth = 60;
+                const headerMinWidth = Math.max(60, getHeaderMinWidth(headerCell));
+                if (newWidth < headerMinWidth) {
+                    newWidth = headerMinWidth;
                 }
                 lastWidth = newWidth;
                 applyColumnWidth(table, columnKey, newWidth);

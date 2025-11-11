@@ -812,6 +812,23 @@ function initPodsColumnControls(table) {
   }
 
   const settings = getPodsColumnSettings();
+  const hasStoredWidths = Object.keys(settings.widths || {}).length > 0;
+
+  const effectiveWidths = {};
+
+  headerCells.forEach(headerCell => {
+    const columnKey = headerCell.dataset.columnKey;
+    if (!columnKey) {
+      return;
+    }
+
+    const storedWidth = settings.widths[columnKey];
+    if (storedWidth) {
+      effectiveWidths[columnKey] = storedWidth;
+    } else if (!hasStoredWidths) {
+      effectiveWidths[columnKey] = getHeaderMinWidth(headerCell);
+    }
+  });
 
   headerCells.forEach(headerCell => {
     const columnKey = headerCell.dataset.columnKey;
@@ -824,9 +841,9 @@ function initPodsColumnControls(table) {
       : true;
     applyColumnVisibility(table, columnKey, isVisible);
 
-    const storedWidth = settings.widths[columnKey];
-    if (storedWidth) {
-      applyColumnWidth(table, columnKey, storedWidth);
+    const widthToApply = effectiveWidths[columnKey];
+    if (widthToApply) {
+      applyColumnWidth(table, columnKey, widthToApply);
     }
 
     const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
@@ -837,8 +854,9 @@ function initPodsColumnControls(table) {
     attachColumnResizer(table, headerCell, columnKey, settings);
   });
 
-  if (Object.keys(settings.widths || {}).length > 0) {
-    ensureTableWidthLock(table, settings);
+  if (!hasStoredWidths) {
+    table.classList.add('pods-table-fixed');
+    table.dataset.columnWidthsLocked = 'true';
   }
 
   const toggles = document.querySelectorAll('.column-toggle[data-column-key]');

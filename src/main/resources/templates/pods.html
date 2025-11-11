@@ -293,11 +293,6 @@
 
         // Functions showNotification, deleteServer, refreshPods are in app.js
 
-        // Auto-refresh every 30 seconds
-        setInterval(function() {
-            location.reload(); // Reload page to refresh data
-        }, 30000);
-
         // Table filter for pods (works with grouped rows)
         (function initPodsFilter() {
             const input = document.getElementById('podsFilter');

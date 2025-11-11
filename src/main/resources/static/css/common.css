@@ -360,3 +360,15 @@ body.column-resize-active {
     font-size: 0.9em;
 }
 
+.pod-wrap-cell {
+    white-space: normal !important;
+    word-break: break-word;
+    vertical-align: top;
+}
+
+.pod-wrap-cell .wrap-code {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+

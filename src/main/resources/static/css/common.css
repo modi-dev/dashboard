@@ -252,6 +252,78 @@ html, body {
     color: #fff;
 }
 
+.column-visibility-dropdown .dropdown-menu {
+    width: 260px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.column-toggle-list {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.column-toggle-list .form-check {
+    margin-bottom: 0.25rem;
+}
+
+.column-toggle-list .form-check:last-child {
+    margin-bottom: 0;
+}
+
+.column-toggle-list .form-check-input {
+    cursor: pointer;
+}
+
+#podsTable th[data-column-key] {
+    position: relative;
+}
+
+.column-resizer {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+}
+
+.column-resizer::after {
+    content: "";
+    position: absolute;
+    top: 25%;
+    bottom: 25%;
+    left: 50%;
+    width: 1px;
+    background-color: rgba(148, 163, 184, 0.5);
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+th[data-column-key]:hover .column-resizer::after {
+    opacity: 1;
+}
+
+.column-resizer:hover::after,
+.column-resizer:active::after {
+    opacity: 1;
+    background-color: rgba(59, 130, 246, 0.8);
+}
+
+.column-hidden {
+    display: none !important;
+}
+
+body.column-resize-active {
+    cursor: col-resize;
+}
+
+#podsTable.pods-table-fixed {
+    table-layout: fixed;
+}
+
 .pods-table-wrapper {
     overflow-x: auto;
     overflow-y: hidden;

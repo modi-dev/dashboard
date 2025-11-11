@@ -7,51 +7,48 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="badge bg-info" th:text="${kubernetesVersion ?: 'Неизвестно'}">v1.28.0</span>
         </div>
-        <div class="pods-scroll-hint text-muted small mb-2">
-            <i class="fas fa-arrows-alt-h me-1"></i>Прокрутите таблицу по горизонтали, чтобы увидеть все колонки.
-        </div>
         <table id="podsTable" class="table table-hover mb-0">
             <thead>
                 <tr>
                     <th style="width: 30px;"></th>
-                    <th>Название</th>
-                    <th class="pod-detail-col">POD_NAME</th>
-                    <th>Версия</th>
-                    <th>Ветка сервиса</th>
-                    <th>Ветка SD</th>
-                    <th>GC Options</th>
-                    <th>Порт</th>
-                    <th class="pod-detail-col">Рестарты</th>
-                    <th class="pod-detail-col">Время до Ready</th>
-                    <th>CPU</th>
-                    <th>Память</th>
-                    <th class="pod-detail-col">Дата создания</th>
+                    <th data-column-key="name">Название</th>
+                    <th class="pod-detail-col" data-column-key="podName">POD_NAME</th>
+                    <th data-column-key="version">Версия</th>
+                    <th data-column-key="msBranch">Ветка сервиса</th>
+                    <th data-column-key="configBranch">Ветка SD</th>
+                    <th data-column-key="gcOptions">GC Options</th>
+                    <th data-column-key="port">Порт</th>
+                    <th class="pod-detail-col" data-column-key="restarts">Рестарты</th>
+                    <th class="pod-detail-col" data-column-key="readyTime">Время до Ready</th>
+                    <th data-column-key="cpu">CPU</th>
+                    <th data-column-key="memory">Память</th>
+                    <th class="pod-detail-col" data-column-key="creationDate">Дата создания</th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="pod : ${pods}" th:attr="data-pod-name=${pod.name},data-is-grouped=false">
                     <td></td>
-                    <td>
+                    <td data-column-key="name">
                         <strong th:text="${pod.name}">-</strong>
                     </td>
-                    <td class="pod-detail-col">
+                    <td class="pod-detail-col" data-column-key="podName">
                         <code th:text="${pod.podName ?: '-'}">-</code>
                     </td>
-                    <td><span class="badge type-badge" th:text="${pod.version}">-</span></td>
-                    <td th:text="${pod.msBranch ?: '-'}">-</td>
-                    <td th:text="${pod.configBranch ?: '-'}">-</td>
-                    <td>
+                    <td data-column-key="version"><span class="badge type-badge" th:text="${pod.version}">-</span></td>
+                    <td data-column-key="msBranch" th:text="${pod.msBranch ?: '-'}">-</td>
+                    <td data-column-key="configBranch" th:text="${pod.configBranch ?: '-'}">-</td>
+                    <td data-column-key="gcOptions">
                         <pre class="m-0" style="white-space: pre-wrap; font-size: 0.85em;" th:text="${pod.gcOptions ?: '-'}">-</pre>
                     </td>
-                    <td><span class="badge bg-secondary" th:text="${pod.port ?: '-'}">-</span></td>
-                    <td class="pod-detail-col">
+                    <td data-column-key="port"><span class="badge bg-secondary" th:text="${pod.port ?: '-'}">-</span></td>
+                    <td class="pod-detail-col" data-column-key="restarts">
                         <span th:class="${(pod.restarts != null and pod.restarts > 0) ? 'badge bg-danger' : 'badge bg-dark'}"
                               th:text="${pod.restarts ?: 0}">0</span>
                     </td>
-                    <td class="pod-detail-col"><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
-                    <td th:text="${pod.cpuRequest ?: '-'}">-</td>
-                    <td th:text="${pod.memoryRequest ?: '-'}">-</td>
-                    <td class="pod-detail-col" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
+                    <td class="pod-detail-col" data-column-key="readyTime"><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
+                    <td data-column-key="cpu" th:text="${pod.cpuRequest ?: '-'}">-</td>
+                    <td data-column-key="memory" th:text="${pod.memoryRequest ?: '-'}">-</td>
+                    <td class="pod-detail-col" data-column-key="creationDate" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
                 </tr>
             </tbody>
         </table>

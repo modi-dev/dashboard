@@ -106,6 +106,69 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <div class="dropdown column-visibility-dropdown" data-bs-auto-close="outside">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-columns me-1"></i>Колонки
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end p-3 column-visibility-menu" aria-labelledby="columnVisibilityDropdown">
+                                    <h6 class="dropdown-header px-0">Отображение столбцов</h6>
+                                    <div class="column-toggle-list">
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnName" data-column-key="name" checked>
+                                            <label class="form-check-label" for="toggleColumnName">Название</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnPodName" data-column-key="podName" checked>
+                                            <label class="form-check-label" for="toggleColumnPodName">POD_NAME</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnVersion" data-column-key="version" checked>
+                                            <label class="form-check-label" for="toggleColumnVersion">Версия</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnMsBranch" data-column-key="msBranch" checked>
+                                            <label class="form-check-label" for="toggleColumnMsBranch">Ветка сервиса</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnConfigBranch" data-column-key="configBranch" checked>
+                                            <label class="form-check-label" for="toggleColumnConfigBranch">Ветка SD</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnGcOptions" data-column-key="gcOptions" checked>
+                                            <label class="form-check-label" for="toggleColumnGcOptions">GC Options</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnPort" data-column-key="port" checked>
+                                            <label class="form-check-label" for="toggleColumnPort">Порт</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnRestarts" data-column-key="restarts" checked>
+                                            <label class="form-check-label" for="toggleColumnRestarts">Рестарты</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnReadyTime" data-column-key="readyTime" checked>
+                                            <label class="form-check-label" for="toggleColumnReadyTime">Время до Ready</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnCpu" data-column-key="cpu" checked>
+                                            <label class="form-check-label" for="toggleColumnCpu">CPU</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnMemory" data-column-key="memory" checked>
+                                            <label class="form-check-label" for="toggleColumnMemory">Память</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnCreationDate" data-column-key="creationDate" checked>
+                                            <label class="form-check-label" for="toggleColumnCreationDate">Дата создания</label>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid mt-3">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" id="resetPodsColumns">
+                                            <i class="fas fa-undo me-1"></i>Сбросить настройки
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <button onclick="refreshPods()" class="btn btn-sm btn-outline-primary" title="Обновить информацию о подах">
                                 <i class="fas fa-sync-alt me-1"></i>Обновить
                             </button>
@@ -431,6 +494,181 @@
                     tbody.appendChild(row);
                 }
             });
+        })();
+
+        const PODS_COLUMN_SETTINGS_KEY = 'podsTableColumnSettings';
+
+        function getPodsColumnSettings() {
+            const defaultSettings = { visibility: {}, widths: {} };
+            try {
+                const raw = localStorage.getItem(PODS_COLUMN_SETTINGS_KEY);
+                if (!raw) {
+                    return defaultSettings;
+                }
+                const parsed = JSON.parse(raw);
+                return {
+                    visibility: parsed.visibility || {},
+                    widths: parsed.widths || {}
+                };
+            } catch (error) {
+                console.warn('Не удалось загрузить настройки колонок подов:', error);
+                return defaultSettings;
+            }
+        }
+
+        function savePodsColumnSettings(settings) {
+            localStorage.setItem(PODS_COLUMN_SETTINGS_KEY, JSON.stringify(settings));
+        }
+
+        function applyColumnVisibility(table, columnKey, visible) {
+            const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+            cells.forEach(cell => {
+                if (visible) {
+                    cell.classList.remove('column-hidden');
+                } else {
+                    cell.classList.add('column-hidden');
+                }
+            });
+        }
+
+        function applyColumnWidth(table, columnKey, width) {
+            if (width === undefined || width === null) {
+                return;
+            }
+            const numericWidth = typeof width === 'number' ? width : parseInt(width, 10);
+            if (Number.isNaN(numericWidth) || numericWidth <= 0) {
+                return;
+            }
+            const widthPx = `${numericWidth}px`;
+            const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+            if (cells.length === 0) {
+                return;
+            }
+
+            table.classList.add('pods-table-fixed');
+            cells.forEach(cell => {
+                cell.style.width = widthPx;
+                cell.style.minWidth = widthPx;
+                cell.style.maxWidth = widthPx;
+            });
+        }
+
+        function clearColumnWidth(table, columnKey) {
+            const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+            cells.forEach(cell => {
+                cell.style.width = '';
+                cell.style.minWidth = '';
+                cell.style.maxWidth = '';
+            });
+        }
+
+        function attachColumnResizer(table, headerCell, columnKey, settings) {
+            if (!headerCell || !columnKey) {
+                return;
+            }
+            if (headerCell.querySelector('.column-resizer')) {
+                return;
+            }
+
+            const resizer = document.createElement('span');
+            resizer.className = 'column-resizer';
+            headerCell.appendChild(resizer);
+
+            let startX = 0;
+            let startWidth = 0;
+            let lastWidth = 0;
+
+            const onMouseMove = (event) => {
+                const delta = event.clientX - startX;
+                let newWidth = startWidth + delta;
+                if (newWidth < 60) {
+                    newWidth = 60;
+                }
+                lastWidth = newWidth;
+                applyColumnWidth(table, columnKey, newWidth);
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.classList.remove('column-resize-active');
+                if (lastWidth > 0) {
+                    settings.widths[columnKey] = Math.round(lastWidth);
+                    savePodsColumnSettings(settings);
+                }
+            };
+
+            resizer.addEventListener('mousedown', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                startX = event.clientX;
+                startWidth = headerCell.offsetWidth;
+                lastWidth = startWidth;
+                document.body.classList.add('column-resize-active');
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        (function initPodsColumnControls() {
+            const table = document.getElementById('podsTable');
+            if (!table) {
+                return;
+            }
+            const settings = getPodsColumnSettings();
+            const headerCells = Array.from(table.querySelectorAll('thead th[data-column-key]'));
+
+            headerCells.forEach(headerCell => {
+                const columnKey = headerCell.dataset.columnKey;
+                const visibility = Object.prototype.hasOwnProperty.call(settings.visibility, columnKey)
+                    ? settings.visibility[columnKey]
+                    : true;
+                const storedWidth = settings.widths[columnKey];
+
+                applyColumnVisibility(table, columnKey, visibility);
+                if (storedWidth) {
+                    applyColumnWidth(table, columnKey, storedWidth);
+                }
+
+                const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
+                if (checkbox) {
+                    checkbox.checked = visibility;
+                }
+
+                attachColumnResizer(table, headerCell, columnKey, settings);
+            });
+
+            const anyWidthSet = Object.keys(settings.widths || {}).length > 0;
+            if (!anyWidthSet) {
+                table.classList.remove('pods-table-fixed');
+            }
+
+            document.querySelectorAll('.column-toggle').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const columnKey = this.dataset.columnKey;
+                    const visible = this.checked;
+                    applyColumnVisibility(table, columnKey, visible);
+                    settings.visibility[columnKey] = visible;
+                    savePodsColumnSettings(settings);
+                });
+            });
+
+            const resetButton = document.getElementById('resetPodsColumns');
+            if (resetButton) {
+                resetButton.addEventListener('click', function() {
+                    const checkboxes = document.querySelectorAll('.column-toggle');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = true;
+                        const key = checkbox.dataset.columnKey;
+                        applyColumnVisibility(table, key, true);
+                        clearColumnWidth(table, key);
+                    });
+                    table.classList.remove('pods-table-fixed');
+                    settings.visibility = {};
+                    settings.widths = {};
+                    savePodsColumnSettings(settings);
+                });
+            }
         })();
 
         // Toggle pod group expand/collapse

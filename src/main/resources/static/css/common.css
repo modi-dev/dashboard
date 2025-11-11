@@ -320,6 +320,37 @@ html, body {
     border-right: 1px solid rgba(226, 232, 240, 0.25);
 }
 
+.instruction-step {
+    animation: fadeIn 0.2s ease-in-out;
+    white-space: pre-line;
+}
+
+#instructionModal .btn-close {
+    filter: invert(0.7);
+    opacity: 0.8;
+}
+
+#instructionModal .btn-close:hover,
+#instructionModal .btn-close:focus {
+    opacity: 1;
+    filter: invert(1);
+}
+
+.theme-dark #instructionModal .btn-close {
+    filter: invert(1);
+    opacity: 0.9;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.theme-dark #instructionModal .modal-content {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
 .column-toggle-list {
     display: grid;
     gap: 0.25rem;

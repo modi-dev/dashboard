@@ -1,6 +1,39 @@
 const PODS_COLUMN_SETTINGS_KEY = 'podsTableColumnSettings';
 let sidebarKeyListenerBound = false;
 
+const INSTRUCTION_STEPS = [
+  {
+    title: 'Главная страница',
+    description: 'Здесь можно посмотреть ключевые показатели по серверам и подам, а также быстро перейти к нужным разделам.'
+  },
+  {
+    title: 'Серверы',
+    description: 'На этой странице удобно работать с серверами: добавлять новые записи, запускать проверку статуса и экспортировать данные.'
+  },
+  {
+    title: 'Поды',
+    description: 'Здесь доступны группировка, фильтрация и обновление данных о подах.\nМожно настроить видимость и ширину колонок; выбранные настройки сохраняются в кэше браузера.'
+  },
+  {
+    title: 'Авторизация',
+    description: 'Удаление и добавление серверов доступны только авторизованным пользователям.\nЕсли у вас нет учетных данных, обратитесь к администратору стенда.'
+  },
+  {
+    title: 'Добавление сервера',
+    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопки «Добавить сервер» и «+» в правом нижнем углу).\
+    \nПри добавлении укажите название, URL и тип сервера.\
+    \n⚠ Для типа «Другое» требуется дополнительно указать healthcheck, metrics endpoints и version regex.\
+    \nПоле «Version regex» помогает извлечь версию из ответа сервера.'
+  },
+  {
+    title: 'Удаление сервера',
+    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой с иконкой корзины.\nЗапись будет удалена из списка и из базы данных.'
+  }
+];
+
+let instructionModal;
+let instructionCurrentStep = 0;
+
 function onDocumentReady(callback) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', callback, { once: true });
@@ -907,12 +940,107 @@ function initPodsFeatures() {
   initPodsColumnControls(table);
 }
 
+function initInstructionModal() {
+  if (instructionModal) {
+    return;
+  }
+
+  const modalElement = document.getElementById('instructionModal');
+  if (!modalElement) {
+    return;
+  }
+
+  instructionModal = new bootstrap.Modal(modalElement);
+
+  const prevBtn = document.getElementById('instructionPrevBtn');
+  const nextBtn = document.getElementById('instructionNextBtn');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (instructionCurrentStep > 0) {
+        instructionCurrentStep -= 1;
+        renderInstructionStep();
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (instructionCurrentStep < INSTRUCTION_STEPS.length - 1) {
+        instructionCurrentStep += 1;
+        renderInstructionStep();
+      } else {
+        instructionModal.hide();
+        localStorage.setItem('instructionTourCompleted', 'true');
+      }
+    });
+  }
+
+  modalElement.addEventListener('shown.bs.modal', () => {
+    instructionCurrentStep = 0;
+    renderInstructionStep();
+  });
+}
+
+function renderInstructionStep() {
+  const modalElement = document.getElementById('instructionModal');
+  if (!modalElement) {
+    return;
+  }
+
+  const body = modalElement.querySelector('.modal-body');
+  const indicator = document.getElementById('instructionStepIndicator');
+  const prevBtn = document.getElementById('instructionPrevBtn');
+  const nextBtn = document.getElementById('instructionNextBtn');
+
+  if (body) {
+    const step = INSTRUCTION_STEPS[instructionCurrentStep];
+    body.innerHTML = `
+      <div class="instruction-step">
+          <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>${step.title}</h6>
+          <p class="mb-0">${step.description}</p>
+      </div>
+    `;
+  }
+
+  if (indicator) {
+    indicator.textContent = `Шаг ${instructionCurrentStep + 1} из ${INSTRUCTION_STEPS.length}`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = instructionCurrentStep === 0;
+  }
+
+  if (nextBtn) {
+    if (instructionCurrentStep === INSTRUCTION_STEPS.length - 1) {
+      nextBtn.innerHTML = 'Готово <i class="fas fa-check ms-1"></i>';
+    } else {
+      nextBtn.innerHTML = 'Далее <i class="fas fa-arrow-right ms-1"></i>';
+    }
+  }
+}
+
+function openInstructions() {
+  initInstructionModal();
+  if (instructionModal) {
+    instructionModal.show();
+  }
+}
+
 // Bootstrap everything ------------------------------------------------------
 onDocumentReady(() => {
   initTheme();
   initSidebar();
   initServersFilter();
   initPodsFeatures();
+  initInstructionModal();
+
+  const tourCompleted = localStorage.getItem('instructionTourCompleted');
+  if (!tourCompleted) {
+    setTimeout(() => {
+      openInstructions();
+    }, 1200);
+  }
 });
 
 // Expose globals for inline handlers ---------------------------------------
@@ -926,3 +1054,4 @@ window.closeSidebar = closeSidebar;
 window.toggleHealthcheck = toggleHealthcheck;
 window.addServer = addServer;
 window.togglePodGroup = togglePodGroup;
+window.openInstructions = openInstructions;

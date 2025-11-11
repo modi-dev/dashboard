@@ -24,6 +24,7 @@
                 <button class="btn btn-link text-white d-lg-none me-2" id="themeToggleMobile" onclick="toggleTheme()" title="Переключить тему" style="text-decoration: none; padding: 0.5rem;">
                     <i class="fas fa-moon" id="themeIconMobile"></i>
                 </button>
+                <th:block th:replace="~{fragments/instructions :: instructionButtonMobile}"></th:block>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -32,17 +33,17 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="/">
-                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            <i class="fas fa-tachometer-alt me-1"></i>Главная страница
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/servers">
-                            <i class="fas fa-server me-1"></i>Servers
+                            <i class="fas fa-server me-1"></i>Серверы
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/pods">
-                            <i class="fas fa-cube me-1"></i>Pods
+                            <i class="fas fa-cube me-1"></i>Поды
                         </a>
                     </li>
                 </ul>
@@ -52,6 +53,7 @@
                             <i class="fas fa-moon" id="themeIcon"></i> <span class="ms-1">Тема</span>
                         </button>
                     </li>
+                    <th:block th:replace="~{fragments/instructions :: instructionButtonDesktop}"></th:block>
                     <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
                         <a class="nav-link" href="/login" title="Войти в систему">
                             <i class="fas fa-sign-in-alt me-1"></i>Войти
@@ -215,7 +217,7 @@
     <!-- Footer -->
     <footer class="footer bg-light text-center py-3 mt-auto">
         <div class="container-fluid px-4">
-            <span class="text-muted">Version Dashboard v1.0.0 | 
+            <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> |
                 <a href="/actuator/health" target="_blank">Health</a> | 
                 <a href="/actuator/metrics" target="_blank">Metrics</a>
             </span>
@@ -224,5 +226,6 @@
 
     <script src="/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
+    <div th:replace="~{fragments/instructions :: instructionModal}"></div>
 </body>
 </html>

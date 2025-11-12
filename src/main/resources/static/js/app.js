@@ -1122,6 +1122,9 @@ onDocumentReady(() => {
   const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
   const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
 
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(triggerEl => new bootstrap.Tooltip(triggerEl));
+
   if (!tourCompleted || shouldForceOpen) {
     setTimeout(() => {
       openInstructions();

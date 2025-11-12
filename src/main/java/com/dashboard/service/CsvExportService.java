@@ -5,6 +5,7 @@ import com.dashboard.model.Server;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Pattern;
 import java.util.List;
 
 /**
@@ -124,10 +125,21 @@ public class CsvExportService {
      * @param value значение для экранирования
      * @return экранированное значение (безопасное для CSV)
      */
+    private static final Pattern EXCEL_TEXT_PATTERN = Pattern.compile(
+        "^(\\+|-)?\\d{1,2}([./-])\\d{1,2}([./-])\\d{2,4}$" // dates like 12.01.2024 or 1-2-23
+        + "|^(\\+|-)?\\d+(\\.\\d+){1,3}$"                  // versions like 1.0.0 or 2.3.4.5
+        + "|^(\\+|-)?\\d{5,}$"                            // long numeric strings that may lose leading zeros
+    );
+
     private String escapeCsvValue(String value) {
         // Если значение пустое - возвращаем пустую строку
         if (value == null) {
             return "";
+        }
+
+        // Предотвращаем автоматическое преобразование Excel'ом в дату или число
+        if (shouldProtectForExcel(value)) {
+            value = "\t" + value;
         }
         
         // Проверяем, содержит ли значение "опасные" символы
@@ -140,5 +152,13 @@ public class CsvExportService {
         
         // Если опасных символов нет - возвращаем как есть
         return value;
+    }
+
+    private boolean shouldProtectForExcel(String value) {
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return false;
+        }
+        return EXCEL_TEXT_PATTERN.matcher(trimmed).matches();
     }
 }

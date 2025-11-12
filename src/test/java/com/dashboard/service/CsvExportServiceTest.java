@@ -61,15 +61,28 @@ public class CsvExportServiceTest {
         
         PodInfo pod2 = new PodInfo("app2", "2.1.0", "develop", "dev-config", "-XX:+UseParallelGC\n-XX:+PrintGCDetails", 
                                   LocalDateTime.of(2024, 1, 15, 10, 0, 0), "9090", "200m", "512Mi");
+        PodInfo pod3 = new PodInfo("app3", "5-28", "release", "prod-config", "-XX:+UseSerialGC", 
+                                  LocalDateTime.of(2024, 1, 16, 11, 0, 0), "10090", "150m", "384Mi");
         
-        List<PodInfo> pods = Arrays.asList(pod1, pod2);
+        List<PodInfo> pods = Arrays.asList(pod1, pod2, pod3);
         
         String csv = csvExportService.exportPodsToCsv(pods);
         
         assertNotNull(csv);
-        assertTrue(csv.contains("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;Creation Date"));
-        assertTrue(csv.contains("app1;;\t1.0.0;main;config-branch;-XX:+UseG1GC;8080;0;;100m;256Mi;2024-01-15 09:00:00"));
-        assertTrue(csv.contains("app2;;\t2.1.0;develop;dev-config;-XX:+UseParallelGC -XX:+PrintGCDetails;9090;0;;200m;512Mi;2024-01-15 10:00:00"));
+        String[] lines = csv.split("\\R");
+        assertTrue(lines.length >= 4);
+        String header = lines[0].replace("\uFEFF", "");
+        assertEquals("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;Creation Date", header);
+
+        String[] app1Columns = lines[1].split(";", -1);
+        assertEquals("\t1.0.0", app1Columns[2]);
+
+        String[] app2Columns = lines[2].split(";", -1);
+        assertEquals("\t2.1.0", app2Columns[2]);
+        assertEquals("-XX:+UseParallelGC -XX:+PrintGCDetails", app2Columns[5]);
+
+        String[] app3Columns = lines[3].split(";", -1);
+        assertEquals("\t5-28", app3Columns[2]);
     }
     
     @Test

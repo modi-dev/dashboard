@@ -129,6 +129,7 @@ public class CsvExportService {
         "^(\\+|-)?\\d{1,2}([./-])\\d{1,2}([./-])\\d{2,4}$" // dates like 12.01.2024 or 1-2-23
         + "|^(\\+|-)?\\d+(\\.\\d+){1,3}$"                  // versions like 1.0.0 or 2.3.4.5
         + "|^(\\+|-)?\\d{5,}$"                            // long numeric strings that may lose leading zeros
+        + "|^\\d{1,3}([./-]\\d{1,3})+$"                   // patterns with repeated groups: numbers separated by ./-
     );
 
     private String escapeCsvValue(String value) {

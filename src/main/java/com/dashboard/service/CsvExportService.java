@@ -137,21 +137,26 @@ public class CsvExportService {
             return "";
         }
 
+        String sanitized = value
+                .replace("\r\n", " ")
+                .replace("\n", " ")
+                .replace("\r", " ");
+
         // Предотвращаем автоматическое преобразование Excel'ом в дату или число
-        if (shouldProtectForExcel(value)) {
-            value = "\t" + value;
+        if (shouldProtectForExcel(sanitized)) {
+            sanitized = "\t" + sanitized;
         }
         
         // Проверяем, содержит ли значение "опасные" символы
-        if (value.contains(CSV_SEPARATOR) || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
+        if (sanitized.contains(CSV_SEPARATOR) || sanitized.contains("\"") || sanitized.contains("\n") || sanitized.contains("\r")) {
             // Заменяем одинарные кавычки на двойные (CSV стандарт)
-            value = value.replace("\"", "\"\"");
+            sanitized = sanitized.replace("\"", "\"\"");
             // Оборачиваем в кавычки
-            return "\"" + value + "\"";
+            return "\"" + sanitized + "\"";
         }
         
         // Если опасных символов нет - возвращаем как есть
-        return value;
+        return sanitized;
     }
 
     private boolean shouldProtectForExcel(String value) {

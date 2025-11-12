@@ -59,7 +59,7 @@ public class CsvExportServiceTest {
         PodInfo pod1 = new PodInfo("app1", "1.0.0", "main", "config-branch", "-XX:+UseG1GC", 
                                   LocalDateTime.of(2024, 1, 15, 9, 0, 0), "8080", "100m", "256Mi");
         
-        PodInfo pod2 = new PodInfo("app2", "2.1.0", "develop", "dev-config", "-XX:+UseParallelGC", 
+        PodInfo pod2 = new PodInfo("app2", "2.1.0", "develop", "dev-config", "-XX:+UseParallelGC\n-XX:+PrintGCDetails", 
                                   LocalDateTime.of(2024, 1, 15, 10, 0, 0), "9090", "200m", "512Mi");
         
         List<PodInfo> pods = Arrays.asList(pod1, pod2);
@@ -69,7 +69,7 @@ public class CsvExportServiceTest {
         assertNotNull(csv);
         assertTrue(csv.contains("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;Creation Date"));
         assertTrue(csv.contains("app1;;\t1.0.0;main;config-branch;-XX:+UseG1GC;8080;0;;100m;256Mi;2024-01-15 09:00:00"));
-        assertTrue(csv.contains("app2;;\t2.1.0;develop;dev-config;-XX:+UseParallelGC;9090;0;;200m;512Mi;2024-01-15 10:00:00"));
+        assertTrue(csv.contains("app2;;\t2.1.0;develop;dev-config;-XX:+UseParallelGC -XX:+PrintGCDetails;9090;0;;200m;512Mi;2024-01-15 10:00:00"));
     }
     
     @Test

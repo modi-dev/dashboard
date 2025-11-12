@@ -1,6 +1,7 @@
 const PODS_COLUMN_SETTINGS_KEY = 'podsTableColumnSettings';
 const INSTRUCTION_STEP_KEY = 'instructionTourStep';
 const INSTRUCTION_SHOULD_OPEN_KEY = 'instructionTourShouldOpen';
+const INSTRUCTION_DISMISSED_KEY = 'instructionTourDismissed';
 let sidebarKeyListenerBound = false;
 
 const INSTRUCTION_STEPS = [
@@ -100,6 +101,7 @@ function showInstructionStep(targetIndex) {
       window.location.href = step.path;
       return false;
     }
+    localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
   }
 
   renderInstructionContent();
@@ -960,22 +962,29 @@ function initPodsColumnControls(table) {
 
   const settings = getPodsColumnSettings();
   const hasStoredWidths = Object.keys(settings.widths || {}).length > 0;
+  const hasStoredVisibility = Object.keys(settings.visibility || {}).length > 0;
 
-  const effectiveWidths = {};
+  if (!hasStoredWidths && !hasStoredVisibility) {
+    headerCells.forEach(headerCell => {
+      const columnKey = headerCell.dataset.columnKey;
+      if (!columnKey) {
+        return;
+      }
+      applyColumnVisibility(table, columnKey, true);
+      clearColumnWidth(table, columnKey);
+      const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+      }
+    });
 
-  headerCells.forEach(headerCell => {
-    const columnKey = headerCell.dataset.columnKey;
-    if (!columnKey) {
-      return;
-    }
+    table.classList.remove('pods-table-fixed');
+    delete table.dataset.columnWidthsLocked;
 
-    const storedWidth = settings.widths[columnKey];
-    if (storedWidth) {
-      effectiveWidths[columnKey] = storedWidth;
-    } else if (!hasStoredWidths) {
-      effectiveWidths[columnKey] = getHeaderMinWidth(headerCell);
-    }
-  });
+    settings.visibility = {};
+    settings.widths = {};
+    savePodsColumnSettings(settings);
+  }
 
   headerCells.forEach(headerCell => {
     const columnKey = headerCell.dataset.columnKey;
@@ -988,9 +997,11 @@ function initPodsColumnControls(table) {
       : true;
     applyColumnVisibility(table, columnKey, isVisible);
 
-    const widthToApply = effectiveWidths[columnKey];
-    if (widthToApply) {
-      applyColumnWidth(table, columnKey, widthToApply);
+    if (hasStoredWidths) {
+      const storedWidth = settings.widths[columnKey];
+      if (storedWidth) {
+        applyColumnWidth(table, columnKey, storedWidth);
+      }
     }
 
     const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
@@ -1000,11 +1011,6 @@ function initPodsColumnControls(table) {
 
     attachColumnResizer(table, headerCell, columnKey, settings);
   });
-
-  if (!hasStoredWidths) {
-    table.classList.add('pods-table-fixed');
-    table.dataset.columnWidthsLocked = 'true';
-  }
 
   const toggles = document.querySelectorAll('.column-toggle[data-column-key]');
   toggles.forEach(checkbox => {
@@ -1086,6 +1092,7 @@ function initInstructionModal() {
         instructionModal.hide();
         localStorage.setItem('instructionTourCompleted', 'true');
         localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
+        localStorage.removeItem(INSTRUCTION_DISMISSED_KEY);
       }
     });
   }
@@ -1096,7 +1103,9 @@ function initInstructionModal() {
   });
 
   modalElement.addEventListener('hidden.bs.modal', () => {
-    if (localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) !== 'true') {
+    const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
+    if (!shouldForceOpen) {
+      localStorage.setItem(INSTRUCTION_DISMISSED_KEY, 'true');
       localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
     }
   });
@@ -1121,11 +1130,12 @@ onDocumentReady(() => {
 
   const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
   const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
+  const tourDismissed = localStorage.getItem(INSTRUCTION_DISMISSED_KEY) === 'true';
 
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(triggerEl => new bootstrap.Tooltip(triggerEl));
 
-  if (!tourCompleted || shouldForceOpen) {
+  if (shouldForceOpen || (!tourCompleted && !tourDismissed)) {
     setTimeout(() => {
       openInstructions();
     }, shouldForceOpen ? 250 : 1200);

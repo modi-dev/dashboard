@@ -61,22 +61,13 @@
 .table td {
     vertical-align: middle;
 }
-
-/* Mobile: Allow text wrapping in tables */
-@media (max-width: 768px) {
-    .table th,
-    .table td {
-        white-space: normal;
-        word-wrap: break-word;
-    }
+.table th {
+    white-space: nowrap;
 }
-
-/* Desktop: Prevent text wrapping in tables */
-@media (min-width: 769px) {
-    .table th,
-    .table td {
-        white-space: nowrap;
-    }
+.table td {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 /* Larger screens: Increase table font size */
@@ -326,19 +317,27 @@ html, body {
 }
 
 #instructionModal .btn-close {
-    filter: invert(0.7);
-    opacity: 0.8;
+    background-color: rgba(33, 37, 41, 0.05);
+    border-radius: 50%;
+    opacity: 0.85;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 #instructionModal .btn-close:hover,
 #instructionModal .btn-close:focus {
+    background-color: rgba(33, 37, 41, 0.15);
     opacity: 1;
-    filter: invert(1);
 }
 
 .theme-dark #instructionModal .btn-close {
+    background-color: rgba(255, 255, 255, 0.1);
     filter: invert(1);
     opacity: 0.9;
+}
+
+.theme-dark #instructionModal .btn-close:hover,
+.theme-dark #instructionModal .btn-close:focus {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes fadeIn {

@@ -1,38 +1,152 @@
 const PODS_COLUMN_SETTINGS_KEY = 'podsTableColumnSettings';
+const INSTRUCTION_STEP_KEY = 'instructionTourStep';
+const INSTRUCTION_SHOULD_OPEN_KEY = 'instructionTourShouldOpen';
 let sidebarKeyListenerBound = false;
 
 const INSTRUCTION_STEPS = [
   {
     title: 'Главная страница',
-    description: 'Здесь можно посмотреть ключевые показатели по серверам и подам, а также быстро перейти к нужным разделам.'
+    description: 'Здесь можно общую информацию по серверам и подам, а также быстро перейти к нужным разделам.',
+    path: '/'
   },
   {
     title: 'Серверы',
-    description: 'На этой странице удобно работать с серверами: добавлять новые записи, запускать проверку статуса и экспортировать данные.'
+    description: 'На этой странице удобно работать с серверами: добавлять новые, удалять старые и экспортировать данные.',
+    path: '/servers'
   },
   {
     title: 'Поды',
-    description: 'Здесь доступны группировка, фильтрация и обновление данных о подах.\nМожно настроить видимость и ширину колонок; выбранные настройки сохраняются в кэше браузера.'
+    description: 'Здесь доступна группировка, фильтрация и обновление данных о подах.\
+    \nМожно настроить видимость и ширину колонок (данные настройки сохраняются в кэше браузера).',
+    path: '/pods'
   },
   {
     title: 'Авторизация',
-    description: 'Удаление и добавление серверов доступны только авторизованным пользователям.\nЕсли у вас нет учетных данных, обратитесь к администратору стенда.'
+    description: 'Удаление и добавление серверов доступны только авторизованным пользователям.\
+    \nЕсли у вас нет учетных данных, обратитесь к администратору стенда.',
+    path: '/'
   },
   {
     title: 'Добавление сервера',
-    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопки «Добавить сервер» и «+» в правом нижнем углу).\
+    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопка «Добавить сервер» или синий кнопка + в правом нижнем углу).\
     \nПри добавлении укажите название, URL и тип сервера.\
     \n⚠ Для типа «Другое» требуется дополнительно указать healthcheck, metrics endpoints и version regex.\
-    \nПоле «Version regex» помогает извлечь версию из ответа сервера.'
+    \nПоле «Version regex» помогает извлечь версию из ответа сервера.',
+    path: '/servers'
   },
   {
     title: 'Удаление сервера',
-    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой с иконкой корзины.\nЗапись будет удалена из списка и из базы данных.'
+    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой с иконкой корзины.\nЗапись будет удалена из списка и из базы данных.',
+    path: '/servers'
+  },
+  {
+    title: 'При возникновении проблем',
+    description: 'При возникновении проблем, можно писать на почту onb-devops.',
+    path: '/'
   }
 ];
 
 let instructionModal;
 let instructionCurrentStep = 0;
+
+function normalizePath(path) {
+  if (!path) {
+    return '';
+  }
+  let normalized = path.trim();
+  if (!normalized) {
+    return '';
+  }
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+  normalized = normalized.replace(/\/+$/, '');
+  return normalized === '' ? '/' : normalized;
+}
+
+function loadInstructionProgress() {
+  const stored = parseInt(localStorage.getItem(INSTRUCTION_STEP_KEY) || '0', 10);
+  if (!Number.isNaN(stored) && stored >= 0 && stored < INSTRUCTION_STEPS.length) {
+    instructionCurrentStep = stored;
+  } else {
+    instructionCurrentStep = 0;
+    localStorage.setItem(INSTRUCTION_STEP_KEY, '0');
+  }
+}
+
+function showInstructionStep(targetIndex) {
+  const clamped = Math.max(0, Math.min(targetIndex, INSTRUCTION_STEPS.length - 1));
+  instructionCurrentStep = clamped;
+  localStorage.setItem(INSTRUCTION_STEP_KEY, String(clamped));
+
+  const step = INSTRUCTION_STEPS[clamped];
+  if (step && step.path) {
+    const targetPath = normalizePath(step.path);
+    const currentFullPath = normalizePath(window.location.pathname);
+    let matches = currentFullPath === targetPath;
+
+    if (!matches && targetPath && targetPath !== '/') {
+      const index = currentFullPath.lastIndexOf(targetPath);
+      if (index !== -1 && index + targetPath.length === currentFullPath.length) {
+        matches = index === 0 || currentFullPath.charAt(index - 1) === '/';
+      }
+    }
+
+    if (!matches) {
+      localStorage.setItem(INSTRUCTION_SHOULD_OPEN_KEY, 'true');
+      if (instructionModal) {
+        instructionModal.hide();
+      }
+      window.location.href = step.path;
+      return false;
+    }
+  }
+
+  renderInstructionContent();
+  return true;
+}
+
+function renderInstructionContent() {
+  const modalElement = document.getElementById('instructionModal');
+  if (!modalElement) {
+    return;
+  }
+
+  const step = INSTRUCTION_STEPS[instructionCurrentStep];
+  if (!step) {
+    return;
+  }
+
+  const body = modalElement.querySelector('.modal-body');
+  const indicator = document.getElementById('instructionStepIndicator');
+  const prevBtn = document.getElementById('instructionPrevBtn');
+  const nextBtn = document.getElementById('instructionNextBtn');
+
+  if (body) {
+    body.innerHTML = `
+      <div class="instruction-step">
+          <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>${step.title}</h6>
+          <p class="mb-0">${step.description}</p>
+      </div>
+    `;
+  }
+
+  if (indicator) {
+    indicator.textContent = `Шаг ${instructionCurrentStep + 1} из ${INSTRUCTION_STEPS.length}`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = instructionCurrentStep === 0;
+  }
+
+  if (nextBtn) {
+    if (instructionCurrentStep === INSTRUCTION_STEPS.length - 1) {
+      nextBtn.innerHTML = 'Готово <i class="fas fa-check ms-1"></i>';
+    } else {
+      nextBtn.innerHTML = 'Далее <i class="fas fa-arrow-right ms-1"></i>';
+    }
+  }
+}
 
 function onDocumentReady(callback) {
   if (document.readyState === 'loading') {
@@ -951,6 +1065,7 @@ function initInstructionModal() {
   }
 
   instructionModal = new bootstrap.Modal(modalElement);
+  loadInstructionProgress();
 
   const prevBtn = document.getElementById('instructionPrevBtn');
   const nextBtn = document.getElementById('instructionNextBtn');
@@ -958,8 +1073,7 @@ function initInstructionModal() {
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
       if (instructionCurrentStep > 0) {
-        instructionCurrentStep -= 1;
-        renderInstructionStep();
+        showInstructionStep(instructionCurrentStep - 1);
       }
     });
   }
@@ -967,62 +1081,32 @@ function initInstructionModal() {
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
       if (instructionCurrentStep < INSTRUCTION_STEPS.length - 1) {
-        instructionCurrentStep += 1;
-        renderInstructionStep();
+        showInstructionStep(instructionCurrentStep + 1);
       } else {
         instructionModal.hide();
         localStorage.setItem('instructionTourCompleted', 'true');
+        localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
       }
     });
   }
 
   modalElement.addEventListener('shown.bs.modal', () => {
-    instructionCurrentStep = 0;
-    renderInstructionStep();
+    loadInstructionProgress();
+    showInstructionStep(instructionCurrentStep);
   });
-}
 
-function renderInstructionStep() {
-  const modalElement = document.getElementById('instructionModal');
-  if (!modalElement) {
-    return;
-  }
-
-  const body = modalElement.querySelector('.modal-body');
-  const indicator = document.getElementById('instructionStepIndicator');
-  const prevBtn = document.getElementById('instructionPrevBtn');
-  const nextBtn = document.getElementById('instructionNextBtn');
-
-  if (body) {
-    const step = INSTRUCTION_STEPS[instructionCurrentStep];
-    body.innerHTML = `
-      <div class="instruction-step">
-          <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>${step.title}</h6>
-          <p class="mb-0">${step.description}</p>
-      </div>
-    `;
-  }
-
-  if (indicator) {
-    indicator.textContent = `Шаг ${instructionCurrentStep + 1} из ${INSTRUCTION_STEPS.length}`;
-  }
-
-  if (prevBtn) {
-    prevBtn.disabled = instructionCurrentStep === 0;
-  }
-
-  if (nextBtn) {
-    if (instructionCurrentStep === INSTRUCTION_STEPS.length - 1) {
-      nextBtn.innerHTML = 'Готово <i class="fas fa-check ms-1"></i>';
-    } else {
-      nextBtn.innerHTML = 'Далее <i class="fas fa-arrow-right ms-1"></i>';
+  modalElement.addEventListener('hidden.bs.modal', () => {
+    if (localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) !== 'true') {
+      localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
     }
-  }
+  });
 }
 
 function openInstructions() {
   initInstructionModal();
-  if (instructionModal) {
+  loadInstructionProgress();
+  const rendered = showInstructionStep(instructionCurrentStep);
+  if (rendered && instructionModal) {
     instructionModal.show();
   }
 }
@@ -1035,11 +1119,13 @@ onDocumentReady(() => {
   initPodsFeatures();
   initInstructionModal();
 
-  const tourCompleted = localStorage.getItem('instructionTourCompleted');
-  if (!tourCompleted) {
+  const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
+  const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
+
+  if (!tourCompleted || shouldForceOpen) {
     setTimeout(() => {
       openInstructions();
-    }, 1200);
+    }, shouldForceOpen ? 250 : 1200);
   }
 });
 

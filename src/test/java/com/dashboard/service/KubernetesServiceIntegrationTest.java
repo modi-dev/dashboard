@@ -110,7 +110,7 @@ class KubernetesServiceIntegrationTest {
         
         PodInfo pod = pods.get(0);
         assertEquals("grafana", pod.getName());
-        assertEquals("grafana/grafana:latest", pod.getVersion());
+        assertEquals("latest", pod.getVersion());
         assertEquals("3000", pod.getPort());
         assertEquals("250m", pod.getCpuRequest());
         assertEquals("256Mi", pod.getMemoryRequest());
@@ -208,7 +208,7 @@ class KubernetesServiceIntegrationTest {
         // Проверяем первый под (redis-dev - первый в JSON)
         PodInfo redisPod = pods.get(0);
         assertEquals("redis-dev", redisPod.getName());
-        assertEquals("redis:7-alpine", redisPod.getVersion());
+        assertEquals("7-alpine", redisPod.getVersion());
         assertEquals("6379", redisPod.getPort());
         assertEquals("100m", redisPod.getCpuRequest());
         assertEquals("128Mi", redisPod.getMemoryRequest());
@@ -216,7 +216,7 @@ class KubernetesServiceIntegrationTest {
         // Проверяем второй под (postgres-dev - второй в JSON)
         PodInfo postgresPod = pods.get(1);
         assertEquals("postgres-dev", postgresPod.getName());
-        assertEquals("postgres:15-alpine", postgresPod.getVersion());
+        assertEquals("15-alpine", postgresPod.getVersion());
         assertEquals("5432", postgresPod.getPort());
         assertEquals("250m", postgresPod.getCpuRequest());
         assertEquals("256Mi", postgresPod.getMemoryRequest());

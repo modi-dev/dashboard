@@ -96,7 +96,7 @@ class KubernetesPodParserTest {
         PodInfo pod = result.get(0);
         assertEquals("nginx", pod.getName());
         assertEquals("nginx-pod-123", pod.getPodName());
-        assertEquals("nginx:1.21", pod.getVersion()); // registry должен быть очищен
+        assertEquals("1.21", pod.getVersion()); // registry должен быть очищен
         assertEquals("main", pod.getMsBranch());
         assertEquals("dev", pod.getConfigBranch());
         assertEquals("80", pod.getPort());

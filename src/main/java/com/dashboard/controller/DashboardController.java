@@ -1,7 +1,9 @@
 package com.dashboard.controller;
 
+import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.Server;
 import com.dashboard.model.PodInfo;
+import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
 import com.dashboard.service.ServerVersionService;
 import com.dashboard.repository.ServerRepository;
@@ -30,10 +32,16 @@ public class DashboardController {
     private ServerRepository serverRepository;
     
     @Autowired
+    private PodRepository podRepository;
+    
+    @Autowired
     private KubernetesService kubernetesService;
     
     @Autowired
     private ServerVersionService serverVersionService;
+    
+    @Autowired
+    private KubernetesConfig kubernetesConfig;
     
     /**
      * Добавляет статистику серверов в модель
@@ -84,8 +92,9 @@ public class DashboardController {
             
             model.addAttribute("servers", servers);
             
-            // Получаем информацию о подах
-            List<PodInfo> pods = kubernetesService.getRunningPods();
+            // Получаем информацию о подах из БД (кэш)
+            String namespace = kubernetesConfig.getNamespace();
+            List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             model.addAttribute("pods", pods);
             
             // Статистика серверов

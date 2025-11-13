@@ -1,6 +1,8 @@
 package com.dashboard.controller;
 
+import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
+import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +24,13 @@ public class PodsController {
     private static final Logger logger = LoggerFactory.getLogger(PodsController.class);
     
     @Autowired
+    private PodRepository podRepository;
+    
+    @Autowired
     private KubernetesService kubernetesService;
+    
+    @Autowired
+    private KubernetesConfig kubernetesConfig;
     
     /**
      * Страница подов
@@ -37,7 +45,10 @@ public class PodsController {
         model.addAttribute("isAuthenticated", isAuthenticated);
         try {
             logger.info("Запрос HTML страницы с информацией о подах");
-            List<PodInfo> pods = kubernetesService.getRunningPods();
+            
+            // Читаем поды из БД (кэш)
+            String namespace = kubernetesConfig.getNamespace();
+            List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
 
             // Подсчеты статистики
             int totalPods = pods.size();

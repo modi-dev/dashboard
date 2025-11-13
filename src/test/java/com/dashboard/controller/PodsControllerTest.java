@@ -1,6 +1,8 @@
 package com.dashboard.controller;
 
+import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
+import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,12 @@ class PodsControllerTest {
     @MockBean
     private KubernetesService kubernetesService;
 
+    @MockBean
+    private PodRepository podRepository;
+
+    @MockBean
+    private KubernetesConfig kubernetesConfig;
+
     private List<PodInfo> testPods;
 
     @BeforeEach
@@ -42,11 +50,13 @@ class PodsControllerTest {
         pod2.setPodName("redis-456");
         
         testPods = Arrays.asList(pod1, pod2);
+
+        when(kubernetesConfig.getNamespace()).thenReturn("default");
     }
 
     @Test
     void testPods_Success() throws Exception {
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
         when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
 
@@ -60,14 +70,14 @@ class PodsControllerTest {
                 .andExpect(model().attribute("withReplicas", 0))
                 .andExpect(model().attribute("kubernetesVersion", "v1.34.0"));
 
-        verify(kubernetesService).getRunningPods();
+        verify(podRepository).findByNamespaceOrderByName("default");
         verify(kubernetesService).countUniqueServices(testPods);
         verify(kubernetesService).getKubernetesVersion();
     }
 
     @Test
     void testPods_WithEmptyPods() throws Exception {
-        when(kubernetesService.getRunningPods()).thenReturn(Collections.emptyList());
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
         when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
 
@@ -80,7 +90,7 @@ class PodsControllerTest {
 
     @Test
     void testPods_ExceptionHandling() throws Exception {
-        when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Kubernetes error"));
+        when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Kubernetes error"));
 
         mockMvc.perform(get("/pods"))
                 .andExpect(status().isOk())

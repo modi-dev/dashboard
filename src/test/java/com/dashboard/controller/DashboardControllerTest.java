@@ -1,9 +1,11 @@
 package com.dashboard.controller;
 
+import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
 import com.dashboard.model.Server;
 import com.dashboard.model.ServerStatus;
 import com.dashboard.model.ServerType;
+import com.dashboard.repository.PodRepository;
 import com.dashboard.repository.ServerRepository;
 import com.dashboard.service.KubernetesService;
 import com.dashboard.service.ServerVersionService;
@@ -34,10 +36,16 @@ class DashboardControllerTest {
     private ServerRepository serverRepository;
 
     @MockBean
+    private PodRepository podRepository;
+
+    @MockBean
     private KubernetesService kubernetesService;
 
     @MockBean
     private ServerVersionService serverVersionService;
+
+    @MockBean
+    private KubernetesConfig kubernetesConfig;
 
     private List<Server> testServers;
     private List<PodInfo> testPods;
@@ -63,12 +71,14 @@ class DashboardControllerTest {
         pod2.setPodName("redis-456");
         
         testPods = Arrays.asList(pod1, pod2);
+
+        when(kubernetesConfig.getNamespace()).thenReturn("default");
     }
 
     @Test
     void testIndex_Success() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(testServers);
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
         when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
         doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());
@@ -86,14 +96,14 @@ class DashboardControllerTest {
                 .andExpect(model().attribute("kubernetesVersion", "v1.34.0"));
 
         verify(serverRepository).findAllOrderByCreatedAtDesc();
-        verify(kubernetesService).getRunningPods();
+        verify(podRepository).findByNamespaceOrderByName("default");
         verify(serverVersionService).updateServerVersionsIfNeeded(anyList());
     }
 
     @Test
     void testIndex_WithEmptyData() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
-        when(kubernetesService.getRunningPods()).thenReturn(Collections.emptyList());
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
         when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
         doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());
@@ -126,7 +136,7 @@ class DashboardControllerTest {
     @Test
     void testDashboard_RedirectsToIndex() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(testServers);
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
         when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
         doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());

@@ -1,9 +1,11 @@
 package com.dashboard.controller;
 
-import com.dashboard.model.PodInfo;
-import com.dashboard.service.CsvExportService;
-import com.dashboard.service.KubernetesService;
 import com.dashboard.config.KubernetesConfig;
+import com.dashboard.model.PodInfo;
+import com.dashboard.repository.PodRepository;
+import com.dashboard.service.CsvExportService;
+import com.dashboard.service.KubernetesPodsSyncService;
+import com.dashboard.service.KubernetesService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,15 @@ class VersionControllerTest {
     @MockBean
     private CsvExportService csvExportService;
 
+    @MockBean
+    private PodRepository podRepository;
+
+    @MockBean
+    private KubernetesPodsSyncService podsSyncService;
+
+    @MockBean
+    private KubernetesConfig kubernetesConfig;
+
     private List<PodInfo> testPods;
     private KubernetesConfig mockConfig;
 
@@ -49,16 +60,16 @@ class VersionControllerTest {
         pod2.setVersion("redis:7.2");
         
         testPods = Arrays.asList(pod1, pod2);
-        
         mockConfig = mock(KubernetesConfig.class);
         when(mockConfig.isEnabled()).thenReturn(true);
         when(mockConfig.getNamespace()).thenReturn("default");
         when(mockConfig.getKubectlPath()).thenReturn("/usr/bin/kubectl");
+        when(kubernetesConfig.getNamespace()).thenReturn("default");
     }
 
     @Test
     void testGetRunningPods_Success() throws Exception {
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
 
         mockMvc.perform(get("/api/pods/api/pods/pods"))
                 .andExpect(status().isOk())
@@ -67,17 +78,17 @@ class VersionControllerTest {
                 .andExpect(jsonPath("$[0].name").value("nginx"))
                 .andExpect(jsonPath("$[1].name").value("redis"));
 
-        verify(kubernetesService, atLeastOnce()).getRunningPods();
+        verify(podRepository, atLeastOnce()).findByNamespaceOrderByName("default");
     }
 
     @Test
     void testGetRunningPods_Exception() throws Exception {
-        when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Kubernetes error"));
+        when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Kubernetes error"));
 
         mockMvc.perform(get("/api/pods/api/pods/pods"))
                 .andExpect(status().isInternalServerError());
 
-        verify(kubernetesService).getRunningPods();
+        verify(podRepository).findByNamespaceOrderByName("default");
     }
 
     @Test
@@ -252,34 +263,34 @@ class VersionControllerTest {
 
     @Test
     void testRefreshPods_Success() throws Exception {
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podsSyncService.syncPods()).thenReturn(testPods.size());
 
         mockMvc.perform(post("/api/pods/refresh"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("Информация о подах успешно обновлена"))
+                .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("Информация о подах успешно обновлена")))
                 .andExpect(jsonPath("$.error").isEmpty())
                 .andExpect(jsonPath("$.message").isEmpty());
 
-        verify(kubernetesService, atLeastOnce()).getRunningPods();
+        verify(podsSyncService, atLeastOnce()).syncPods();
     }
 
     @Test
     void testRefreshPods_Exception() throws Exception {
-        when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Refresh error"));
+        when(podsSyncService.syncPods()).thenThrow(new RuntimeException("Refresh error"));
 
         mockMvc.perform(post("/api/pods/refresh"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").exists());
 
-        verify(kubernetesService).getRunningPods();
+        verify(podsSyncService).syncPods();
     }
 
     @Test
     void testExportPodsToCsv_Success() throws Exception {
         String csvContent = "Name,Version\nnginx,alpine\nredis,7.2";
-        when(kubernetesService.getRunningPods()).thenReturn(testPods);
+        when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(csvExportService.exportPodsToCsv(testPods)).thenReturn(csvContent);
 
         mockMvc.perform(get("/api/pods/export/csv"))
@@ -287,18 +298,18 @@ class VersionControllerTest {
                 .andExpect(content().contentType("text/csv; charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("filename=\"pods_")));
 
-        verify(kubernetesService).getRunningPods();
+        verify(podRepository).findByNamespaceOrderByName("default");
         verify(csvExportService).exportPodsToCsv(testPods);
     }
 
     @Test
     void testExportPodsToCsv_Exception() throws Exception {
-        when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Export error"));
+        when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Export error"));
 
         mockMvc.perform(get("/api/pods/export/csv"))
                 .andExpect(status().isInternalServerError());
 
-        verify(kubernetesService).getRunningPods();
+        verify(podRepository).findByNamespaceOrderByName("default");
     }
 }
 

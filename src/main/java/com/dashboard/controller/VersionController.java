@@ -1,7 +1,10 @@
 package com.dashboard.controller;
 
+import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
+import com.dashboard.repository.PodRepository;
 import com.dashboard.service.CsvExportService;
+import com.dashboard.service.KubernetesPodsSyncService;
 import com.dashboard.service.KubernetesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +37,15 @@ public class VersionController {
     private KubernetesService kubernetesService;
     
     @Autowired
+    private KubernetesPodsSyncService podsSyncService;
+    
+    @Autowired
+    private PodRepository podRepository;
+    
+    @Autowired
+    private KubernetesConfig kubernetesConfig;
+    
+    @Autowired
     private CsvExportService csvExportService;
     
     /**
@@ -45,7 +57,9 @@ public class VersionController {
     public ResponseEntity<List<PodInfo>> getRunningPods() {
         try {
             logger.info("Запрос информации о запущенных подах");
-            List<PodInfo> pods = kubernetesService.getRunningPods();
+            // Читаем поды из БД (кэш)
+            String namespace = kubernetesConfig.getNamespace();
+            List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             return ResponseEntity.ok(pods);
         } catch (Exception e) {
             logger.error("Ошибка при получении информации о подах: {}", e.getMessage(), e);
@@ -258,10 +272,12 @@ public class VersionController {
     public ResponseEntity<ApiResponse<String>> refreshPods() {
         try {
             logger.info("Принудительное обновление информации о подах");
-            // Вызываем getRunningPods для обновления кэша/данных
-            kubernetesService.getRunningPods();
+            // Синхронизируем поды из Kubernetes в БД
+            int syncedCount = podsSyncService.syncPods();
             return ResponseEntity.ok()
-                .body(new ApiResponse<>(true, "Информация о подах успешно обновлена", null, null));
+                .body(new ApiResponse<>(true, 
+                    String.format("Информация о подах успешно обновлена (%d подов)", syncedCount), 
+                    null, null));
         } catch (Exception e) {
             logger.error("Ошибка при обновлении информации о подах: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
@@ -278,7 +294,9 @@ public class VersionController {
     public ResponseEntity<byte[]> exportPodsToCsv() {
         try {
             logger.info("Экспорт подов в CSV формат");
-            List<PodInfo> pods = kubernetesService.getRunningPods();
+            // Читаем поды из БД (кэш)
+            String namespace = kubernetesConfig.getNamespace();
+            List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             String csv = csvExportService.exportPodsToCsv(pods);
             
             // Конвертируем строку в байты с UTF-8 кодировкой (BOM уже включен в строку)

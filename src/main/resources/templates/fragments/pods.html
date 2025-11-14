@@ -41,13 +41,13 @@
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="podName">
                         <code class="wrap-code" th:text="${pod.podName ?: '-'}">-</code>
                     </td>
-                    <td class="pod-wrap-cell" data-column-key="version"><span class="badge type-badge" th:text="${pod.version}">-</span></td>
+                    <td class="pod-wrap-cell" data-column-key="version"><span th:text="${pod.version}">-</span></td>
                     <td class="pod-wrap-cell" data-column-key="msBranch" th:text="${pod.msBranch ?: '-'}">-</td>
                     <td class="pod-wrap-cell" data-column-key="configBranch" th:text="${pod.configBranch ?: '-'}">-</td>
                     <td class="pod-wrap-cell" data-column-key="gcOptions">
                         <pre class="m-0" style="white-space: pre-wrap; font-size: 0.85em;" th:text="${pod.gcOptions ?: '-'}">-</pre>
                     </td>
-                    <td class="pod-wrap-cell" data-column-key="port"><span class="badge bg-secondary" th:text="${pod.port ?: '-'}">-</span></td>
+                    <td class="pod-wrap-cell" data-column-key="port"><span th:text="${pod.port ?: '-'}">-</span></td>
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="restarts">
                         <span th:class="${(pod.restarts != null and pod.restarts > 0) ? 'badge bg-danger' : 'badge bg-dark'}"
                               th:text="${pod.restarts ?: 0}">0</span>

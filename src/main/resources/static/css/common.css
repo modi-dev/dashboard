@@ -61,9 +61,6 @@
 .table td {
     vertical-align: middle;
 }
-.table th {
-    white-space: nowrap;
-}
 .table td {
     white-space: normal;
     word-break: break-word;

@@ -138,7 +138,7 @@
         <!-- Pods Section -->
         <div class="row">
             <div class="col-12">
-                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion})}"></div>
+                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion}, ${kubernetesNamespace})}"></div>
             </div>
         </div>
     </main>

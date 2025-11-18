@@ -6,6 +6,7 @@ import com.dashboard.repository.PodRepository;
 import com.dashboard.service.CsvExportService;
 import com.dashboard.service.KubernetesPodsSyncService;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ public class VersionController {
     private KubernetesConfig kubernetesConfig;
     
     @Autowired
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+    
+    @Autowired
     private CsvExportService csvExportService;
     
     /**
@@ -58,7 +62,8 @@ public class VersionController {
         try {
             logger.info("Запрос информации о запущенных подах");
             // Читаем поды из БД (кэш)
-            String namespace = kubernetesConfig.getNamespace();
+            // Namespace берем из БД (синхронизируется в фоне)
+            String namespace = clusterInfoSyncService.getNamespace();
             List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             return ResponseEntity.ok(pods);
         } catch (Exception e) {
@@ -295,7 +300,8 @@ public class VersionController {
         try {
             logger.info("Экспорт подов в CSV формат");
             // Читаем поды из БД (кэш)
-            String namespace = kubernetesConfig.getNamespace();
+            // Namespace берем из БД (синхронизируется в фоне)
+            String namespace = clusterInfoSyncService.getNamespace();
             List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             String csv = csvExportService.exportPodsToCsv(pods);
             

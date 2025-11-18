@@ -5,7 +5,7 @@ import com.dashboard.model.Server;
 import com.dashboard.model.PodInfo;
 import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
-import com.dashboard.service.ServerVersionService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import com.dashboard.repository.ServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -38,7 +38,7 @@ public class DashboardController {
     private KubernetesService kubernetesService;
     
     @Autowired
-    private ServerVersionService serverVersionService;
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
     
     @Autowired
     private KubernetesConfig kubernetesConfig;
@@ -85,15 +85,14 @@ public class DashboardController {
             model.addAttribute("isAuthenticated", isAuthenticated);
             
             // Получаем список серверов
+            // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,
+            // не делаем синхронные HTTP запросы здесь для ускорения загрузки страницы
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
-            
-            // Получаем версии для всех серверов
-            serverVersionService.updateServerVersionsIfNeeded(servers);
-            
             model.addAttribute("servers", servers);
             
             // Получаем информацию о подах из БД (кэш)
-            String namespace = kubernetesConfig.getNamespace();
+            // Namespace берем из БД (синхронизируется в фоне)
+            String namespace = clusterInfoSyncService.getNamespace();
             List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
             model.addAttribute("pods", pods);
             
@@ -106,8 +105,9 @@ public class DashboardController {
             // Подсчет уникальных сервисов
             model.addAttribute("uniqueServices", kubernetesService.countUniqueServices(pods));
             
-            // Версия Kubernetes
-            model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
+            // Версия Kubernetes и namespace из БД (синхронизируются в фоне)
+            model.addAttribute("kubernetesVersion", clusterInfoSyncService.getKubernetesVersion());
+            model.addAttribute("kubernetesNamespace", clusterInfoSyncService.getNamespace());
             
             logger.info("Главная страница загружена: {} серверов, {} подов", servers.size(), pods.size());
             
@@ -154,11 +154,9 @@ public class DashboardController {
         model.addAttribute("isAuthenticated", isAuthenticated);
         try {
             // Получаем список серверов
+            // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,
+            // не делаем синхронные HTTP запросы здесь для ускорения загрузки страницы
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
-            
-            // Получаем версии для всех серверов
-            serverVersionService.updateServerVersionsIfNeeded(servers);
-            
             model.addAttribute("servers", servers);
             
             // Статистика

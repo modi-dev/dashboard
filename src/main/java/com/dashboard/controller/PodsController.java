@@ -4,6 +4,7 @@ import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
 import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class PodsController {
     private KubernetesService kubernetesService;
     
     @Autowired
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+    
+    @Autowired
     private KubernetesConfig kubernetesConfig;
     
     /**
@@ -47,7 +51,8 @@ public class PodsController {
             logger.info("Запрос HTML страницы с информацией о подах");
             
             // Читаем поды из БД (кэш)
-            String namespace = kubernetesConfig.getNamespace();
+            // Namespace берем из БД (синхронизируется в фоне)
+            String namespace = clusterInfoSyncService.getNamespace();
             List<PodInfo> pods = podRepository.findByNamespaceOrderByName(namespace);
 
             // Подсчеты статистики
@@ -58,7 +63,9 @@ public class PodsController {
             model.addAttribute("uniqueServices", kubernetesService.countUniqueServices(pods));   // уникальные сервисы (по полю name)
             model.addAttribute("totalReplicas", totalPods);
             model.addAttribute("withReplicas", 0); // больше нет группировки
-            model.addAttribute("kubernetesVersion", kubernetesService.getKubernetesVersion());
+            // Версия Kubernetes и namespace из БД (синхронизируются в фоне)
+            model.addAttribute("kubernetesVersion", clusterInfoSyncService.getKubernetesVersion());
+            model.addAttribute("kubernetesNamespace", clusterInfoSyncService.getNamespace());
             return "pods";
         } catch (Exception e) {
             logger.error("Ошибка при получении HTML страницы с подами: {}", e.getMessage(), e);

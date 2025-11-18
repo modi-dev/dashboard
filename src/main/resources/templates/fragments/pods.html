@@ -1,11 +1,11 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion)">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion, kubernetesNamespace)">
     <div th:if="${#lists.isEmpty(pods)}" class="text-center text-muted py-4">
         <i class="fas fa-cube fa-3x mb-3"></i>
         <p>Нет доступных подов</p>
     </div>
     <div th:unless="${#lists.isEmpty(pods)}" class="pods-table-wrapper table-responsive p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="badge type-badge" th:text="'Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'}">Неизвестно</span>
+            <span class="badge type-badge" th:text="'Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'} + ' | Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'}">Неизвестно</span>
         </div>
         <table id="podsTable" class="table table-hover mb-0">
             <thead>
@@ -62,7 +62,7 @@
     </div>
 </div>
 
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion)">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace)">
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
@@ -144,7 +144,7 @@
                 </a>
             </div>
         </div>
-        <div class="card-body p-0" th:replace="~{fragments/pods :: podsTable(${pods}, ${kubernetesVersion})}"></div>
+        <div class="card-body p-0" th:replace="~{fragments/pods :: podsTable(${pods}, ${kubernetesVersion}, ${kubernetesNamespace})}"></div>
     </div>
 </div>
 

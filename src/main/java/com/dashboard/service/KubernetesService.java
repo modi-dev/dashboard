@@ -153,7 +153,11 @@ public class KubernetesService {
     }
     
     /**
-     * Получает версию Kubernetes кластера
+     * Получает версию Kubernetes кластера напрямую через kubectl
+     * 
+     * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.
+     * Для получения версии в контроллерах используйте KubernetesClusterInfoSyncService.getKubernetesVersion(),
+     * который читает из БД (быстрее и не блокирует UI).
      * 
      * Использует команду: kubectl version -o json
      * 
@@ -168,22 +172,28 @@ public class KubernetesService {
             }
             
             JsonNode root = objectMapper.readTree(json);
+            String version = null;
+            
             // Пытаемся взять версию сервера, иначе клиента
             JsonNode server = root.get("serverVersion");
             if (server != null) {
                 JsonNode gitVersion = server.get("gitVersion");
                 if (gitVersion != null && !gitVersion.asText().isBlank()) {
-                    return gitVersion.asText();
+                    version = gitVersion.asText();
                 }
             }
-            JsonNode client = root.get("clientVersion");
-            if (client != null) {
-                JsonNode gitVersion = client.get("gitVersion");
-                if (gitVersion != null && !gitVersion.asText().isBlank()) {
-                    return gitVersion.asText();
+            
+            if (version == null) {
+                JsonNode client = root.get("clientVersion");
+                if (client != null) {
+                    JsonNode gitVersion = client.get("gitVersion");
+                    if (gitVersion != null && !gitVersion.asText().isBlank()) {
+                        version = gitVersion.asText();
+                    }
                 }
             }
-            return "Неизвестно";
+            
+            return version != null ? version : "Неизвестно";
         } catch (KubectlException e) {
             logger.warn("Не удалось получить версию Kubernetes: {}", e.getMessage());
             return "Неизвестно";

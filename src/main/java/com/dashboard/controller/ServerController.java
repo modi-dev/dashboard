@@ -47,8 +47,8 @@ public class ServerController {
         try {
             List<Server> servers = serverRepository.findAllOrderByCreatedAtDesc();
             
-            // Получаем версии для всех серверов
-            serverVersionService.updateServerVersionsIfNeeded(servers);
+            // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,
+            // не делаем синхронные HTTP запросы здесь для ускорения API ответа
             
             List<ServerDto> serverDtos = servers.stream()
                 .map(this::convertToDto)

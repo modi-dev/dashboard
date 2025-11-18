@@ -90,3 +90,4 @@ security:
 monitoring:
   interval: ${MONITORING_INTERVAL:5}  # Interval in minutes (default: 5 minutes, converted to milliseconds for scheduling)
   timeout: ${MONITORING_TIMEOUT:1}  # Timeout in minutes (default: 0.17 minutes = 10 seconds, converted to milliseconds)
+  async-pool-size: ${MONITORING_ASYNC_POOL_SIZE:4} # Threads for async monitoring tasks

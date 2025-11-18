@@ -240,8 +240,8 @@ function refreshServers(ev) {
         return;
       }
       if (data.success) {
-        showNotification('Статус серверов успешно обновлен!', 'success');
-        setTimeout(() => location.reload(), 500);
+        showNotification('Фоновая проверка серверов запущена. Обновим данные через пару секунд.', 'info');
+        setTimeout(() => location.reload(), 3000);
       } else {
         showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
         if (btn) {

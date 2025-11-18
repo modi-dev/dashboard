@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -47,6 +48,8 @@ class ServerMonitorServiceMockTest {
         serverMonitorService = spy(new ServerMonitorService(0.17));
         ReflectionTestUtils.setField(serverMonitorService, "serverRepository", serverRepository);
         ReflectionTestUtils.setField(serverMonitorService, "webClientBuilder", webClientBuilder);
+        TaskExecutor immediateExecutor = Runnable::run;
+        ReflectionTestUtils.setField(serverMonitorService, "serverMonitorExecutor", immediateExecutor);
         ReflectionTestUtils.setField(serverMonitorService, "serverVersionService", serverVersionService);
         
         postgresServer = new Server("Postgres Test", "localhost:5432", ServerType.POSTGRES);

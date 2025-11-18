@@ -7,7 +7,9 @@ import com.dashboard.repository.ServerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -32,6 +34,10 @@ public class ServerMonitorService {
     
     @Autowired(required = false)
     private ServerVersionService serverVersionService;
+    
+    @Autowired(required = false)
+    @Qualifier("serverMonitorExecutor")
+    private TaskExecutor serverMonitorExecutor;
     
     private final long timeoutMs;
     
@@ -130,6 +136,21 @@ public class ServerMonitorService {
         }
     }
     
+    public void checkAllServersAsync() {
+        runAsyncTask(this::checkAllServers, "bulk server status refresh");
+    }
+
+    public void checkServerAsync(Long serverId) {
+        runAsyncTask(() -> serverRepository.findById(serverId).ifPresentOrElse(
+                this::checkServer,
+                () -> logger.warn("Server with ID {} not found for async check", serverId)
+        ), "server check for id=" + serverId);
+    }
+
+    public void checkServerAsync(Server server) {
+        runAsyncTask(() -> checkServer(server), "server check for " + server.getName());
+    }
+    
     private void refreshServerVersionIfNeeded(Server server, ServerStatus status) {
         if (serverVersionService == null || status != ServerStatus.ONLINE) {
             return;
@@ -144,6 +165,22 @@ public class ServerMonitorService {
         } catch (Exception e) {
             logger.warn("Не удалось обновить версию для сервера {}: {}", server.getName(), e.getMessage());
         }
+    }
+
+    private void runAsyncTask(Runnable task, String description) {
+        if (serverMonitorExecutor == null) {
+            logger.debug("Async executor not configured, running {} synchronously", description);
+            task.run();
+            return;
+        }
+
+        serverMonitorExecutor.execute(() -> {
+            try {
+                task.run();
+            } catch (Exception e) {
+                logger.error("Async {} failed: {}", description, e.getMessage(), e);
+            }
+        });
     }
     
     private boolean checkTcpConnection(String host, int port) {

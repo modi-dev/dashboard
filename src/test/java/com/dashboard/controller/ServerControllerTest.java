@@ -123,7 +123,7 @@ public class ServerControllerTest {
         
         when(serverRepository.findByUrl("https://newserver.com")).thenReturn(Optional.empty());
         when(serverRepository.save(any(Server.class))).thenReturn(savedServer);
-        doNothing().when(serverMonitorService).checkServer(any(Server.class));
+        doNothing().when(serverMonitorService).checkServerAsync(any(Server.class));
         
         mockMvc.perform(post("/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -189,7 +189,7 @@ public class ServerControllerTest {
         
         when(serverRepository.findByUrl("https://custom.com")).thenReturn(Optional.empty());
         when(serverRepository.save(any(Server.class))).thenReturn(savedServer);
-        doNothing().when(serverMonitorService).checkServer(any(Server.class));
+        doNothing().when(serverMonitorService).checkServerAsync(any(Server.class));
         
         mockMvc.perform(post("/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -259,13 +259,13 @@ public class ServerControllerTest {
         server.setId(1L);
         
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
-        doNothing().when(serverMonitorService).checkServer(any(Server.class));
+        doNothing().when(serverMonitorService).checkServerAsync(anyLong());
         
         mockMvc.perform(post("/api/servers/1/check"))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Server check triggered"));
+                .andExpect(jsonPath("$.message").value("Фоновая проверка сервера запущена"));
     }
     
     @Test
@@ -360,7 +360,7 @@ public class ServerControllerTest {
         server.setId(1L);
         
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
-        doThrow(new RuntimeException("Check error")).when(serverMonitorService).checkServer(any(Server.class));
+        doThrow(new RuntimeException("Check error")).when(serverMonitorService).checkServerAsync(anyLong());
         
         mockMvc.perform(post("/api/servers/1/check"))
                 .andExpect(status().isInternalServerError())
@@ -399,19 +399,19 @@ public class ServerControllerTest {
     
     @Test
     public void testRefreshServers() throws Exception {
-        doNothing().when(serverMonitorService).checkAllServers();
+        doNothing().when(serverMonitorService).checkAllServersAsync();
         
         mockMvc.perform(post("/api/servers/refresh"))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("Статус серверов успешно обновлен"));
+                .andExpect(jsonPath("$.message").value("Фоновая проверка статусов серверов запущена"));
         
-        verify(serverMonitorService, times(1)).checkAllServers();
+        verify(serverMonitorService, times(1)).checkAllServersAsync();
     }
     
     @Test
     public void testRefreshServersException() throws Exception {
-        doThrow(new RuntimeException("Refresh error")).when(serverMonitorService).checkAllServers();
+        doThrow(new RuntimeException("Refresh error")).when(serverMonitorService).checkAllServersAsync();
         
         mockMvc.perform(post("/api/servers/refresh"))
                 .andExpect(status().isInternalServerError())

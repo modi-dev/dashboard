@@ -100,8 +100,8 @@ public class ServerController {
             
             Server savedServer = serverRepository.save(server);
             
-            // Trigger immediate check
-            serverMonitorService.checkServer(savedServer);
+            // Trigger immediate async check so UI is not blocked
+            serverMonitorService.checkServerAsync(savedServer);
             
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, convertToDto(savedServer), null, "Server created successfully"));
@@ -166,8 +166,9 @@ public class ServerController {
                     .body(new ApiResponse<>(false, null, "Server not found", null));
             }
             
-            serverMonitorService.checkServer(serverOpt.get());
-            return ResponseEntity.ok(new ApiResponse<>(true, null, null, "Server check triggered"));
+            serverMonitorService.checkServerAsync(serverOpt.get().getId());
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new ApiResponse<>(true, null, null, "Фоновая проверка сервера запущена"));
             
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -183,9 +184,9 @@ public class ServerController {
     public ResponseEntity<ApiResponse<String>> refreshServers() {
         try {
             logger.info("Принудительное обновление статуса всех серверов");
-            serverMonitorService.checkAllServers();
-            return ResponseEntity.ok()
-                .body(new ApiResponse<>(true, "Статус серверов успешно обновлен", null, null));
+            serverMonitorService.checkAllServersAsync();
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new ApiResponse<>(true, null, null, "Фоновая проверка статусов серверов запущена"));
         } catch (Exception e) {
             logger.error("Ошибка при обновлении статуса серверов: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

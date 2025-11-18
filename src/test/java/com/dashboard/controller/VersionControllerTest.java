@@ -6,6 +6,7 @@ import com.dashboard.repository.PodRepository;
 import com.dashboard.service.CsvExportService;
 import com.dashboard.service.KubernetesPodsSyncService;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ class VersionControllerTest {
     @MockBean
     private KubernetesConfig kubernetesConfig;
 
+    @MockBean
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+
     private List<PodInfo> testPods;
     private KubernetesConfig mockConfig;
 
@@ -65,6 +69,7 @@ class VersionControllerTest {
         when(mockConfig.getNamespace()).thenReturn("default");
         when(mockConfig.getKubectlPath()).thenReturn("/usr/bin/kubectl");
         when(kubernetesConfig.getNamespace()).thenReturn("default");
+        when(clusterInfoSyncService.getNamespace()).thenReturn("default");
     }
 
     @Test

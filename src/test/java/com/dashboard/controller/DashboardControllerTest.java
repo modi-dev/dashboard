@@ -8,6 +8,7 @@ import com.dashboard.model.ServerType;
 import com.dashboard.repository.PodRepository;
 import com.dashboard.repository.ServerRepository;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import com.dashboard.service.ServerVersionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ class DashboardControllerTest {
     @MockBean
     private KubernetesConfig kubernetesConfig;
 
+    @MockBean
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+
     private List<Server> testServers;
     private List<PodInfo> testPods;
 
@@ -73,6 +77,8 @@ class DashboardControllerTest {
         testPods = Arrays.asList(pod1, pod2);
 
         when(kubernetesConfig.getNamespace()).thenReturn("default");
+        when(clusterInfoSyncService.getNamespace()).thenReturn("default");
+        when(clusterInfoSyncService.getKubernetesVersion()).thenReturn("v1.28.0");
     }
 
     @Test
@@ -80,8 +86,6 @@ class DashboardControllerTest {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(testServers);
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
-        when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
-        doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());
 
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
@@ -93,11 +97,12 @@ class DashboardControllerTest {
                 .andExpect(model().attribute("offlineServers", 1))
                 .andExpect(model().attribute("totalPods", 2))
                 .andExpect(model().attribute("uniqueServices", 2L))
-                .andExpect(model().attribute("kubernetesVersion", "v1.34.0"));
+                .andExpect(model().attribute("kubernetesVersion", "v1.28.0"));
 
         verify(serverRepository).findAllOrderByCreatedAtDesc();
         verify(podRepository).findByNamespaceOrderByName("default");
-        verify(serverVersionService).updateServerVersionsIfNeeded(anyList());
+        verify(clusterInfoSyncService).getKubernetesVersion();
+        verify(clusterInfoSyncService, atLeastOnce()).getNamespace();
     }
 
     @Test
@@ -105,8 +110,6 @@ class DashboardControllerTest {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
-        when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
-        doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());
 
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
@@ -149,7 +152,6 @@ class DashboardControllerTest {
     @Test
     void testServers_Success() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(testServers);
-        doNothing().when(serverVersionService).updateServerVersionsIfNeeded(anyList());
 
         mockMvc.perform(get("/servers"))
                 .andExpect(status().isOk())
@@ -160,7 +162,6 @@ class DashboardControllerTest {
                 .andExpect(model().attribute("offlineServers", 1));
 
         verify(serverRepository).findAllOrderByCreatedAtDesc();
-        verify(serverVersionService).updateServerVersionsIfNeeded(anyList());
     }
 
     @Test

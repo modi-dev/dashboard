@@ -4,6 +4,7 @@ import com.dashboard.config.KubernetesConfig;
 import com.dashboard.model.PodInfo;
 import com.dashboard.repository.PodRepository;
 import com.dashboard.service.KubernetesService;
+import com.dashboard.service.KubernetesClusterInfoSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ class PodsControllerTest {
     @MockBean
     private KubernetesConfig kubernetesConfig;
 
+    @MockBean
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+
     private List<PodInfo> testPods;
 
     @BeforeEach
@@ -52,13 +56,14 @@ class PodsControllerTest {
         testPods = Arrays.asList(pod1, pod2);
 
         when(kubernetesConfig.getNamespace()).thenReturn("default");
+        when(clusterInfoSyncService.getNamespace()).thenReturn("default");
+        when(clusterInfoSyncService.getKubernetesVersion()).thenReturn("v1.28.0");
     }
 
     @Test
     void testPods_Success() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
-        when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
 
         mockMvc.perform(get("/pods"))
                 .andExpect(status().isOk())
@@ -68,18 +73,18 @@ class PodsControllerTest {
                 .andExpect(model().attribute("uniqueServices", 2L))
                 .andExpect(model().attribute("totalReplicas", 2))
                 .andExpect(model().attribute("withReplicas", 0))
-                .andExpect(model().attribute("kubernetesVersion", "v1.34.0"));
+                .andExpect(model().attribute("kubernetesVersion", "v1.28.0"));
 
         verify(podRepository).findByNamespaceOrderByName("default");
         verify(kubernetesService).countUniqueServices(testPods);
-        verify(kubernetesService).getKubernetesVersion();
+        verify(clusterInfoSyncService).getKubernetesVersion();
+        verify(clusterInfoSyncService, atLeastOnce()).getNamespace();
     }
 
     @Test
     void testPods_WithEmptyPods() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
-        when(kubernetesService.getKubernetesVersion()).thenReturn("v1.34.0");
 
         mockMvc.perform(get("/pods"))
                 .andExpect(status().isOk())

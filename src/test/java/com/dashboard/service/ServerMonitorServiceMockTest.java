@@ -7,7 +7,6 @@ import com.dashboard.repository.ServerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -33,6 +32,9 @@ class ServerMonitorServiceMockTest {
     
     @Mock
     private WebClient.Builder webClientBuilder;
+
+    @Mock
+    private ServerVersionService serverVersionService;
     
     private ServerMonitorService serverMonitorService;
     
@@ -42,13 +44,41 @@ class ServerMonitorServiceMockTest {
     
     @BeforeEach
     void setUp() {
-        serverMonitorService = new ServerMonitorService(0.17);
+        serverMonitorService = spy(new ServerMonitorService(0.17));
         ReflectionTestUtils.setField(serverMonitorService, "serverRepository", serverRepository);
         ReflectionTestUtils.setField(serverMonitorService, "webClientBuilder", webClientBuilder);
+        ReflectionTestUtils.setField(serverMonitorService, "serverVersionService", serverVersionService);
         
         postgresServer = new Server("Postgres Test", "localhost:5432", ServerType.POSTGRES);
         redisServer = new Server("Redis Test", "http://localhost:6379", ServerType.REDIS);
         otherServer = new Server("Other Test", "http://example.com", ServerType.OTHER);
+    }
+
+    @Test
+    void testCheckServer_UpdatesVersionWhenOnline() {
+        Server server = new Server("Versioned", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Old");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        when(serverVersionService.getServerVersion(server)).thenReturn("New");
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals("New", server.getVersion());
+        verify(serverVersionService).getServerVersion(server);
+    }
+
+    @Test
+    void testCheckServer_SkipsVersionRefreshWhenOffline() {
+        Server server = new Server("Offline", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Old");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.OFFLINE).when(serverMonitorService).determineServerStatus(server);
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals("Old", server.getVersion());
+        verify(serverVersionService, never()).getServerVersion(server);
     }
     
     @Test

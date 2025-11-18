@@ -30,6 +30,9 @@ public class ServerMonitorService {
     @Autowired
     private WebClient.Builder webClientBuilder;
     
+    @Autowired(required = false)
+    private ServerVersionService serverVersionService;
+    
     private final long timeoutMs;
     
     public ServerMonitorService(@Value("${monitoring.timeout:0.17}") double timeoutMinutes) {
@@ -63,6 +66,9 @@ public class ServerMonitorService {
             
             server.setStatus(status);
             server.setLastChecked(LocalDateTime.now());
+            
+            refreshServerVersionIfNeeded(server, status);
+            
             serverRepository.save(server);
             
             if (status == ServerStatus.ONLINE) {
@@ -81,7 +87,7 @@ public class ServerMonitorService {
         }
     }
     
-    private ServerStatus determineServerStatus(Server server) {
+    protected ServerStatus determineServerStatus(Server server) {
         try {
             String host;
             int port;
@@ -121,6 +127,22 @@ public class ServerMonitorService {
         } catch (Exception e) {
             logger.error("Error determining status for server {}: {}", server.getName(), e.getMessage());
             return ServerStatus.OFFLINE;
+        }
+    }
+    
+    private void refreshServerVersionIfNeeded(Server server, ServerStatus status) {
+        if (serverVersionService == null || status != ServerStatus.ONLINE) {
+            return;
+        }
+        
+        try {
+            String resolvedVersion = serverVersionService.getServerVersion(server);
+            if (resolvedVersion != null && !resolvedVersion.equals(server.getVersion())) {
+                server.setVersion(resolvedVersion);
+                logger.info("Обновлена версия {} для сервера {}", resolvedVersion, server.getName());
+            }
+        } catch (Exception e) {
+            logger.warn("Не удалось обновить версию для сервера {}: {}", server.getName(), e.getMessage());
         }
     }
     

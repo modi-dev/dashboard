@@ -35,6 +35,9 @@ class KubernetesPodsSyncServiceTest {
     @Mock
     private KubernetesConfig kubernetesConfig;
 
+    @Mock
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+
     @InjectMocks
     private KubernetesPodsSyncService podsSyncService;
 
@@ -51,13 +54,14 @@ class KubernetesPodsSyncServiceTest {
         int result = podsSyncService.syncPods();
 
         assertEquals(0, result);
-        verifyNoInteractions(kubernetesService, podRepository);
+        verifyNoInteractions(kubernetesService, podRepository, clusterInfoSyncService);
     }
 
     @Test
     void syncPods_createsUpdatesAndDeletesPods() {
         when(kubernetesConfig.isEnabled()).thenReturn(true);
         when(kubernetesConfig.getNamespace()).thenReturn("test-ns");
+        when(clusterInfoSyncService.syncClusterInfo()).thenReturn(true);
 
         PodInfo existingPodInDb = new PodInfo();
         existingPodInDb.setPodName("existing-pod");
@@ -113,6 +117,7 @@ class KubernetesPodsSyncServiceTest {
 
         verify(podRepository).delete(stalePod);
         verify(kubernetesService).getRunningPods();
+        verify(clusterInfoSyncService).syncClusterInfo();
     }
 
     @Test
@@ -122,10 +127,26 @@ class KubernetesPodsSyncServiceTest {
         when(kubernetesService.getRunningPods()).thenThrow(new IllegalStateException("kubectl down"));
 
         assertThrows(IllegalStateException.class, () -> podsSyncService.syncPods());
+        verify(clusterInfoSyncService, never()).syncClusterInfo();
     }
 
     @Test
-    void cleanupStalePods_returnsZero_whenDisabled() {
+    void syncPods_continuesWhenClusterInfoSyncFails() {
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-ns");
+        when(kubernetesService.getRunningPods()).thenReturn(Collections.emptyList());
+        when(podRepository.findByNamespace("test-ns")).thenReturn(Collections.emptyList());
+        when(clusterInfoSyncService.syncClusterInfo()).thenThrow(new RuntimeException("Cluster info sync failed"));
+
+        int result = podsSyncService.syncPods();
+
+        assertEquals(0, result);
+        verify(clusterInfoSyncService).syncClusterInfo();
+        // Синхронизация подов должна завершиться успешно, даже если синхронизация версии не удалась
+    }
+
+    @Test
+    void cleanupStalePods_returnsZero_whenKubernetesDisabled() {
         when(kubernetesConfig.isEnabled()).thenReturn(false);
 
         int removed = podsSyncService.cleanupStalePods(30);
@@ -135,19 +156,17 @@ class KubernetesPodsSyncServiceTest {
     }
 
     @Test
-    void cleanupStalePods_removesPodsOlderThanThreshold() {
+    void cleanupStalePods_deletesOnlyStalePods() {
         when(kubernetesConfig.isEnabled()).thenReturn(true);
         when(kubernetesConfig.getNamespace()).thenReturn("test-ns");
 
         PodInfo stale = new PodInfo();
-        stale.setPodName("stale");
-        stale.setK8sQueriedAt(LocalDateTime.now().minusMinutes(60));
-        stale.setUpdatedAt(LocalDateTime.now().minusMinutes(60));
+        stale.setPodName("stale-pod");
+        stale.setK8sQueriedAt(LocalDateTime.now().minusHours(2));
 
         PodInfo fresh = new PodInfo();
-        fresh.setPodName("fresh");
-        fresh.setK8sQueriedAt(LocalDateTime.now().minusMinutes(5));
-        fresh.setUpdatedAt(LocalDateTime.now().minusMinutes(5));
+        fresh.setPodName("fresh-pod");
+        fresh.setK8sQueriedAt(LocalDateTime.now().minusMinutes(10));
 
         when(podRepository.findByNamespace("test-ns"))
                 .thenReturn(Arrays.asList(stale, fresh));
@@ -160,4 +179,3 @@ class KubernetesPodsSyncServiceTest {
                 .containsExactly(stale);
     }
 }
-

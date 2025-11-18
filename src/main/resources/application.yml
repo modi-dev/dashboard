@@ -77,9 +77,7 @@ kubernetes:
   command:
     timeout: ${KUBERNETES_COMMAND_TIMEOUT:30}  # Timeout in seconds for kubectl commands (default: 30 seconds)
   pods:
-    sync-interval: ${KUBERNETES_PODS_SYNC_INTERVAL:5}  # Interval in minutes for syncing pods from kubectl to DB (default: 5 minutes)
-  cluster-info:
-    sync-interval: ${KUBERNETES_CLUSTER_INFO_SYNC_INTERVAL:60}  # Interval in minutes for syncing cluster info (version, namespace) to DB (default: 60 minutes = 1 hour)
+    sync-interval: ${KUBERNETES_PODS_SYNC_INTERVAL:5}  # Interval in minutes for syncing pods from kubectl to DB (default: 5 minutes). Версия Kubernetes синхронизируется вместе с подами.
 
 # Настройки безопасности
 security:

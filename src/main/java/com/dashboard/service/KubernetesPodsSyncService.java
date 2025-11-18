@@ -38,6 +38,9 @@ public class KubernetesPodsSyncService {
     @Autowired
     private KubernetesConfig kubernetesConfig;
     
+    @Autowired
+    private KubernetesClusterInfoSyncService clusterInfoSyncService;
+    
     /**
      * Синхронизирует поды из Kubernetes в БД
      * 
@@ -46,6 +49,9 @@ public class KubernetesPodsSyncService {
      * 2. Для каждого пода устанавливает namespace
      * 3. Обновляет существующие поды или создает новые
      * 4. Удаляет поды, которых больше нет в кластере
+     * 5. Синхронизирует версию Kubernetes (выполняется вместе с синхронизацией подов)
+     * 
+     * ВАЖНО: Версия Kubernetes синхронизируется вместе с подами, чтобы избежать дублирования вызовов kubectl.
      * 
      * @return количество синхронизированных подов
      */
@@ -120,6 +126,15 @@ public class KubernetesPodsSyncService {
             
             logger.info("Синхронизация завершена: создано {}, обновлено {}, удалено {} подов", 
                        createdCount, updatedCount, deletedCount);
+            
+            // Синхронизируем версию Kubernetes вместе с подами
+            try {
+                clusterInfoSyncService.syncClusterInfo();
+                logger.debug("Версия Kubernetes синхронизирована вместе с подами");
+            } catch (Exception e) {
+                logger.warn("Не удалось синхронизировать версию Kubernetes: {}", e.getMessage());
+                // Не прерываем синхронизацию подов из-за ошибки версии
+            }
             
             return currentPods.size();
             

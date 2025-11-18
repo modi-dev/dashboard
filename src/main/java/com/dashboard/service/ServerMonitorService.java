@@ -41,11 +41,11 @@ public class ServerMonitorService {
     
     private final long timeoutMs;
     
-    public ServerMonitorService(@Value("${monitoring.timeout:0.17}") double timeoutMinutes) {
-        // Convert minutes to milliseconds (default: 0.17 minutes = ~10 seconds)
-        this.timeoutMs = (long) (timeoutMinutes * 60 * 1000);
-        logger.debug("ServerMonitorService initialized with timeout: {} minutes ({} ms)", 
-                    timeoutMinutes, timeoutMs);
+    public ServerMonitorService(@Value("${monitoring.timeout:10}") long timeoutSeconds) {
+        // Convert seconds to milliseconds (default: 10 seconds)
+        this.timeoutMs = timeoutSeconds * 1000;
+        logger.debug("ServerMonitorService initialized with timeout: {} seconds ({} ms)", 
+                    timeoutSeconds, timeoutMs);
     }
     
     // Scheduling moved to ServerMonitorScheduler to avoid running in tests

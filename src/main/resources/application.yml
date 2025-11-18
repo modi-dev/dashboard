@@ -86,8 +86,7 @@ security:
   password: ${SECURITY_PASSWORD}  # Пароль (по умолчанию: admin, рекомендуется изменить через переменную окружения) 
 
 # Custom monitoring configuration (kept also in application.properties for env-only overrides)
-# Values are in MINUTES (converted to milliseconds/seconds internally)
 monitoring:
   interval: ${MONITORING_INTERVAL:5}  # Interval in minutes (default: 5 minutes, converted to milliseconds for scheduling)
-  timeout: ${MONITORING_TIMEOUT:1}  # Timeout in minutes (default: 0.17 minutes = 10 seconds, converted to milliseconds)
+  timeout: ${MONITORING_TIMEOUT:10}  # Timeout in seconds (default: 10 seconds, converted to milliseconds)
   async-pool-size: ${MONITORING_ASYNC_POOL_SIZE:4} # Threads for async monitoring tasks

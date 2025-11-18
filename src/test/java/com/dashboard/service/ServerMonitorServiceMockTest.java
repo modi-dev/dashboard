@@ -45,7 +45,7 @@ class ServerMonitorServiceMockTest {
     
     @BeforeEach
     void setUp() {
-        serverMonitorService = spy(new ServerMonitorService(0.17));
+        serverMonitorService = spy(new ServerMonitorService(10L)); // 10 seconds timeout
         ReflectionTestUtils.setField(serverMonitorService, "serverRepository", serverRepository);
         ReflectionTestUtils.setField(serverMonitorService, "webClientBuilder", webClientBuilder);
         TaskExecutor immediateExecutor = Runnable::run;

@@ -45,7 +45,7 @@ server:
 # Отключаем мониторинг серверов в тестах
 monitoring:
   interval: 1    # 1 minute (for tests, but scheduling is disabled)
-  timeout: 0.17  # ~10 seconds (for tests)
+  timeout: 10    # 10 seconds (for tests)
 
 # Отключаем Security для тестов
 security:

@@ -1147,6 +1147,184 @@ window.showNotification = showNotification;
 window.deleteServer = deleteServer;
 window.refreshServers = refreshServers;
 window.refreshPods = refreshPods;
+/**
+ * Создает SVG спидометр для визуализации quota
+ * @param {string} containerId - ID контейнера для спидометра
+ * @param {string} label - Название метрики
+ * @param {string} quotaValue - Значение в формате "used/hard" или null
+ */
+function createSpeedometer(containerId, label, quotaValue) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Парсим значение quota
+    let used = 0;
+    let hard = 1;
+    let percentage = 0;
+    let displayValue = quotaValue || '-';
+    
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        const usedStr = parts[0].trim();
+        const hardStr = parts[1].trim();
+        
+        // Пытаемся извлечь числовое значение (игнорируя единицы измерения)
+        // Для CPU: "2" или "2000m" -> 2
+        // Для Memory: "4Gi" -> конвертируем в байты для расчета процента
+        const parseValue = (str) => {
+            if (!str) return 0;
+            // Убираем единицы измерения и парсим число
+            const numMatch = str.match(/^([\d.]+)/);
+            if (numMatch) {
+                let value = parseFloat(numMatch[1]);
+                // Конвертируем единицы памяти в байты для расчета процента
+                if (str.toLowerCase().includes('ki')) value *= 1024;
+                else if (str.toLowerCase().includes('mi')) value *= 1024 * 1024;
+                else if (str.toLowerCase().includes('gi')) value *= 1024 * 1024 * 1024;
+                else if (str.toLowerCase().includes('ti')) value *= 1024 * 1024 * 1024 * 1024;
+                else if (str.toLowerCase().includes('k')) value *= 1000;
+                else if (str.toLowerCase().includes('m') && !str.toLowerCase().includes('mi')) value *= 1000 * 1000;
+                else if (str.toLowerCase().includes('g') && !str.toLowerCase().includes('gi')) value *= 1000 * 1000 * 1000;
+                else if (str.toLowerCase().includes('t') && !str.toLowerCase().includes('ti')) value *= 1000 * 1000 * 1000 * 1000;
+                return value;
+            }
+            return 0;
+        };
+        
+        used = parseValue(usedStr);
+        hard = parseValue(hardStr);
+        percentage = hard > 0 ? Math.min((used / hard) * 100, 100) : 0;
+    }
+    
+    // Определяем цвет в зависимости от процента использования
+    let color = '#28a745'; // зеленый
+    if (percentage >= 90) {
+        color = '#dc3545'; // красный
+    } else if (percentage >= 70) {
+        color = '#ffc107'; // желтый
+    } else if (percentage >= 50) {
+        color = '#fd7e14'; // оранжевый
+    }
+    
+    // Создаем SVG спидометр
+    const size = 130;
+    const center = size / 2;
+    const radius = 50;
+    const strokeWidth = 10;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'speedometer-svg');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    
+    // Фоновая дуга (адаптивная к теме)
+    const htmlRoot = document.getElementById('htmlRoot') || document.documentElement;
+    const isDarkTheme = htmlRoot.classList.contains('theme-dark') || 
+                        document.body.classList.contains('theme-dark') ||
+                        document.documentElement.classList.contains('theme-dark');
+    const backgroundColor = isDarkTheme ? '#343a40' : '#e9ecef';
+    
+    const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    backgroundCircle.setAttribute('cx', center);
+    backgroundCircle.setAttribute('cy', center);
+    backgroundCircle.setAttribute('r', radius);
+    backgroundCircle.setAttribute('fill', 'none');
+    backgroundCircle.setAttribute('stroke', backgroundColor);
+    backgroundCircle.setAttribute('stroke-width', strokeWidth);
+    backgroundCircle.setAttribute('stroke-dasharray', circumference);
+    backgroundCircle.setAttribute('stroke-dashoffset', 0);
+    svg.appendChild(backgroundCircle);
+    
+    // Активная дуга (цветная)
+    const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    progressCircle.setAttribute('cx', center);
+    progressCircle.setAttribute('cy', center);
+    progressCircle.setAttribute('r', radius);
+    progressCircle.setAttribute('fill', 'none');
+    progressCircle.setAttribute('stroke', color);
+    progressCircle.setAttribute('stroke-width', strokeWidth);
+    progressCircle.setAttribute('stroke-dasharray', circumference);
+    progressCircle.setAttribute('stroke-dashoffset', offset);
+    progressCircle.setAttribute('stroke-linecap', 'round');
+    progressCircle.style.transition = 'stroke-dashoffset 0.5s ease';
+    svg.appendChild(progressCircle);
+    
+    // Контейнер для значения
+    const valueContainer = document.createElement('div');
+    valueContainer.className = 'speedometer-value';
+    valueContainer.textContent = displayValue;
+    
+    // Контейнер для SVG
+    const svgContainer = document.createElement('div');
+    svgContainer.className = 'speedometer-container';
+    svgContainer.appendChild(svg);
+    svgContainer.appendChild(valueContainer);
+    
+    // Метка
+    const labelElement = document.createElement('div');
+    labelElement.className = 'speedometer-label';
+    labelElement.textContent = label;
+    
+    // Очищаем контейнер и добавляем элементы
+    container.innerHTML = '';
+    container.appendChild(svgContainer);
+    container.appendChild(labelElement);
+}
+
+/**
+ * Инициализирует все спидометры на странице
+ */
+function initSpeedometers() {
+    // Получаем значения quota из data-атрибутов или из глобальных переменных
+    const quotaCpu = document.body.getAttribute('data-quota-cpu') || 
+                     (typeof window.quotaCpu !== 'undefined' ? window.quotaCpu : null);
+    const quotaMemory = document.body.getAttribute('data-quota-memory') || 
+                        (typeof window.quotaMemory !== 'undefined' ? window.quotaMemory : null);
+    const quotaPods = document.body.getAttribute('data-quota-pods') || 
+                      (typeof window.quotaPods !== 'undefined' ? window.quotaPods : null);
+    const quotaConfigmaps = document.body.getAttribute('data-quota-configmaps') || 
+                            (typeof window.quotaConfigmaps !== 'undefined' ? window.quotaConfigmaps : null);
+    const quotaSecrets = document.body.getAttribute('data-quota-secrets') || 
+                         (typeof window.quotaSecrets !== 'undefined' ? window.quotaSecrets : null);
+    
+    // Создаем спидометры
+    if (document.getElementById('speedometer-cpu')) {
+        createSpeedometer('speedometer-cpu', 'CPU', quotaCpu);
+    }
+    if (document.getElementById('speedometer-memory')) {
+        createSpeedometer('speedometer-memory', 'Memory', quotaMemory);
+    }
+    if (document.getElementById('speedometer-pods')) {
+        createSpeedometer('speedometer-pods', 'Pods', quotaPods);
+    }
+    if (document.getElementById('speedometer-configmaps')) {
+        createSpeedometer('speedometer-configmaps', 'ConfigMaps', quotaConfigmaps);
+    }
+    if (document.getElementById('speedometer-secrets')) {
+        createSpeedometer('speedometer-secrets', 'Secrets', quotaSecrets);
+    }
+}
+
+// Инициализируем спидометры при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    initSpeedometers();
+    
+    // Обновляем спидометры при переключении темы
+    const originalToggleTheme = window.toggleTheme;
+    if (originalToggleTheme) {
+        window.toggleTheme = function() {
+            originalToggleTheme();
+            // Небольшая задержка, чтобы тема успела примениться
+            setTimeout(function() {
+                initSpeedometers();
+            }, 100);
+        };
+    }
+});
+
 window.toggleTheme = toggleTheme;
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
@@ -1154,3 +1332,5 @@ window.toggleHealthcheck = toggleHealthcheck;
 window.addServer = addServer;
 window.togglePodGroup = togglePodGroup;
 window.openInstructions = openInstructions;
+window.createSpeedometer = createSpeedometer;
+window.initSpeedometers = initSpeedometers;

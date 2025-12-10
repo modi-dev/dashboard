@@ -58,6 +58,11 @@ class PodsControllerTest {
         when(kubernetesConfig.getNamespace()).thenReturn("default");
         when(clusterInfoSyncService.getNamespace()).thenReturn("default");
         when(clusterInfoSyncService.getKubernetesVersion()).thenReturn("v1.28.0");
+        when(clusterInfoSyncService.getQuotaCpu()).thenReturn("2/10");
+        when(clusterInfoSyncService.getQuotaMemory()).thenReturn("4Gi/20Gi");
+        when(clusterInfoSyncService.getQuotaPods()).thenReturn("5/50");
+        when(clusterInfoSyncService.getQuotaConfigmaps()).thenReturn("10/100");
+        when(clusterInfoSyncService.getQuotaSecrets()).thenReturn("5/50");
     }
 
     @Test
@@ -73,12 +78,18 @@ class PodsControllerTest {
                 .andExpect(model().attribute("uniqueServices", 2L))
                 .andExpect(model().attribute("totalReplicas", 2))
                 .andExpect(model().attribute("withReplicas", 0))
-                .andExpect(model().attribute("kubernetesVersion", "v1.28.0"));
+                .andExpect(model().attribute("kubernetesVersion", "v1.28.0"))
+                .andExpect(model().attribute("quotaCpu", "2/10"))
+                .andExpect(model().attribute("quotaMemory", "4Gi/20Gi"))
+                .andExpect(model().attribute("quotaPods", "5/50"));
 
         verify(podRepository).findByNamespaceOrderByName("default");
         verify(kubernetesService).countUniqueServices(testPods);
         verify(clusterInfoSyncService).getKubernetesVersion();
         verify(clusterInfoSyncService, atLeastOnce()).getNamespace();
+        verify(clusterInfoSyncService).getQuotaCpu();
+        verify(clusterInfoSyncService).getQuotaMemory();
+        verify(clusterInfoSyncService).getQuotaPods();
     }
 
     @Test

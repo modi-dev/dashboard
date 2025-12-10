@@ -153,6 +153,131 @@ public class KubernetesService {
     }
     
     /**
+     * Получает информацию о quota для namespace через kubectl
+     * 
+     * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.
+     * 
+     * Использует команду: kubectl get quota -n <namespace> -o json
+     * 
+     * @return объект NamespaceQuota с информацией о CPU, Memory и Pods или null если не удалось получить
+     */
+    public NamespaceQuota getNamespaceQuota() {
+        try {
+            String namespace = kubernetesConfig.getNamespace();
+            String json = kubectlExecutor.executeCommand(
+                "get", "quota",
+                "-n", namespace,
+                "-o", "json"
+            );
+            
+            if (json == null || json.trim().isEmpty()) {
+                logger.debug("Quota не найдены для namespace: {}", namespace);
+                return null;
+            }
+            
+            JsonNode root = objectMapper.readTree(json);
+            NamespaceQuota quota = new NamespaceQuota();
+            
+            // Ищем первый ResourceQuota в списке items
+            JsonNode items = root.get("items");
+            if (items != null && items.isArray() && items.size() > 0) {
+                JsonNode firstQuota = items.get(0);
+                
+                // Извлекаем used и hard из status
+                JsonNode status = firstQuota.get("status");
+                if (status != null) {
+                    JsonNode used = status.get("used");
+                    JsonNode hard = status.get("hard");
+                    
+                    if (used != null) {
+                        JsonNode cpuUsed = used.get("requests.cpu");
+                        if (cpuUsed != null) {
+                            quota.cpuUsed = cpuUsed.asText();
+                        }
+                        
+                        JsonNode memoryUsed = used.get("requests.memory");
+                        if (memoryUsed != null) {
+                            quota.memoryUsed = memoryUsed.asText();
+                        }
+                        
+                        JsonNode podsUsed = used.get("pods");
+                        if (podsUsed != null) {
+                            quota.podsUsed = podsUsed.asText();
+                        }
+                        
+                        JsonNode configmapsUsed = used.get("configmaps");
+                        if (configmapsUsed != null) {
+                            quota.configmapsUsed = configmapsUsed.asText();
+                        }
+                        
+                        JsonNode secretsUsed = used.get("secrets");
+                        if (secretsUsed != null) {
+                            quota.secretsUsed = secretsUsed.asText();
+                        }
+                    }
+                    
+                    if (hard != null) {
+                        JsonNode cpuHard = hard.get("requests.cpu");
+                        if (cpuHard != null) {
+                            quota.cpuHard = cpuHard.asText();
+                        }
+                        
+                        JsonNode memoryHard = hard.get("requests.memory");
+                        if (memoryHard != null) {
+                            quota.memoryHard = memoryHard.asText();
+                        }
+                        
+                        JsonNode podsHard = hard.get("pods");
+                        if (podsHard != null) {
+                            quota.podsHard = podsHard.asText();
+                        }
+                        
+                        JsonNode configmapsHard = hard.get("configmaps");
+                        if (configmapsHard != null) {
+                            quota.configmapsHard = configmapsHard.asText();
+                        }
+                        
+                        JsonNode secretsHard = hard.get("secrets");
+                        if (secretsHard != null) {
+                            quota.secretsHard = secretsHard.asText();
+                        }
+                    }
+                }
+            }
+            
+            logger.debug("Quota получены для namespace {}: CPU={}/{}, Memory={}/{}, Pods={}/{}, ConfigMaps={}/{}, Secrets={}/{}",
+                        namespace, quota.cpuUsed, quota.cpuHard, quota.memoryUsed, quota.memoryHard,
+                        quota.podsUsed, quota.podsHard, quota.configmapsUsed, quota.configmapsHard,
+                        quota.secretsUsed, quota.secretsHard);
+            
+            return quota;
+            
+        } catch (KubectlException e) {
+            logger.warn("Не удалось получить quota для namespace: {}", e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.warn("Ошибка при получении quota: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Класс для хранения информации о quota namespace
+     */
+    public static class NamespaceQuota {
+        public String cpuUsed;
+        public String cpuHard;
+        public String memoryUsed;
+        public String memoryHard;
+        public String podsUsed;
+        public String podsHard;
+        public String configmapsUsed;
+        public String configmapsHard;
+        public String secretsUsed;
+        public String secretsHard;
+    }
+    
+    /**
      * Получает версию Kubernetes кластера напрямую через kubectl
      * 
      * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.

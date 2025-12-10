@@ -102,4 +102,22 @@
   color: #fff;
 }
 
+/* Speedometer styles for dark theme */
+.theme-dark .speedometer-value {
+  color: #e9ecef;
+}
+
+.theme-dark .speedometer-label {
+  color: #e9ecef;
+}
+
+.theme-dark .speedometer-card {
+  background-color: #1c1f22;
+  border-color: #2a2e32;
+}
+
+.theme-dark .speedometer-card .card-body {
+  background-color: #1c1f22;
+}
+
 

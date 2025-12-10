@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Серверы - Version Dashboard</title>
+    
+    <!-- Favicon from layout fragment -->
+    <th:block th:replace="~{layout :: favicon}"></th:block>
+    
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/all.min.css" rel="stylesheet">
+    <link href="/css/theme-dark.css" rel="stylesheet">
+    <link href="/css/common.css" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-server me-2"></i>Version Dashboard
+            </a>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-white d-lg-none me-2" id="themeToggleMobile" onclick="toggleTheme()" title="Переключить тему" style="text-decoration: none; padding: 0.5rem;">
+                    <i class="fas fa-moon" id="themeIconMobile"></i>
+                </button>
+                <th:block th:replace="~{fragments/instructions :: instructionButtonMobile}"></th:block>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-tachometer-alt me-1"></i>Главная страница
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/servers">
+                            <i class="fas fa-server me-1"></i>Серверы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pods">
+                            <i class="fas fa-cube me-1"></i>Поды
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-light btn-sm nav-link border-0" id="themeToggle" onclick="toggleTheme()" title="Переключить тему" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;">
+                            <i class="fas fa-moon" id="themeIcon"></i> <span class="ms-1">Тема</span>
+                        </button>
+                    </li>
+                    <th:block th:replace="~{fragments/instructions :: instructionButtonDesktop}"></th:block>
+                    <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
+                        <a class="nav-link" href="/login" title="Войти в систему">
+                            <i class="fas fa-sign-in-alt me-1"></i>Войти
+                        </a>
+                    </li>
+                    <li class="nav-item" th:if="${isAuthenticated == true}">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-link nav-link border-0" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;" title="Выйти из системы">
+                                <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content container-fluid px-4 py-3">
+
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row g-3 mb-4 justify-content-center">
+            <div class="col-md-4 col-lg-4 col-xl-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-server fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">Всего серверов</h5>
+                        <h3 class="text-primary" th:text="${totalServers}">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4 col-xl-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">Онлайн</h5>
+                        <h3 class="text-success" th:text="${onlineServers}">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4 col-xl-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                        <h5 class="card-title">Оффлайн</h5>
+                        <h3 class="text-danger" th:text="${offlineServers}">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Servers Table -->
+        <div class="row">
+            <div class="col-12">
+                <div th:replace="~{fragments/servers :: serversCard(${servers}, ${isAuthenticated})}"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Add Button -->
+    <button th:if="${isAuthenticated == true}" class="btn btn-primary btn-add-server" onclick="openSidebar()" title="Добавить сервер">
+        <i class="fas fa-plus fa-lg"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Add Server Sidebar -->
+    <div class="sidebar" id="addServerSidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Добавить сервер</h5>
+            <button class="btn btn-sm btn-outline-light" onclick="closeSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-body">
+            <form id="addServerForm">
+                <div class="mb-3">
+                    <label for="serverName" class="form-label">Название сервера</label>
+                    <input type="text" class="form-control" id="serverName" required placeholder="Например: My Server">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverUrl" class="form-label">URL</label>
+                    <input type="text" class="form-control" id="serverUrl" required placeholder="example.com:8080 или https://example.com">
+                    <div class="form-text">Протокол будет добавлен автоматически в зависимости от типа сервера</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="serverType" class="form-label">Тип сервера</label>
+                    <select class="form-select" id="serverType" required>
+                        <option value="">Выберите тип</option>
+                        <option value="POSTGRES">PostgreSQL</option>
+                        <option value="REDIS">Redis</option>
+                        <option value="KAFKA">Kafka</option>
+                        <option value="ASTRA_LINUX">Astra Linux</option>
+                        <option value="OTHER">Другое</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="healthcheckField" style="display: none;">
+                    <label for="serverHealthcheck" class="form-label">Healthcheck endpoint</label>
+                    <input type="text" class="form-control" id="serverHealthcheck" placeholder="/health">
+                    <div class="form-text">Обязательно для типа "Другое"</div>
+                </div>
+                
+                <div class="mb-3" id="metricsEndpointField" style="display: none;">
+                    <label for="serverMetricsEndpoint" class="form-label">Metrics endpoint</label>
+                    <input type="text" class="form-control" id="serverMetricsEndpoint" placeholder="/metrics">
+                    <div class="form-text">Endpoint для получения метрик (например: /metrics, /api/version)</div>
+                </div>
+                
+                <div class="mb-3" id="versionRegexField" style="display: none;">
+                    <label for="serverVersionRegex" class="form-label">Version regex</label>
+                    <input type="text" class="form-control" id="serverVersionRegex" placeholder='version\\s*=\\s*"([^"]+)"'>
+                    <div class="form-text">Регулярное выражение для извлечения версии из метрик</div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Добавить сервер
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="closeSidebar()">
+                        <i class="fas fa-times me-1"></i>Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer bg-light text-center py-3 mt-auto">
+        <div class="container-fluid px-4">
+            <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> |
+                <a href="/actuator/health" target="_blank">Health</a> | 
+                <a href="/actuator/metrics" target="_blank">Metrics</a>
+            </span>
+        </div>
+    </footer>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <div th:replace="~{fragments/instructions :: instructionModal}"></div>
+</body>
+</html>

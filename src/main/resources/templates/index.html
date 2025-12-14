@@ -135,49 +135,10 @@
             </div>
         </div>
 
-        <!-- Quota Speedometers -->
-        <div class="row g-2 mb-4 justify-content-center" th:if="${quotaCpu != null or quotaMemory != null or quotaPods != null or quotaConfigmaps != null or quotaSecrets != null}">
-            <div class="col-6 col-md-4 col-lg-2 col-xl-2" th:if="${quotaCpu != null}">
-                <div class="card speedometer-card h-100">
-                    <div class="card-body">
-                        <div id="speedometer-cpu"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2 col-xl-2" th:if="${quotaMemory != null}">
-                <div class="card speedometer-card h-100">
-                    <div class="card-body">
-                        <div id="speedometer-memory"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2 col-xl-2" th:if="${quotaPods != null}">
-                <div class="card speedometer-card h-100">
-                    <div class="card-body">
-                        <div id="speedometer-pods"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2 col-xl-2" th:if="${quotaConfigmaps != null}">
-                <div class="card speedometer-card h-100">
-                    <div class="card-body">
-                        <div id="speedometer-configmaps"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2 col-xl-2" th:if="${quotaSecrets != null}">
-                <div class="card speedometer-card h-100">
-                    <div class="card-body">
-                        <div id="speedometer-secrets"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Pods Section -->
         <div class="row">
             <div class="col-12">
-                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods})}"></div>
+                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods}, ${quotaConfigmaps}, ${quotaSecrets})}"></div>
             </div>
         </div>
     </main>
@@ -272,6 +233,11 @@
         window.quotaPods = /*[[${quotaPods}]]*/ null;
         window.quotaConfigmaps = /*[[${quotaConfigmaps}]]*/ null;
         window.quotaSecrets = /*[[${quotaSecrets}]]*/ null;
+        
+        // Инициализируем спидометры после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            initSpeedometers();
+        });
     </script>
     <div th:replace="~{fragments/instructions :: instructionModal}"></div>
 </body>

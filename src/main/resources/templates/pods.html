@@ -73,27 +73,6 @@
 
     <!-- Main Content -->
     <main class="main-content container-fluid px-4 py-3">
-        <!-- Statistics Cards -->
-        <div class="row g-3 mb-4 justify-content-center">
-            <div class="col-md-4 col-lg-3 col-xl-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-cube fa-2x text-primary mb-2"></i>
-                        <h5 class="card-title">Всего подов</h5>
-                        <h3 class="text-primary" th:text="${totalPods ?: 0}">0</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 col-lg-3 col-xl-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-gem fa-2x text-warning mb-2"></i>
-                        <h5 class="card-title">Уникальных сервисов</h5>
-                        <h3 class="text-warning" th:text="${uniqueServices ?: 0}">0</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Quota Speedometers -->
         <div class="row g-2 mb-4 justify-content-center" th:if="${quotaCpu != null or quotaMemory != null or quotaPods != null or quotaConfigmaps != null or quotaSecrets != null}">
@@ -137,7 +116,7 @@
         <!-- Pods Section -->
         <div class="row">
             <div class="col-12">
-                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods})}"></div>
+                <div th:replace="~{fragments/pods :: podsCard(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods}, ${quotaConfigmaps}, ${quotaSecrets})}"></div>
             </div>
         </div>
     </main>
@@ -161,6 +140,11 @@
         window.quotaPods = /*[[${quotaPods}]]*/ null;
         window.quotaConfigmaps = /*[[${quotaConfigmaps}]]*/ null;
         window.quotaSecrets = /*[[${quotaSecrets}]]*/ null;
+        
+        // Инициализируем спидометры после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            initSpeedometers();
+        });
     </script>
     <div th:replace="~{fragments/instructions :: instructionModal}"></div>
 </body>

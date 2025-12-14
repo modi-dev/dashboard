@@ -1169,23 +1169,34 @@ function createSpeedometer(containerId, label, quotaValue) {
         const hardStr = parts[1].trim();
         
         // Пытаемся извлечь числовое значение (игнорируя единицы измерения)
-        // Для CPU: "2" или "2000m" -> 2
+        // Для CPU: "2" или "2000m" -> 2 (где 1000m = 1 CPU)
         // Для Memory: "4Gi" -> конвертируем в байты для расчета процента
         const parseValue = (str) => {
             if (!str) return 0;
+            const strLower = str.toLowerCase().trim();
+            
+            // Специальная обработка для CPU: миллиCPU (m в конце, но не mi)
+            // Например: "2000m" -> 2.0, "500m" -> 0.5
+            if (strLower.endsWith('m') && !strLower.includes('mi') && !strLower.includes('ma')) {
+                const numMatch = str.match(/^([\d.]+)m$/i);
+                if (numMatch) {
+                    return parseFloat(numMatch[1]) / 1000; // Конвертируем миллиCPU в CPU
+                }
+            }
+            
             // Убираем единицы измерения и парсим число
             const numMatch = str.match(/^([\d.]+)/);
             if (numMatch) {
                 let value = parseFloat(numMatch[1]);
                 // Конвертируем единицы памяти в байты для расчета процента
-                if (str.toLowerCase().includes('ki')) value *= 1024;
-                else if (str.toLowerCase().includes('mi')) value *= 1024 * 1024;
-                else if (str.toLowerCase().includes('gi')) value *= 1024 * 1024 * 1024;
-                else if (str.toLowerCase().includes('ti')) value *= 1024 * 1024 * 1024 * 1024;
-                else if (str.toLowerCase().includes('k')) value *= 1000;
-                else if (str.toLowerCase().includes('m') && !str.toLowerCase().includes('mi')) value *= 1000 * 1000;
-                else if (str.toLowerCase().includes('g') && !str.toLowerCase().includes('gi')) value *= 1000 * 1000 * 1000;
-                else if (str.toLowerCase().includes('t') && !str.toLowerCase().includes('ti')) value *= 1000 * 1000 * 1000 * 1000;
+                if (strLower.includes('ki')) value *= 1024;
+                else if (strLower.includes('mi')) value *= 1024 * 1024;
+                else if (strLower.includes('gi')) value *= 1024 * 1024 * 1024;
+                else if (strLower.includes('ti')) value *= 1024 * 1024 * 1024 * 1024;
+                else if (strLower.includes('k') && !strLower.includes('ki')) value *= 1000;
+                else if (strLower.includes('g') && !strLower.includes('gi')) value *= 1000 * 1000 * 1000;
+                else if (strLower.includes('t') && !strLower.includes('ti')) value *= 1000 * 1000 * 1000 * 1000;
+                // Для CPU без единиц измерения (просто число) - оставляем как есть
                 return value;
             }
             return 0;
@@ -1196,14 +1207,21 @@ function createSpeedometer(containerId, label, quotaValue) {
         percentage = hard > 0 ? Math.min((used / hard) * 100, 100) : 0;
     }
     
-    // Определяем цвет в зависимости от процента использования
+    // Определяем цвет и градиент в зависимости от процента использования
     let color = '#28a745'; // зеленый
+    let gradientColor = '#34ce57';
+    
     if (percentage >= 90) {
         color = '#dc3545'; // красный
+        gradientColor = '#e4606d';
     } else if (percentage >= 70) {
         color = '#ffc107'; // желтый
+        gradientColor = '#ffcd39';
     } else if (percentage >= 50) {
         color = '#fd7e14'; // оранжевый
+        gradientColor = '#ff9a3c';
+    } else {
+        gradientColor = '#34ce57';
     }
     
     // Создаем SVG спидометр
@@ -1220,13 +1238,38 @@ function createSpeedometer(containerId, label, quotaValue) {
     svg.setAttribute('height', size);
     svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
     
-    // Фоновая дуга (адаптивная к теме)
+    // Определяем тему
     const htmlRoot = document.getElementById('htmlRoot') || document.documentElement;
     const isDarkTheme = htmlRoot.classList.contains('theme-dark') || 
                         document.body.classList.contains('theme-dark') ||
                         document.documentElement.classList.contains('theme-dark');
     const backgroundColor = isDarkTheme ? '#343a40' : '#e9ecef';
     
+    // Создаем градиент для прогресс-бара
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const linearGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    linearGradient.setAttribute('id', `gradient-${containerId}`);
+    linearGradient.setAttribute('x1', '0%');
+    linearGradient.setAttribute('y1', '0%');
+    linearGradient.setAttribute('x2', '100%');
+    linearGradient.setAttribute('y2', '100%');
+    
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', color);
+    stop1.setAttribute('stop-opacity', '1');
+    
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '100%');
+    stop2.setAttribute('stop-color', gradientColor);
+    stop2.setAttribute('stop-opacity', '0.8');
+    
+    linearGradient.appendChild(stop1);
+    linearGradient.appendChild(stop2);
+    defs.appendChild(linearGradient);
+    svg.appendChild(defs);
+    
+    // Фоновая дуга (адаптивная к теме)
     const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     backgroundCircle.setAttribute('cx', center);
     backgroundCircle.setAttribute('cy', center);
@@ -1236,26 +1279,37 @@ function createSpeedometer(containerId, label, quotaValue) {
     backgroundCircle.setAttribute('stroke-width', strokeWidth);
     backgroundCircle.setAttribute('stroke-dasharray', circumference);
     backgroundCircle.setAttribute('stroke-dashoffset', 0);
+    backgroundCircle.setAttribute('opacity', '0.3');
     svg.appendChild(backgroundCircle);
     
-    // Активная дуга (цветная)
+    // Активная дуга (цветная с градиентом)
     const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     progressCircle.setAttribute('cx', center);
     progressCircle.setAttribute('cy', center);
     progressCircle.setAttribute('r', radius);
     progressCircle.setAttribute('fill', 'none');
-    progressCircle.setAttribute('stroke', color);
+    progressCircle.setAttribute('stroke', `url(#gradient-${containerId})`);
     progressCircle.setAttribute('stroke-width', strokeWidth);
     progressCircle.setAttribute('stroke-dasharray', circumference);
     progressCircle.setAttribute('stroke-dashoffset', offset);
     progressCircle.setAttribute('stroke-linecap', 'round');
-    progressCircle.style.transition = 'stroke-dashoffset 0.5s ease';
+    progressCircle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
     svg.appendChild(progressCircle);
+    
+    // Метка (перенесена наверх вместо иконки)
+    const labelElement = document.createElement('div');
+    labelElement.className = 'speedometer-label';
+    labelElement.textContent = label;
     
     // Контейнер для значения
     const valueContainer = document.createElement('div');
     valueContainer.className = 'speedometer-value';
-    valueContainer.textContent = displayValue;
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        valueContainer.innerHTML = `<span style="font-size: 0.9em;">${percentage.toFixed(0)}%</span><br><span style="font-size: 0.65em; opacity: 0.8;">${parts[0].trim()}/${parts[1].trim()}</span>`;
+    } else {
+        valueContainer.textContent = displayValue;
+    }
     
     // Контейнер для SVG
     const svgContainer = document.createElement('div');
@@ -1263,15 +1317,10 @@ function createSpeedometer(containerId, label, quotaValue) {
     svgContainer.appendChild(svg);
     svgContainer.appendChild(valueContainer);
     
-    // Метка
-    const labelElement = document.createElement('div');
-    labelElement.className = 'speedometer-label';
-    labelElement.textContent = label;
-    
     // Очищаем контейнер и добавляем элементы
     container.innerHTML = '';
-    container.appendChild(svgContainer);
     container.appendChild(labelElement);
+    container.appendChild(svgContainer);
 }
 
 /**

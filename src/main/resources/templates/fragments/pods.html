@@ -5,7 +5,7 @@
     </div>
     <div th:unless="${#lists.isEmpty(pods)}" class="pods-table-wrapper table-responsive p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="badge type-badge" th:text="'Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'} + ' | Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'}">Неизвестно</span>
+            <span class="badge type-badge" th:text="'Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'} + ' | Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'}">Неизвестно</span>
         </div>
         <table id="podsTable" class="table table-hover mb-0">
             <thead>
@@ -62,7 +62,7 @@
     </div>
 </div>
 
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods)">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods, quotaConfigmaps, quotaSecrets)">
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">

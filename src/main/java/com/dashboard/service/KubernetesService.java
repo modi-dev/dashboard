@@ -278,6 +278,104 @@ public class KubernetesService {
     }
     
     /**
+     * Получает значение переменной DATABASE_CLUSTER_URL из секретов для указанного сервиса
+     * 
+     * Ищет секреты, связанные с именем сервиса, и извлекает значение переменной DATABASE_CLUSTER_URL.
+     * Проверяет секреты с именами, содержащими имя сервиса.
+     * 
+     * Использует команду: kubectl get secrets -n <namespace> -o json
+     * 
+     * @param serviceName имя сервиса (из labels.app)
+     * @return значение DATABASE_CLUSTER_URL или null если не найдено
+     */
+    public String getDatabaseClusterUrlFromSecrets(String serviceName) {
+        if (serviceName == null || serviceName.isEmpty()) {
+            logger.debug("Имя сервиса пустое, пропускаем поиск секретов");
+            return null;
+        }
+        
+        try {
+            String namespace = kubernetesConfig.getNamespace();
+            logger.debug("Поиск DATABASE_CLUSTER_URL в секретах для сервиса: {} в namespace: {}", serviceName, namespace);
+            
+            // Получаем все секреты в namespace
+            String json = kubectlExecutor.executeCommand(
+                "get", "secrets",
+                "-n", namespace,
+                "-o", "json"
+            );
+            
+            if (json == null || json.trim().isEmpty()) {
+                logger.debug("Секреты не найдены для namespace: {}", namespace);
+                return null;
+            }
+            
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode items = root.get("items");
+            
+            if (items == null || !items.isArray()) {
+                logger.debug("Не найден массив items в ответе kubectl get secrets");
+                return null;
+            }
+            
+            // Ищем секреты, связанные с сервисом
+            // Обычно секреты имеют имена вида: <service-name>, <service-name>-secret, <service-name>-secrets и т.д.
+            for (JsonNode secret : items) {
+                JsonNode metadata = secret.get("metadata");
+                if (metadata == null) continue;
+                
+                String secretName = metadata.get("name").asText();
+                
+                // Проверяем, связан ли секрет с нашим сервисом
+                if (secretName.contains(serviceName) || serviceName.contains(secretName) ||
+                    secretName.equals(serviceName) || secretName.equals(serviceName + "-secret") ||
+                    secretName.equals(serviceName + "-secrets")) {
+                    
+                    logger.debug("Проверяем секрет: {}", secretName);
+                    
+                    JsonNode data = secret.get("data");
+                    if (data != null) {
+                        // Проверяем все ключи в секрете
+                        java.util.Iterator<String> fieldNames = data.fieldNames();
+                        while (fieldNames.hasNext()) {
+                            String key = fieldNames.next();
+                            String upperKey = key.toUpperCase();
+                            
+                            // Ищем ключи, содержащие DATABASE_CLUSTER_URL
+                            if (upperKey.contains("DATABASE_CLUSTER_URL") || 
+                                (upperKey.contains("DATABASE") && upperKey.contains("CLUSTER") && upperKey.contains("URL"))) {
+                                
+                                JsonNode valueNode = data.get(key);
+                                if (valueNode != null) {
+                                    try {
+                                        // Декодируем base64 значение
+                                        byte[] decodedBytes = java.util.Base64.getDecoder().decode(valueNode.asText());
+                                        String decodedValue = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
+                                        logger.info("Найдена переменная DATABASE_CLUSTER_URL в секрете {}: {}", secretName, decodedValue);
+                                        return decodedValue;
+                                    } catch (Exception e) {
+                                        logger.debug("Ошибка декодирования значения из секрета {}: {}", secretName, e.getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            logger.debug("Переменная DATABASE_CLUSTER_URL не найдена в секретах для сервиса: {}", serviceName);
+            return null;
+            
+        } catch (KubectlException e) {
+            logger.warn("Не удалось получить секреты для сервиса {}: {}", serviceName, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.warn("Ошибка при поиске DATABASE_CLUSTER_URL в секретах для сервиса {}: {}", serviceName, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
      * Получает версию Kubernetes кластера напрямую через kubectl
      * 
      * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.

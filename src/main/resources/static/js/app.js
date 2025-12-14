@@ -215,6 +215,54 @@ function deleteServer(serverId) {
     });
 }
 
+function formatLastUpdateTime(date) {
+  if (!date) {
+    return '-';
+  }
+  const now = new Date(date);
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function updateServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('serversLastUpdateTime', now.toISOString());
+}
+
+function loadServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  // Пытаемся загрузить время из localStorage
+  const storedTime = localStorage.getItem('serversLastUpdateTime');
+  if (storedTime) {
+    const date = new Date(storedTime);
+    if (!isNaN(date.getTime())) {
+      timeElement.textContent = formatLastUpdateTime(date);
+      return;
+    }
+  }
+  
+  // Если нет сохраненного времени, показываем текущее время
+  updateServersLastUpdateTime();
+}
+
 function refreshServers(ev) {
   const btn = ev && ev.target ? ev.target.closest('button') : null;
   const originalContent = btn ? btn.innerHTML : null;
@@ -240,6 +288,8 @@ function refreshServers(ev) {
         return;
       }
       if (data.success) {
+        // Обновляем время последнего обновления перед перезагрузкой
+        updateServersLastUpdateTime();
         showNotification('Фоновая проверка серверов запущена. Обновим данные через пару секунд.', 'info');
         setTimeout(() => location.reload(), 3000);
       } else {
@@ -258,6 +308,40 @@ function refreshServers(ev) {
         btn.innerHTML = originalContent;
       }
     });
+}
+
+function updatePodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('podsLastUpdateTime', now.toISOString());
+}
+
+function loadPodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  // Пытаемся загрузить время из localStorage
+  const storedTime = localStorage.getItem('podsLastUpdateTime');
+  if (storedTime) {
+    const date = new Date(storedTime);
+    if (!isNaN(date.getTime())) {
+      timeElement.textContent = formatLastUpdateTime(date);
+      return;
+    }
+  }
+  
+  // Если нет сохраненного времени, показываем текущее время
+  updatePodsLastUpdateTime();
 }
 
 function refreshPods(ev) {
@@ -289,6 +373,8 @@ function refreshPods(ev) {
         return;
       }
       if (data.success) {
+        // Обновляем время последнего обновления перед перезагрузкой
+        updatePodsLastUpdateTime();
         showNotification('Информация о подах успешно обновлена!', 'success');
         setTimeout(() => location.reload(), 500);
       } else {
@@ -1127,6 +1213,8 @@ onDocumentReady(() => {
   initServersFilter();
   initPodsFeatures();
   initInstructionModal();
+  loadPodsLastUpdateTime();
+  loadServersLastUpdateTime();
 
   const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
   const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';

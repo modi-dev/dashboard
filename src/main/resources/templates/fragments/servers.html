@@ -64,6 +64,11 @@
                 </a>
             </div>
         </div>
+        <div class="card-header border-top-0 pt-0 pb-2 px-3 d-flex justify-content-end">
+            <small class="text-muted" id="serversLastUpdate">
+                <i class="fas fa-clock me-1"></i>Последнее обновление: <span id="serversLastUpdateTime">-</span>
+            </small>
+        </div>
         <div class="card-body p-0" th:replace="~{fragments/servers :: serversTable(${servers}, ${isAuthenticated})}"></div>
     </div>
 </div>

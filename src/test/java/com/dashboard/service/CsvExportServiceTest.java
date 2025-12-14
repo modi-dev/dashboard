@@ -72,7 +72,7 @@ public class CsvExportServiceTest {
         String[] lines = csv.split("\\R");
         assertTrue(lines.length >= 4);
         String header = lines[0].replace("\uFEFF", "");
-        assertEquals("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;Creation Date", header);
+        assertEquals("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;DATABASE_CLUSTER_URL;Creation Date", header);
 
         String[] app1Columns = lines[1].split(";", -1);
         assertEquals("\t1.0.0", app1Columns[2]);
@@ -142,7 +142,7 @@ public class CsvExportServiceTest {
         String csv = csvExportService.exportPodsToCsv(pods);
         
         assertNotNull(csv);
-        assertTrue(csv.contains("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;Creation Date"));
+        assertTrue(csv.contains("Name;POD_NAME;Version;MS Branch;Config Branch;GC Options;Port;Restarts;Ready Time;CPU Request;Memory Request;DATABASE_CLUSTER_URL;Creation Date"));
         // Should only contain header, no data rows
         String[] lines = csv.split("\n");
         assertEquals(1, lines.length);

@@ -91,6 +91,7 @@ public class CsvExportService {
            .append("Ready Time").append(CSV_SEPARATOR)
            .append("CPU Request").append(CSV_SEPARATOR)
            .append("Memory Request").append(CSV_SEPARATOR)
+           .append("DATABASE_CLUSTER_URL").append(CSV_SEPARATOR)
            .append("Creation Date\n");
         
         // Данные
@@ -106,6 +107,7 @@ public class CsvExportService {
             csv.append(escapeCsvValue(pod.getReadyTime() != null ? pod.getReadyTime() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getCpuRequest() != null ? pod.getCpuRequest() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getMemoryRequest() != null ? pod.getMemoryRequest() : "")).append(CSV_SEPARATOR);
+            csv.append(escapeCsvValue(pod.getDatabaseClusterUrl() != null ? pod.getDatabaseClusterUrl() : "")).append(CSV_SEPARATOR);
             csv.append(escapeCsvValue(pod.getCreationDate() != null ? pod.getCreationDate().format(DATE_FORMATTER) : ""));
             csv.append("\n");
         }

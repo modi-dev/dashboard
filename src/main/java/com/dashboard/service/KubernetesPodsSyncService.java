@@ -71,9 +71,23 @@ public class KubernetesPodsSyncService {
             LocalDateTime queryTime = LocalDateTime.now();
             
             // Устанавливаем namespace и время запроса для всех подов
+            // Также получаем DATABASE_CLUSTER_URL из секретов для каждого сервиса
             currentPods.forEach(pod -> {
                 pod.setNamespace(namespace);
                 pod.setK8sQueriedAt(queryTime);
+                
+                // Получаем DATABASE_CLUSTER_URL из секретов для сервиса
+                if (pod.getName() != null && !pod.getName().isEmpty()) {
+                    try {
+                        String databaseClusterUrl = kubernetesService.getDatabaseClusterUrlFromSecrets(pod.getName());
+                        if (databaseClusterUrl != null && !databaseClusterUrl.isEmpty()) {
+                            pod.setDatabaseClusterUrl(databaseClusterUrl);
+                            logger.debug("Найден DATABASE_CLUSTER_URL для сервиса {}: {}", pod.getName(), databaseClusterUrl);
+                        }
+                    } catch (Exception e) {
+                        logger.debug("Не удалось получить DATABASE_CLUSTER_URL для сервиса {}: {}", pod.getName(), e.getMessage());
+                    }
+                }
             });
             
             logger.info("Получено {} подов из Kubernetes", currentPods.size());
@@ -160,6 +174,7 @@ public class KubernetesPodsSyncService {
         existing.setMemoryRequest(current.getMemoryRequest());
         existing.setRestarts(current.getRestarts());
         existing.setReadyTime(current.getReadyTime());
+        existing.setDatabaseClusterUrl(current.getDatabaseClusterUrl());
         existing.setNamespace(current.getNamespace());
         existing.setK8sQueriedAt(queryTime);
         // updatedAt будет установлен автоматически через @PreUpdate

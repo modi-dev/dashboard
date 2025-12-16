@@ -1508,7 +1508,9 @@ function initStandsLinks() {
     'preprod': { full: 'preprod', short: 'pp', patterns: ['preprod', 'pp', 'pre-prod'] },
     'lt': { full: 'lt', short: 'lt', patterns: ['lt'] },
     'hotfix': { full: 'hotfix', short: 'hf', patterns: ['hotfix', 'hf'] },
-    'prod': { full: 'prod', short: 'prod', patterns: ['prod'] }
+    'prod': { full: 'prod', short: 'prod', patterns: ['prod'] },
+    'pk2': { full: 'pk2', short: 'pk2', patterns: ['pk2'] },
+    'pk5': { full: 'pk5', short: 'pk5', patterns: ['pk5'] }
   };
   
   const stands = Object.keys(standMapping);
@@ -1668,18 +1670,45 @@ function initStandsLinks() {
     return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
   }
   
-  // Функция для генерации URL OKO
+  // Функция для генерации URL OKO (Grafana k8s)
   function generateOkoUrl(targetStandKey) {
     const targetStand = standMapping[targetStandKey];
     if (!targetStand) {
       return null;
     }
     
-    // Используем сокращение для OKO ссылок
-    const standShort = targetStand.short;
+    // Получаем домен 2-го уровня (предпоследний элемент) и домен 1-го уровня (TLD, последний элемент)
+    if (hostParts.length < 2) {
+      return null;
+    }
     
-    // Формируем URL: oko.test-{stand}
-    return `${currentProtocol}//oko.test-${standShort}`;
+    const domainLevel2 = hostParts[hostParts.length - 2]; // Домен 2-го уровня
+    const domainLevel1 = hostParts[hostParts.length - 1]; // TLD (домен 1-го уровня)
+    
+    // Маппинг значений для var-cluster в зависимости от стенда
+    const clusterValueMapping = {
+      'ift': 'ik7-cole01',
+      'preprod': 'rk7-cole01',
+      'pp': 'rk7-cole01',
+      'lt': 'lk5-cole01',
+      'hotfix': 'hk7-cole01',
+      'hf': 'hk7-cole01',
+      'pk2': 'pk2-cole01',
+      'pk5': 'pk5-cole01'
+    };
+    
+    // Определяем значение для var-cluster
+    // Сначала пробуем по ключу стенда, затем по сокращению
+    let clusterValue = clusterValueMapping[targetStandKey] || 
+                       clusterValueMapping[targetStand.short] || 
+                       targetStand.short;
+    
+    // Формируем URL: https://oko.<домен 2-го уровня>.<домен 1-го уровня>/d/...?var-cluster=<значение>
+    const baseUrl = `https://oko.${domainLevel2}.${domainLevel1}`;
+    const dashboardPath = `/d/b68c7841-7f41-4b3c-8175-ble2e19e8a55/resursy-klastera-kubernetes`;
+    const queryParams = `orgId=1&var-cluster=${clusterValue}`;
+    
+    return `${baseUrl}${dashboardPath}?${queryParams}`;
   }
   
   // Устанавливаем ссылки для каждого стенда
@@ -1696,7 +1725,9 @@ function initStandsLinks() {
     'preprod': 'Preprod',
     'lt': 'LT',
     'hotfix': 'Hotfix',
-    'prod': 'Prod'
+    'prod': 'Prod',
+    'pk2': 'PK2',
+    'pk5': 'PK5'
   };
   
   // Устанавливаем ссылки на стенды
@@ -1725,7 +1756,8 @@ function initStandsLinks() {
     'preprod': 'okoLinkPreprod',
     'lt': 'okoLinkLt',
     'hotfix': 'okoLinkHotfix',
-    'prod': 'okoLinkProd'
+    'pk2': 'okoLinkPK2',
+    'pk5': 'okoLinkPK5'
   };
   
   for (const [standKey, linkId] of Object.entries(okoLinkIds)) {

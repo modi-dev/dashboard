@@ -1521,21 +1521,20 @@ function initStandsLinks() {
   let currentStandPattern = null;
   const hostLower = currentHost.toLowerCase();
   
+  // Разбиваем домен на части (справа налево: TLD, домен 2-го уровня, и т.д.)
+  const hostParts = currentHost.split('.');
+  
   // Ищем название стенда в хосте (поддерживаем сокращения)
-  for (const [standKey, standInfo] of Object.entries(standMapping)) {
-    for (const patternStr of standInfo.patterns) {
-      // Паттерны для поиска: с дефисами, точками, в начале/конце
-      const patterns = [
-        new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'i'),
-        new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'),
-        new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'i'),
-        new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'i'),
-        new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'i'),
-        new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
-      ];
+  // Проверяем все части домена
+  for (let i = 0; i < hostParts.length; i++) {
+    const part = hostParts[i].toLowerCase();
+    
+    for (const [standKey, standInfo] of Object.entries(standMapping)) {
+      // Пропускаем prod при поиске
+      if (standKey === 'prod') continue;
       
-      for (const pattern of patterns) {
-        if (pattern.test(hostLower)) {
+      for (const patternStr of standInfo.patterns) {
+        if (part === patternStr.toLowerCase()) {
           currentStand = standKey;
           currentStandPattern = patternStr;
           break;
@@ -1552,104 +1551,121 @@ function initStandsLinks() {
     }
   }
   
+  // Если не нашли стенд, значит это prod
+  if (!currentStand) {
+    currentStand = 'prod';
+  }
+  
   // Функция для генерации URL другого стенда
   function generateStandUrl(targetStandKey) {
-    let newHost = currentHost;
-    const hostLower = currentHost.toLowerCase();
     const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return `${currentProtocol}//${currentHost}${currentPath}`;
+    }
     
-    // Специальная обработка для prod: удаляем название стенда, слово "test" и лишние точки
+    // Работаем с массивом частей домена
+    let newHostParts = [...hostParts];
+    
+    // Если переходим на prod - удаляем стенд и test
     if (targetStandKey === 'prod') {
       // Удаляем название текущего стенда
-      if (currentStand && currentStandPattern) {
-        const escapedPattern = currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Удаляем стенд с точками вокруг
-        newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '\\.', 'gi'), '.');
-        newHost = newHost.replace(new RegExp('^' + escapedPattern + '\\.', 'gi'), '');
-        newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '$', 'gi'), '');
-        // Удаляем стенд с дефисами
-        newHost = newHost.replace(new RegExp('-' + escapedPattern + '-', 'gi'), '-');
-        newHost = newHost.replace(new RegExp('^' + escapedPattern + '-', 'gi'), '');
-        newHost = newHost.replace(new RegExp('-' + escapedPattern + '$', 'gi'), '');
-      } else {
-        // Если не определили текущий стенд, пробуем удалить любые найденные
+      if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+        const standIndex = newHostParts.findIndex(part => 
+          part.toLowerCase() === currentStandPattern.toLowerCase()
+        );
+        if (standIndex !== -1) {
+          newHostParts.splice(standIndex, 1);
+        }
+      } else if (currentStand !== 'prod') {
+        // Пробуем удалить любой найденный стенд
         for (const [standKey, standInfo] of Object.entries(standMapping)) {
           if (standKey === 'prod') continue;
           for (const patternStr of standInfo.patterns) {
-            const escapedPattern = patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '\\.', 'gi'), '.');
-            newHost = newHost.replace(new RegExp('^' + escapedPattern + '\\.', 'gi'), '');
-            newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '$', 'gi'), '');
-            newHost = newHost.replace(new RegExp('-' + escapedPattern + '-', 'gi'), '-');
-            newHost = newHost.replace(new RegExp('^' + escapedPattern + '-', 'gi'), '');
-            newHost = newHost.replace(new RegExp('-' + escapedPattern + '$', 'gi'), '');
-          }
-        }
-      }
-      
-      // Удаляем слово "test" с точками вокруг
-      newHost = newHost.replace(/\.test\./gi, '.');
-      newHost = newHost.replace(/^test\./gi, '');
-      newHost = newHost.replace(/\.test$/gi, '');
-      
-      // Удаляем лишние точки (двойные точки)
-      newHost = newHost.replace(/\.\.+/g, '.');
-      // Удаляем точку в начале или конце, если есть
-      newHost = newHost.replace(/^\.+|\.+$/g, '');
-      
-      return `${currentProtocol}//${newHost}${currentPath}`;
-    }
-    
-    // Если определили текущий стенд, заменяем его
-    if (currentStand && currentStandPattern) {
-      const currentStandInfo = standMapping[currentStand];
-      
-      // Используем то же сокращение/полное название, что было в исходном домене
-      // Если в домене было сокращение (pp), используем сокращение для замены
-      // Если было полное название (preprod), используем полное
-      const useShort = currentStandInfo.short === currentStandPattern;
-      const replacementPattern = useShort ? targetStand.short : targetStand.full;
-      
-      // Пробуем различные паттерны замены
-      const replacePatterns = [
-        { pattern: new RegExp('-' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: '-' + replacementPattern + '-' },
-        { pattern: new RegExp('-' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '-' + replacementPattern },
-        { pattern: new RegExp('^' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: replacementPattern + '-' },
-        { pattern: new RegExp('^' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: replacementPattern + '.' },
-        { pattern: new RegExp('\\.' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: '.' + replacementPattern + '.' },
-        { pattern: new RegExp('\\.' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '.' + replacementPattern }
-      ];
-      
-      for (const { pattern, replacement } of replacePatterns) {
-        if (pattern.test(newHost)) {
-          newHost = newHost.replace(pattern, replacement);
-          break;
-        }
-      }
-    } else {
-      // Если не удалось определить текущий стенд, пробуем заменить любые найденные названия стендов
-      for (const [standKey, standInfo] of Object.entries(standMapping)) {
-        for (const patternStr of standInfo.patterns) {
-          const patterns = [
-            { pattern: new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: '-' + targetStand.short + '-' },
-            { pattern: new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '-' + targetStand.short },
-            { pattern: new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: targetStand.short + '-' },
-            { pattern: new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: targetStand.short + '.' },
-            { pattern: new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: '.' + targetStand.short + '.' },
-            { pattern: new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '.' + targetStand.short }
-          ];
-          
-          for (const { pattern, replacement } of patterns) {
-            if (pattern.test(newHost)) {
-              newHost = newHost.replace(pattern, replacement);
-              return `${currentProtocol}//${newHost}${currentPath}`;
+            const standIndex = newHostParts.findIndex(part => 
+              part.toLowerCase() === patternStr.toLowerCase()
+            );
+            if (standIndex !== -1) {
+              newHostParts.splice(standIndex, 1);
+              break;
             }
           }
         }
       }
+      
+      // Удаляем "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      if (testIndex !== -1) {
+        newHostParts.splice(testIndex, 1);
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
     }
     
-    return `${currentProtocol}//${newHost}${currentPath}`;
+    // Если переходим с prod на другой стенд (ift/pp/lt/hf)
+    if (currentStand === 'prod' || !currentStandPattern) {
+      // Нужно добавить "test" и название стенда
+      // Где stand - это ift/pp/lt/hf
+      
+      const standShort = targetStand.short;
+      
+      // Проверяем наличие "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      
+      // Проверяем наличие стенда
+      const standIndex = newHostParts.findIndex(part => {
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            if (part.toLowerCase() === patternStr.toLowerCase()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+      
+      // Если есть стенд, заменяем его
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = standShort;
+      } else {
+        // Если нет стенда, вставляем его после первого поддомена (обычно ms-dashboard)
+        // Вставляем на позицию 1 (после первого элемента)
+        newHostParts.splice(1, 0, standShort);
+      }
+      
+      // Если нет "test", вставляем его
+      if (testIndex === -1) {
+        // Ищем позицию: обычно после уровня "onb" (домен 3-го уровня)
+        // TLD обычно последний элемент, домен 2-го уровня - предпоследний
+        // Вставляем "test" перед предпоследним элементом (домен 2-го уровня)
+        if (newHostParts.length >= 2) {
+          const insertIndex = newHostParts.length - 2;
+          newHostParts.splice(insertIndex, 0, 'test');
+        } else {
+          // Если структура неожиданная, вставляем перед последним элементом
+          newHostParts.splice(newHostParts.length - 1, 0, 'test');
+        }
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+    }
+    
+    // Если переходим с одного не-prod стенда на другой не-prod стенд
+    // Просто заменяем название стенда
+    if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+      const standIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === currentStandPattern.toLowerCase()
+      );
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = targetStand.short;
+      }
+    }
+    
+    return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
   }
   
   // Функция для генерации URL OKO

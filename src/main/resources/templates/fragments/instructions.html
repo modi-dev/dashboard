@@ -17,7 +17,7 @@
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="instructionModalLabel"><i class="fas me-2"></i>Добро пожаловать в Version Dashboard</h5>
+                    <h5 class="modal-title" id="instructionModalLabel"><i class="fas me-2"></i>Добро пожаловать в Version Dashboard v<span th:text="${@environment.getProperty('app.version', '1.0.0')}">1.0.0</span>!</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">

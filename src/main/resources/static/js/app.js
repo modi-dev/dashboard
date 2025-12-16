@@ -1652,6 +1652,20 @@ function initStandsLinks() {
     return `${currentProtocol}//${newHost}${currentPath}`;
   }
   
+  // Функция для генерации URL OKO
+  function generateOkoUrl(targetStandKey) {
+    const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return null;
+    }
+    
+    // Используем сокращение для OKO ссылок
+    const standShort = targetStand.short;
+    
+    // Формируем URL: oko.test-{stand}
+    return `${currentProtocol}//oko.test-${standShort}`;
+  }
+  
   // Устанавливаем ссылки для каждого стенда
   const linkIds = {
     'ift': 'standLinkIft',
@@ -1669,6 +1683,7 @@ function initStandsLinks() {
     'prod': 'Prod'
   };
   
+  // Устанавливаем ссылки на стенды
   for (const [standKey, linkId] of Object.entries(linkIds)) {
     const linkElement = document.getElementById(linkId);
     if (linkElement) {
@@ -1683,6 +1698,26 @@ function initStandsLinks() {
         linkElement.innerHTML = `<i class="fas fa-check-circle me-2"></i><strong>${standLabels[standKey]}</strong> <span class="text-muted">(текущий)</span>`;
       } else {
         linkElement.classList.remove('current-stand');
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+  
+  // Устанавливаем ссылки на OKO
+  const okoLinkIds = {
+    'ift': 'okoLinkIft',
+    'preprod': 'okoLinkPreprod',
+    'lt': 'okoLinkLt',
+    'hotfix': 'okoLinkHotfix',
+    'prod': 'okoLinkProd'
+  };
+  
+  for (const [standKey, linkId] of Object.entries(okoLinkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateOkoUrl(standKey);
+      if (url) {
+        linkElement.href = url;
         linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
       }
     }

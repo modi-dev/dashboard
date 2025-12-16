@@ -229,6 +229,58 @@ function formatLastUpdateTime(date) {
   return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
 }
 
+function formatRelativeTime(dateString) {
+  if (!dateString) {
+    return '-';
+  }
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return '-';
+  }
+  
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) {
+    return 'только что';
+  } else if (diffMinutes < 60) {
+    const minutes = diffMinutes;
+    if (minutes === 1) {
+      return '1 минуту назад';
+    } else if (minutes >= 2 && minutes <= 4) {
+      return `${minutes} минуты назад`;
+    } else {
+      return `${minutes} минут назад`;
+    }
+  } else if (diffHours < 24) {
+    const hours = diffHours;
+    if (hours === 1) {
+      return '1 час назад';
+    } else if (hours >= 2 && hours <= 4) {
+      return `${hours} часа назад`;
+    } else {
+      return `${hours} часов назад`;
+    }
+  } else if (diffDays < 7) {
+    const days = diffDays;
+    if (days === 1) {
+      return 'вчера';
+    } else if (days >= 2 && days <= 4) {
+      return `${days} дня назад`;
+    } else {
+      return `${days} дней назад`;
+    }
+  } else {
+    // Если больше недели, показываем полную дату
+    return formatLastUpdateTime(date);
+  }
+}
+
 function updateServersLastUpdateTime() {
   const timeElement = document.getElementById('serversLastUpdateTime');
   if (!timeElement) {
@@ -249,18 +301,54 @@ function loadServersLastUpdateTime() {
     return;
   }
   
-  // Пытаемся загрузить время из localStorage
-  const storedTime = localStorage.getItem('serversLastUpdateTime');
-  if (storedTime) {
-    const date = new Date(storedTime);
-    if (!isNaN(date.getTime())) {
-      timeElement.textContent = formatLastUpdateTime(date);
-      return;
-    }
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/servers/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success && data.data) {
+          if (data.data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading servers last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
   }
   
-  // Если нет сохраненного времени, показываем текущее время
-  updateServersLastUpdateTime();
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.serversUpdateInterval) {
+    window.serversUpdateInterval = setInterval(updateTime, 60000);
+  }
 }
 
 function refreshServers(ev) {
@@ -288,8 +376,7 @@ function refreshServers(ev) {
         return;
       }
       if (data.success) {
-        // Обновляем время последнего обновления перед перезагрузкой
-        updateServersLastUpdateTime();
+        // Время обновления будет загружено из БД после перезагрузки страницы
         showNotification('Фоновая проверка серверов запущена. Обновим данные через пару секунд.', 'info');
         setTimeout(() => location.reload(), 3000);
       } else {
@@ -330,18 +417,54 @@ function loadPodsLastUpdateTime() {
     return;
   }
   
-  // Пытаемся загрузить время из localStorage
-  const storedTime = localStorage.getItem('podsLastUpdateTime');
-  if (storedTime) {
-    const date = new Date(storedTime);
-    if (!isNaN(date.getTime())) {
-      timeElement.textContent = formatLastUpdateTime(date);
-      return;
-    }
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/pods/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success) {
+          if (data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading pods last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
   }
   
-  // Если нет сохраненного времени, показываем текущее время
-  updatePodsLastUpdateTime();
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.podsUpdateInterval) {
+    window.podsUpdateInterval = setInterval(updateTime, 60000);
+  }
 }
 
 function refreshPods(ev) {
@@ -373,8 +496,7 @@ function refreshPods(ev) {
         return;
       }
       if (data.success) {
-        // Обновляем время последнего обновления перед перезагрузкой
-        updatePodsLastUpdateTime();
+        // Время обновления будет загружено из БД после перезагрузки страницы
         showNotification('Информация о подах успешно обновлена!', 'success');
         setTimeout(() => location.reload(), 500);
       } else {
@@ -1135,6 +1257,133 @@ function initPodsColumnControls(table) {
   }
 }
 
+function generateServiceUrl(serviceName) {
+  if (!serviceName || serviceName === '-') {
+    return null;
+  }
+  
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  
+  // Разбиваем домен на части
+  const hostParts = currentHost.split('.');
+  
+  // Если домен имеет формат ms-dashboard.ift.onb.test.komp.ru
+  // Заменяем первую часть (ms-dashboard) на serviceName
+  if (hostParts.length > 1) {
+    hostParts[0] = serviceName;
+    const newHost = hostParts.join('.');
+    return `${currentProtocol}//${newHost}/actuator/health`;
+  }
+  
+  return null;
+}
+
+function initPodsNameClickHandlers() {
+  const table = document.getElementById('podsTable');
+  if (!table) {
+    return;
+  }
+  
+  // Функция для извлечения названия сервиса из ячейки
+  function extractServiceName(cell) {
+    if (!cell) {
+      return null;
+    }
+    
+    // Получаем strong элемент, который содержит название
+    const strongElement = cell.querySelector('strong');
+    
+    if (strongElement) {
+      // Клонируем элемент, чтобы не изменять оригинал
+      const clone = strongElement.cloneNode(true);
+      
+      // Удаляем все badge элементы из клона
+      const badges = clone.querySelectorAll('.badge');
+      badges.forEach(badge => badge.remove());
+      
+      // Получаем текст без badge
+      let serviceName = clone.textContent.trim();
+      
+      // Убираем все лишние пробелы и переносы строк
+      serviceName = serviceName.replace(/\s+/g, ' ').trim();
+      
+      if (!serviceName || serviceName === '-') {
+        return null;
+      }
+      
+      return serviceName;
+    }
+    
+    // Если нет strong, берем весь текст из ячейки
+    let serviceName = cell.textContent.trim();
+    
+    // Убираем badge с количеством подов в скобках, если есть (например, "my-service (3)" -> "my-service")
+    serviceName = serviceName.replace(/\s*\(\d+\)\s*$/, '').trim();
+    
+    // Убираем все лишние пробелы и переносы строк
+    serviceName = serviceName.replace(/\s+/g, ' ').trim();
+    
+    if (!serviceName || serviceName === '-') {
+      return null;
+    }
+    
+    return serviceName;
+  }
+  
+  // Обработчик клика на ячейки с названием
+  table.addEventListener('click', (event) => {
+    // Проверяем, что зажат Ctrl (или Cmd на Mac)
+    if (!(event.ctrlKey || event.metaKey)) {
+      return;
+    }
+    
+    // Ищем ячейку с названием
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (!cell) {
+      return;
+    }
+    
+    // Извлекаем название сервиса (работает и для группированных, и для обычных строк)
+    const serviceName = extractServiceName(cell);
+    if (!serviceName) {
+      return;
+    }
+    
+    // Генерируем URL
+    const url = generateServiceUrl(serviceName);
+    if (url) {
+      event.preventDefault();
+      event.stopPropagation();
+      window.open(url, '_blank');
+    }
+  });
+  
+  // Добавляем визуальную подсказку при наведении
+  table.addEventListener('mouseover', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      const serviceName = extractServiceName(cell);
+      
+      if (serviceName) {
+        cell.style.cursor = 'pointer';
+        const url = generateServiceUrl(serviceName);
+        if (url) {
+          cell.title = 'Ctrl+Click (или Cmd+Click) для открытия: ' + url;
+        }
+      }
+    }
+  });
+  
+  table.addEventListener('mouseout', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      // Не сбрасываем cursor, так как ячейка должна оставаться кликабельной
+      // cell.style.cursor = '';
+    }
+  });
+}
+
 function initPodsFeatures() {
   const table = document.getElementById('podsTable');
   if (!table) {
@@ -1144,6 +1393,7 @@ function initPodsFeatures() {
   groupPods(table);
   initPodsFilter(table);
   initPodsColumnControls(table);
+  initPodsNameClickHandlers();
 }
 
 function initInstructionModal() {
@@ -1206,6 +1456,195 @@ function openInstructions() {
   }
 }
 
+// Stands navigation ---------------------------------------------------------
+function initStandsLinks() {
+  // Маппинг полных названий и сокращений стендов
+  const standMapping = {
+    'ift': { full: 'ift', short: 'ift', patterns: ['ift'] },
+    'preprod': { full: 'preprod', short: 'pp', patterns: ['preprod', 'pp', 'pre-prod'] },
+    'lt': { full: 'lt', short: 'lt', patterns: ['lt'] },
+    'hotfix': { full: 'hotfix', short: 'hf', patterns: ['hotfix', 'hf'] },
+    'prod': { full: 'prod', short: 'prod', patterns: ['prod'] }
+  };
+  
+  const stands = Object.keys(standMapping);
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  const currentPath = window.location.pathname;
+  
+  // Определяем текущий стенд по хосту
+  let currentStand = null;
+  let currentStandPattern = null;
+  const hostLower = currentHost.toLowerCase();
+  
+  // Ищем название стенда в хосте (поддерживаем сокращения)
+  for (const [standKey, standInfo] of Object.entries(standMapping)) {
+    for (const patternStr of standInfo.patterns) {
+      // Паттерны для поиска: с дефисами, точками, в начале/конце
+      const patterns = [
+        new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'i'),
+        new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'),
+        new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'i'),
+        new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'i'),
+        new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'i'),
+        new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+      ];
+      
+      for (const pattern of patterns) {
+        if (pattern.test(hostLower)) {
+          currentStand = standKey;
+          currentStandPattern = patternStr;
+          break;
+        }
+      }
+      
+      if (currentStand) {
+        break;
+      }
+    }
+    
+    if (currentStand) {
+      break;
+    }
+  }
+  
+  // Функция для генерации URL другого стенда
+  function generateStandUrl(targetStandKey) {
+    let newHost = currentHost;
+    const hostLower = currentHost.toLowerCase();
+    const targetStand = standMapping[targetStandKey];
+    
+    // Специальная обработка для prod: удаляем название стенда, слово "test" и лишние точки
+    if (targetStandKey === 'prod') {
+      // Удаляем название текущего стенда
+      if (currentStand && currentStandPattern) {
+        const escapedPattern = currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Удаляем стенд с точками вокруг
+        newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '\\.', 'gi'), '.');
+        newHost = newHost.replace(new RegExp('^' + escapedPattern + '\\.', 'gi'), '');
+        newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '$', 'gi'), '');
+        // Удаляем стенд с дефисами
+        newHost = newHost.replace(new RegExp('-' + escapedPattern + '-', 'gi'), '-');
+        newHost = newHost.replace(new RegExp('^' + escapedPattern + '-', 'gi'), '');
+        newHost = newHost.replace(new RegExp('-' + escapedPattern + '$', 'gi'), '');
+      } else {
+        // Если не определили текущий стенд, пробуем удалить любые найденные
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            const escapedPattern = patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '\\.', 'gi'), '.');
+            newHost = newHost.replace(new RegExp('^' + escapedPattern + '\\.', 'gi'), '');
+            newHost = newHost.replace(new RegExp('\\.' + escapedPattern + '$', 'gi'), '');
+            newHost = newHost.replace(new RegExp('-' + escapedPattern + '-', 'gi'), '-');
+            newHost = newHost.replace(new RegExp('^' + escapedPattern + '-', 'gi'), '');
+            newHost = newHost.replace(new RegExp('-' + escapedPattern + '$', 'gi'), '');
+          }
+        }
+      }
+      
+      // Удаляем слово "test" с точками вокруг
+      newHost = newHost.replace(/\.test\./gi, '.');
+      newHost = newHost.replace(/^test\./gi, '');
+      newHost = newHost.replace(/\.test$/gi, '');
+      
+      // Удаляем лишние точки (двойные точки)
+      newHost = newHost.replace(/\.\.+/g, '.');
+      // Удаляем точку в начале или конце, если есть
+      newHost = newHost.replace(/^\.+|\.+$/g, '');
+      
+      return `${currentProtocol}//${newHost}${currentPath}`;
+    }
+    
+    // Если определили текущий стенд, заменяем его
+    if (currentStand && currentStandPattern) {
+      const currentStandInfo = standMapping[currentStand];
+      
+      // Используем то же сокращение/полное название, что было в исходном домене
+      // Если в домене было сокращение (pp), используем сокращение для замены
+      // Если было полное название (preprod), используем полное
+      const useShort = currentStandInfo.short === currentStandPattern;
+      const replacementPattern = useShort ? targetStand.short : targetStand.full;
+      
+      // Пробуем различные паттерны замены
+      const replacePatterns = [
+        { pattern: new RegExp('-' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: '-' + replacementPattern + '-' },
+        { pattern: new RegExp('-' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '-' + replacementPattern },
+        { pattern: new RegExp('^' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: replacementPattern + '-' },
+        { pattern: new RegExp('^' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: replacementPattern + '.' },
+        { pattern: new RegExp('\\.' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: '.' + replacementPattern + '.' },
+        { pattern: new RegExp('\\.' + currentStandPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '.' + replacementPattern }
+      ];
+      
+      for (const { pattern, replacement } of replacePatterns) {
+        if (pattern.test(newHost)) {
+          newHost = newHost.replace(pattern, replacement);
+          break;
+        }
+      }
+    } else {
+      // Если не удалось определить текущий стенд, пробуем заменить любые найденные названия стендов
+      for (const [standKey, standInfo] of Object.entries(standMapping)) {
+        for (const patternStr of standInfo.patterns) {
+          const patterns = [
+            { pattern: new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: '-' + targetStand.short + '-' },
+            { pattern: new RegExp('-' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '-' + targetStand.short },
+            { pattern: new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-', 'gi'), replacement: targetStand.short + '-' },
+            { pattern: new RegExp('^' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: targetStand.short + '.' },
+            { pattern: new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.', 'gi'), replacement: '.' + targetStand.short + '.' },
+            { pattern: new RegExp('\\.' + patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'gi'), replacement: '.' + targetStand.short }
+          ];
+          
+          for (const { pattern, replacement } of patterns) {
+            if (pattern.test(newHost)) {
+              newHost = newHost.replace(pattern, replacement);
+              return `${currentProtocol}//${newHost}${currentPath}`;
+            }
+          }
+        }
+      }
+    }
+    
+    return `${currentProtocol}//${newHost}${currentPath}`;
+  }
+  
+  // Устанавливаем ссылки для каждого стенда
+  const linkIds = {
+    'ift': 'standLinkIft',
+    'preprod': 'standLinkPreprod',
+    'lt': 'standLinkLt',
+    'hotfix': 'standLinkHotfix',
+    'prod': 'standLinkProd'
+  };
+  
+  const standLabels = {
+    'ift': 'IFT',
+    'preprod': 'Preprod',
+    'lt': 'LT',
+    'hotfix': 'Hotfix',
+    'prod': 'Prod'
+  };
+  
+  for (const [standKey, linkId] of Object.entries(linkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateStandUrl(standKey);
+      linkElement.href = url;
+      
+      // Если это текущий стенд, делаем ссылку неактивной и выделяем
+      if (currentStand === standKey) {
+        linkElement.classList.add('current-stand');
+        linkElement.classList.add('disabled');
+        linkElement.style.pointerEvents = 'none';
+        linkElement.innerHTML = `<i class="fas fa-check-circle me-2"></i><strong>${standLabels[standKey]}</strong> <span class="text-muted">(текущий)</span>`;
+      } else {
+        linkElement.classList.remove('current-stand');
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+}
+
 // Bootstrap everything ------------------------------------------------------
 onDocumentReady(() => {
   initTheme();
@@ -1215,6 +1654,7 @@ onDocumentReady(() => {
   initInstructionModal();
   loadPodsLastUpdateTime();
   loadServersLastUpdateTime();
+  initStandsLinks();
 
   const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
   const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';

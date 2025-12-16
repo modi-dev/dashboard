@@ -49,7 +49,6 @@ public class ServerVersionService {
     );
     
     // Регулярное выражение для извлечения версии Kafka из метрик
-    // Ищем строку вида: vtb_kafka_component{app_type="kafka",ci_host="hostname",cluster_name="1357-kafka-if-cluster-kafka-astra-7144",component_name="VTB-Kafka",component_version="3.362.4",exp_name="vtb_jmx_exporter",ris_name="1357",ris_sub="test"}
     private static final Pattern KAFKA_VERSION_PATTERN = Pattern.compile(
         "vtb_kafka_component\\{[^}]*component_version=\"([^\"]+)\"", 
         Pattern.CASE_INSENSITIVE
@@ -254,7 +253,7 @@ public class ServerVersionService {
     }
     
     /**
-     * Получает версию Kafka через метрики vtb_jmx_exporter
+     * Получает версию Kafka через метрики
      * 
      * @param server сервер Kafka
      * @return версия Kafka или null

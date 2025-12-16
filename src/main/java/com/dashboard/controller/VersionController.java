@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Контроллер для работы с версиями и информацией о подах
@@ -287,6 +288,34 @@ public class VersionController {
             logger.error("Ошибка при обновлении информации о подах: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                 .body(new ApiResponse<>(false, null, "Ошибка при обновлении информации о подах: " + e.getMessage(), null));
+        }
+    }
+    
+    /**
+     * Получает время последнего обновления подов
+     * GET /api/pods/last-updated
+     */
+    @GetMapping("/last-updated")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getPodsLastUpdated() {
+        try {
+            Optional<LocalDateTime> lastUpdated = podRepository.findLastUpdatedAt();
+            Map<String, Object> response = new HashMap<>();
+            if (lastUpdated.isPresent()) {
+                response.put("success", true);
+                // Возвращаем ISO строку для правильного парсинга на клиенте
+                response.put("lastUpdated", lastUpdated.get().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            } else {
+                response.put("success", true);
+                response.put("lastUpdated", null);
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Ошибка при получении времени последнего обновления подов: {}", e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
     

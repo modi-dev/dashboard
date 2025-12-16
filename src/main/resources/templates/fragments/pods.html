@@ -36,7 +36,7 @@
             <tbody>
                 <tr th:each="pod : ${pods}" th:attr="data-pod-name=${pod.name},data-is-grouped=false">
                     <td></td>
-                    <td data-column-key="name">
+                    <td data-column-key="name" class="pod-name-clickable">
                         <strong th:text="${pod.name}">-</strong>
                     </td>
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="podName">

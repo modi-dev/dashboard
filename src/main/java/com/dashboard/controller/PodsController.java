@@ -47,6 +47,7 @@ public class PodsController {
         boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                  !auth.getName().equals("anonymousUser");
         model.addAttribute("isAuthenticated", isAuthenticated);
+        model.addAttribute("activePage", "pods");
         try {
             logger.info("Запрос HTML страницы с информацией о подах");
             

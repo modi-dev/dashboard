@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -191,6 +193,29 @@ public class ServerController {
             logger.error("Ошибка при обновлении статуса серверов: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, null, "Ошибка при обновлении статуса серверов: " + e.getMessage(), null));
+        }
+    }
+    
+    /**
+     * Получает время последнего обновления серверов
+     * GET /api/servers/last-updated
+     */
+    @GetMapping("/last-updated")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getServersLastUpdated() {
+        try {
+            Optional<LocalDateTime> lastUpdated = serverRepository.findLastUpdatedAt();
+            Map<String, Object> data = new HashMap<>();
+            if (lastUpdated.isPresent()) {
+                // Возвращаем ISO строку для правильного парсинга на клиенте
+                data.put("lastUpdated", lastUpdated.get().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            } else {
+                data.put("lastUpdated", null);
+            }
+            return ResponseEntity.ok(new ApiResponse<>(true, data, null, null));
+        } catch (Exception e) {
+            logger.error("Ошибка при получении времени последнего обновления серверов: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse<>(false, null, "Ошибка при получении времени последнего обновления: " + e.getMessage(), null));
         }
     }
     

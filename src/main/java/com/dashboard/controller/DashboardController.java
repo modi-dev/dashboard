@@ -83,6 +83,7 @@ public class DashboardController {
             boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                      !auth.getName().equals("anonymousUser");
             model.addAttribute("isAuthenticated", isAuthenticated);
+            model.addAttribute("activePage", "dashboard");
             
             // Получаем список серверов
             // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,
@@ -158,6 +159,7 @@ public class DashboardController {
         boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                  !auth.getName().equals("anonymousUser");
         model.addAttribute("isAuthenticated", isAuthenticated);
+        model.addAttribute("activePage", "servers");
         try {
             // Получаем список серверов
             // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,

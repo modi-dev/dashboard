@@ -280,13 +280,13 @@ public class KubernetesService {
     /**
      * Получает значение переменной DATABASE_CLUSTER_URL из секретов для указанного сервиса
      * 
-     * Ищет секреты, связанные с именем сервиса, и извлекает значение переменной DATABASE_CLUSTER_URL.
+     * Ищет секреты, связанные с именем сервиса, и извлекает все значения переменных, содержащих DATABASE_CLUSTER_URL.
      * Проверяет секреты с именами, содержащими имя сервиса.
      * 
      * Использует команду: kubectl get secrets -n <namespace> -o json
      * 
      * @param serviceName имя сервиса (из labels.app)
-     * @return значение DATABASE_CLUSTER_URL или null если не найдено
+     * @return все найденные значения DATABASE_CLUSTER_URL, разделенные переносом строки, или null если не найдено
      */
     public String getDatabaseClusterUrlFromSecrets(String serviceName) {
         if (serviceName == null || serviceName.isEmpty()) {
@@ -317,6 +317,9 @@ public class KubernetesService {
                 logger.debug("Не найден массив items в ответе kubectl get secrets");
                 return null;
             }
+            
+            // Список для хранения всех найденных значений
+            java.util.List<String> foundValues = new java.util.ArrayList<>();
             
             // Ищем секреты, связанные с сервисом
             // Обычно секреты имеют имена вида: <service-name>, <service-name>-secret, <service-name>-secrets и т.д.
@@ -351,8 +354,12 @@ public class KubernetesService {
                                         // Декодируем base64 значение
                                         byte[] decodedBytes = java.util.Base64.getDecoder().decode(valueNode.asText());
                                         String decodedValue = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-                                        logger.info("Найдена переменная DATABASE_CLUSTER_URL в секрете {}: {}", secretName, decodedValue);
-                                        return decodedValue;
+                                        
+                                        // Добавляем значение в список, если его еще нет
+                                        if (!decodedValue.trim().isEmpty() && !foundValues.contains(decodedValue.trim())) {
+                                            foundValues.add(decodedValue.trim());
+                                            logger.info("Найдена переменная {} в секрете {}: {}", key, secretName, decodedValue);
+                                        }
                                     } catch (Exception e) {
                                         logger.debug("Ошибка декодирования значения из секрета {}: {}", secretName, e.getMessage());
                                     }
@@ -363,8 +370,15 @@ public class KubernetesService {
                 }
             }
             
-            logger.debug("Переменная DATABASE_CLUSTER_URL не найдена в секретах для сервиса: {}", serviceName);
-            return null;
+            if (foundValues.isEmpty()) {
+                logger.debug("Переменная DATABASE_CLUSTER_URL не найдена в секретах для сервиса: {}", serviceName);
+                return null;
+            }
+            
+            // Объединяем все найденные значения через перенос строки
+            String result = String.join("\n", foundValues);
+            logger.info("Найдено {} значений DATABASE_CLUSTER_URL для сервиса {}: {}", foundValues.size(), serviceName, result);
+            return result;
             
         } catch (KubectlException e) {
             logger.warn("Не удалось получить секреты для сервиса {}: {}", serviceName, e.getMessage());

@@ -540,6 +540,10 @@ body.column-resize-active {
     word-break: break-word;
 }
 
+.pod-wrap-cell .wrap-code.database-cluster-url {
+    white-space: pre-line;
+}
+
 /* Pod name clickable cell */
 td[data-column-key="name"].pod-name-clickable {
     cursor: pointer;

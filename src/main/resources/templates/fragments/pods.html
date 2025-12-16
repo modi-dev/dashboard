@@ -57,7 +57,7 @@
                     <td class="pod-wrap-cell" data-column-key="cpu" th:text="${pod.cpuRequest ?: '-'}">-</td>
                     <td class="pod-wrap-cell" data-column-key="memory" th:text="${pod.memoryRequest ?: '-'}">-</td>
                     <td class="pod-wrap-cell" data-column-key="databaseClusterUrl">
-                        <code class="wrap-code" th:text="${pod.databaseClusterUrl ?: '-'}">-</code>
+                        <code class="wrap-code database-cluster-url" th:text="${pod.databaseClusterUrl ?: '-'}">-</code>
                     </td>
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="creationDate" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
                 </tr>

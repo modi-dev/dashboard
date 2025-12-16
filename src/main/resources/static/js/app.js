@@ -934,10 +934,31 @@ function togglePodGroup(button) {
 
     const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
     detailCells.forEach(cell => {
+      // Сохраняем оригинальный HTML
       cell.setAttribute('data-original-html', cell.innerHTML);
+      
+      // Сохраняем ширину столбца из header или первой видимой ячейки
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey && !table.hasAttribute(`data-saved-width-${columnKey}`)) {
+        // Пытаемся получить ширину из header
+        const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+        let savedWidth = null;
+        
+        if (headerCell && headerCell.offsetWidth > 0) {
+          savedWidth = headerCell.offsetWidth + 'px';
+        } else if (cell.offsetWidth > 0) {
+          savedWidth = cell.offsetWidth + 'px';
+        }
+        
+        if (savedWidth) {
+          table.setAttribute(`data-saved-width-${columnKey}`, savedWidth);
+        }
+      }
+      
       cell.innerHTML = '';
       cell.style.visibility = 'hidden';
-      cell.style.width = '0';
+      // Не меняем width, чтобы не влиять на ширину столбца
+      // Используем только padding и border для визуального скрытия
       cell.style.padding = '0';
       cell.style.border = 'none';
     });
@@ -956,11 +977,34 @@ function togglePodGroup(button) {
 
     const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
     detailCells.forEach(cell => {
-      cell.innerHTML = '-';
+      // Восстанавливаем оригинальный HTML
+      const originalHtml = cell.getAttribute('data-original-html');
+      if (originalHtml) {
+        cell.innerHTML = originalHtml;
+      } else {
+        cell.innerHTML = '-';
+      }
+      
+      // Восстанавливаем стили
       cell.style.visibility = '';
-      cell.style.width = '';
       cell.style.padding = '';
       cell.style.border = '';
+      
+      // Восстанавливаем ширину столбца, если она была сохранена
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey) {
+        const savedWidth = table.getAttribute(`data-saved-width-${columnKey}`);
+        if (savedWidth && table.classList.contains('pods-table-fixed')) {
+          // Применяем сохраненную ширину ко всем ячейкам этого столбца
+          const allColumnCells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+          allColumnCells.forEach(colCell => {
+            colCell.style.width = savedWidth;
+            colCell.style.minWidth = savedWidth;
+            colCell.style.maxWidth = savedWidth;
+          });
+        }
+        table.removeAttribute(`data-saved-width-${columnKey}`);
+      }
     });
 
     if (table) {

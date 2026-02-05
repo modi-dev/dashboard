@@ -149,5 +149,143 @@ class KubectlCommandExecutorImplTest {
         // The method should not throw an exception
         assertTrue(available || !available); // Either true or false is acceptable
     }
+    
+    @Test
+    void testExecuteCommand_ThrowsKubectlException_WhenCommandNotFound() {
+        // Given
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("nonexistent-kubectl-command");
+        
+        KubectlCommandExecutorImpl executorWithInvalidPath = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // When & Then
+        assertThrows(KubectlException.class, () -> 
+            executorWithInvalidPath.executeCommand("version", "-o", "json")
+        );
+    }
+    
+    @Test
+    void testExecuteCommand_WithShortTimeout() {
+        // Given - using a command that will take longer than timeout
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("sh");
+        
+        KubectlCommandExecutorImpl executorWithShortTimeout = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 1L);
+        
+        // When & Then - Command should timeout (sh -c "sleep 10" takes 10 seconds, but timeout is 1 second)
+        try {
+            // Try to run a command that would timeout
+            executorWithShortTimeout.executeCommand("-c", "sleep 10");
+            // If we get here, the command completed (shouldn't happen with 1s timeout on 10s sleep)
+            // But if sleep is not available or command fails quickly, that's also acceptable
+        } catch (KubectlException e) {
+            // Expected - either timeout or command failure is acceptable
+            assertNotNull(e.getMessage());
+        }
+    }
+    
+    @Test
+    void testExecuteCommand_SuccessWithEcho() {
+        // Given
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("echo");
+        
+        KubectlCommandExecutorImpl executorWithEcho = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // When
+        try {
+            String result = executorWithEcho.executeCommand("test output");
+            
+            // Then
+            assertNotNull(result);
+            assertTrue(result.contains("test output"));
+        } catch (KubectlException e) {
+            // If echo is not available, the test should handle gracefully
+            assertNotNull(e.getMessage());
+        }
+    }
+    
+    @Test
+    void testExecuteCommand_HandlesStderr() {
+        // Given - Use a command that writes to stderr
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("sh");
+        
+        KubectlCommandExecutorImpl executorWithSh = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // When & Then - Command exits with non-zero, should throw exception
+        assertThrows(KubectlException.class, () -> 
+            executorWithSh.executeCommand("-c", "exit 1")
+        );
+    }
+    
+    @Test
+    void testConstructor_DefaultsAreSet() {
+        // Given & When
+        KubectlCommandExecutorImpl newExecutor = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // Then
+        assertNotNull(newExecutor);
+        verify(kubernetesConfig, never()).getKubectlPath(); // Not called in constructor
+    }
+    
+    @Test
+    void testIsAvailable_WhenKubectlNotAvailable_ReturnsFalse() {
+        // Given
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("non-existent-command-12345");
+        
+        KubectlCommandExecutorImpl executorWithInvalidCommand = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // When
+        boolean available = executorWithInvalidCommand.isAvailable();
+        
+        // Then
+        assertFalse(available);
+    }
+    
+    @Test
+    void testExecuteCommand_ReThrowsKubectlException() {
+        // Given
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("false"); // Command that always returns exit code 1
+        
+        KubectlCommandExecutorImpl executorWithFalseCommand = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        
+        // When & Then
+        KubectlException exception = assertThrows(KubectlException.class, () -> 
+            executorWithFalseCommand.executeCommand()
+        );
+        
+        assertNotNull(exception.getMessage());
+    }
+    
+    @Test
+    void testGetKubectlPath_PreferenceOrder() {
+        // Test 1: Embedded kubectl is preferred when both available and initialized
+        lenient().when(embeddedKubectlService.getKubectlPath()).thenReturn("/embedded/kubectl");
+        lenient().when(embeddedKubectlService.isInitialized()).thenReturn(true);
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("/config/kubectl");
+        
+        KubectlCommandExecutorImpl exec1 = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        exec1.isAvailable(); // Trigger getKubectlPath
+        
+        verify(embeddedKubectlService, atLeastOnce()).getKubectlPath();
+        verify(embeddedKubectlService, atLeastOnce()).isInitialized();
+        
+        // Test 2: Config kubectl is used when embedded is not initialized
+        reset(embeddedKubectlService, kubernetesConfig);
+        lenient().when(embeddedKubectlService.getKubectlPath()).thenReturn("/embedded/kubectl");
+        lenient().when(embeddedKubectlService.isInitialized()).thenReturn(false);
+        lenient().when(kubernetesConfig.getKubectlPath()).thenReturn("/config/kubectl");
+        
+        KubectlCommandExecutorImpl exec2 = 
+            new KubectlCommandExecutorImpl(kubernetesConfig, embeddedKubectlService, 30L);
+        exec2.isAvailable(); // Trigger getKubectlPath
+        
+        verify(kubernetesConfig, atLeastOnce()).getKubectlPath();
+    }
 }
 

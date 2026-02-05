@@ -449,4 +449,301 @@ class KubernetesServiceTest {
         // Then
         assertEquals("default", result);
     }
+    
+    @Test
+    void testGetNamespaceQuota_Success() throws KubectlException {
+        // Given
+        String quotaJson = "{\"items\":[{\"status\":{\"used\":{\"requests.cpu\":\"2\",\"requests.memory\":\"4Gi\",\"pods\":\"5\",\"configmaps\":\"10\",\"secrets\":\"15\"},\"hard\":{\"requests.cpu\":\"10\",\"requests.memory\":\"20Gi\",\"pods\":\"50\",\"configmaps\":\"100\",\"secrets\":\"150\"}}}]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        assertEquals("2", quota.cpuUsed);
+        assertEquals("10", quota.cpuHard);
+        assertEquals("4Gi", quota.memoryUsed);
+        assertEquals("20Gi", quota.memoryHard);
+        assertEquals("5", quota.podsUsed);
+        assertEquals("50", quota.podsHard);
+        assertEquals("10", quota.configmapsUsed);
+        assertEquals("100", quota.configmapsHard);
+        assertEquals("15", quota.secretsUsed);
+        assertEquals("150", quota.secretsHard);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenEmptyResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("");
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenNullResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(null);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenNoItems_ShouldReturnEmptyQuota() throws KubectlException {
+        // Given
+        String quotaJson = "{\"items\":[]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        assertNull(quota.cpuUsed);
+        assertNull(quota.cpuHard);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenKubectlException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenGenericException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenInvalidJson_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("invalid json");
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_Success() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        String secretsJson = "{\"items\":[{\"metadata\":{\"name\":\"test-service-secret\"},\"data\":{\"DATABASE_CLUSTER_URL\":\"" + 
+            java.util.Base64.getEncoder().encodeToString("jdbc:postgresql://localhost:5432/test".getBytes()) + "\"}}]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNotNull(result);
+        assertTrue(result.contains("jdbc:postgresql://localhost:5432/test"));
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNullServiceName_ShouldReturnNull() {
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(null);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenEmptyServiceName_ShouldReturnNull() {
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoSecrets_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        String secretsJson = "{\"items\":[]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenEmptyResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("");
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNullResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(null);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenKubectlException_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenGenericException_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WithMultipleMatchingSecrets() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        String url1 = "jdbc:postgresql://host1:5432/db1";
+        String url2 = "jdbc:postgresql://host2:5432/db2";
+        String secretsJson = "{\"items\":[" +
+            "{\"metadata\":{\"name\":\"test-service-secret\"},\"data\":{\"DATABASE_CLUSTER_URL\":\"" + 
+            java.util.Base64.getEncoder().encodeToString(url1.getBytes()) + "\"}}," +
+            "{\"metadata\":{\"name\":\"test-service-secrets\"},\"data\":{\"DATABASE_CLUSTER_URL\":\"" + 
+            java.util.Base64.getEncoder().encodeToString(url2.getBytes()) + "\"}}]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNotNull(result);
+        assertTrue(result.contains(url1) || result.contains(url2));
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WithDifferentKeyFormats() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        String url = "jdbc:postgresql://localhost:5432/test";
+        String secretsJson = "{\"items\":[{\"metadata\":{\"name\":\"test-service\"},\"data\":{\"database_cluster_url\":\"" + 
+            java.util.Base64.getEncoder().encodeToString(url.getBytes()) + "\"}}]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNotNull(result);
+        assertTrue(result.contains(url));
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenInvalidJson_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("invalid json");
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoItemsArray_ShouldReturnNull() throws KubectlException {
+        // Given
+        String serviceName = "test-service";
+        String secretsJson = "{\"kind\":\"SecretList\"}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(serviceName);
+        
+        // Then
+        assertNull(result);
+    }
 }

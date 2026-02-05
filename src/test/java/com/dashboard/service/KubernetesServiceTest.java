@@ -449,4 +449,595 @@ class KubernetesServiceTest {
         // Then
         assertEquals("default", result);
     }
+    
+    // ===== Tests for getNamespaceQuota() =====
+    
+    @Test
+    void testGetNamespaceQuota_WhenValidQuota_ShouldReturnQuota() throws KubectlException {
+        // Given
+        String quotaJson = """
+            {
+                "items": [{
+                    "status": {
+                        "used": {
+                            "requests.cpu": "2",
+                            "requests.memory": "4Gi",
+                            "pods": "10",
+                            "configmaps": "5",
+                            "secrets": "3"
+                        },
+                        "hard": {
+                            "requests.cpu": "4",
+                            "requests.memory": "8Gi",
+                            "pods": "20",
+                            "configmaps": "10",
+                            "secrets": "10"
+                        }
+                    }
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        assertEquals("2", quota.cpuUsed);
+        assertEquals("4", quota.cpuHard);
+        assertEquals("4Gi", quota.memoryUsed);
+        assertEquals("8Gi", quota.memoryHard);
+        assertEquals("10", quota.podsUsed);
+        assertEquals("20", quota.podsHard);
+        assertEquals("5", quota.configmapsUsed);
+        assertEquals("10", quota.configmapsHard);
+        assertEquals("3", quota.secretsUsed);
+        assertEquals("10", quota.secretsHard);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenNullResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(null);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenEmptyResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("   ");
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenKubectlException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenGenericException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNull(quota);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenEmptyItems_ShouldReturnEmptyQuota() throws KubectlException {
+        // Given
+        String quotaJson = "{\"items\": []}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        // Все поля должны быть null, так как items пустой
+        assertNull(quota.cpuUsed);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenNoStatus_ShouldReturnEmptyQuota() throws KubectlException {
+        // Given
+        String quotaJson = "{\"items\": [{}]}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        assertNull(quota.cpuUsed);
+    }
+    
+    @Test
+    void testGetNamespaceQuota_WhenPartialQuotaData_ShouldReturnPartialQuota() throws KubectlException {
+        // Given
+        String quotaJson = """
+            {
+                "items": [{
+                    "status": {
+                        "used": {
+                            "requests.cpu": "2"
+                        },
+                        "hard": {
+                            "requests.memory": "8Gi"
+                        }
+                    }
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(quotaJson);
+        
+        // When
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        
+        // Then
+        assertNotNull(quota);
+        assertEquals("2", quota.cpuUsed);
+        assertNull(quota.cpuHard);
+        assertNull(quota.memoryUsed);
+        assertEquals("8Gi", quota.memoryHard);
+    }
+    
+    // ===== Tests for getDatabaseClusterUrlFromSecrets() =====
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNullServiceName_ShouldReturnNull() {
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets(null);
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenEmptyServiceName_ShouldReturnNull() {
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNullResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(null);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenEmptyResponse_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn("   ");
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoItems_ShouldReturnNull() throws KubectlException {
+        // Given
+        String secretsJson = "{\"kind\": \"SecretList\"}";
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoMatchingSecrets_ShouldReturnNull() throws KubectlException {
+        // Given
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "other-service"},
+                    "data": {"DATABASE_CLUSTER_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenMatchingSecret_ShouldReturnDecodedUrl() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {"DATABASE_CLUSTER_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenSecretHasSuffix_ShouldReturnDecodedUrl() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service-secret"},
+                    "data": {"DATABASE_CLUSTER_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenKubectlException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new KubectlException("kubectl command failed"));
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenGenericException_ShouldReturnNull() throws KubectlException {
+        // Given
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenThrow(new RuntimeException("Unexpected error"));
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoDataInSecret_ShouldReturnNull() throws KubectlException {
+        // Given
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenNoDatabaseUrlInSecret_ShouldReturnNull() throws KubectlException {
+        // Given
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {"OTHER_KEY": "dGVzdA=="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNull(result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenMultipleMatchingSecrets_ShouldReturnAllUrls() throws KubectlException {
+        // Given - "url1" in base64 is "dXJsMQ==", "url2" in base64 is "dXJsMg=="
+        String secretsJson = """
+            {
+                "items": [
+                    {
+                        "metadata": {"name": "my-service"},
+                        "data": {"DATABASE_CLUSTER_URL": "dXJsMQ=="}
+                    },
+                    {
+                        "metadata": {"name": "my-service-secret"},
+                        "data": {"DATABASE_CLUSTER_URL": "dXJsMg=="}
+                    }
+                ]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertNotNull(result);
+        assertTrue(result.contains("url1"));
+        assertTrue(result.contains("url2"));
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenSecretContainsServiceName_ShouldMatch() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "prefix-my-service-suffix"},
+                    "data": {"DATABASE_CLUSTER_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenServiceNameContainsSecretName_ShouldMatch() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "service"},
+                    "data": {"DATABASE_CLUSTER_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service-name");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenKeyContainsDatabaseClusterUrl_ShouldMatch() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {"APP_DATABASE_CLUSTER_URL_PRIMARY": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    @Test
+    void testGetDatabaseClusterUrlFromSecrets_WhenKeyHasDatabaseAndClusterAndUrl_ShouldMatch() throws KubectlException {
+        // Given - "test-url" encoded in base64 is "dGVzdC11cmw="
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {"DATABASE_CONNECTION_CLUSTER_SERVICE_URL": "dGVzdC11cmw="}
+                }]
+            }
+            """;
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+            .thenReturn(secretsJson);
+        
+        // When
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        
+        // Then
+        assertEquals("test-url", result);
+    }
+    
+    // ===== Tests for generateHtmlPage() with actual pod data =====
+    
+    @Test
+    void testGenerateHtmlPage_WithPods_ShouldContainPodData() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        PodInfo pod1 = new PodInfo();
+        pod1.setName("my-app");
+        pod1.setVersion("1.0.0");
+        pod1.setMsBranch("main");
+        pod1.setConfigBranch("config-main");
+        pod1.setGcOptions("-XX:+UseG1GC");
+        pod1.setPort("8080");
+        pod1.setCpuRequest("500m");
+        pod1.setMemoryRequest("512Mi");
+        pod1.setCreationDate(java.time.LocalDateTime.of(2024, 1, 15, 10, 30, 0));
+        
+        List<PodInfo> pods = Arrays.asList(pod1);
+        
+        // Mock for getRunningPods() call - exact arguments
+        when(kubectlExecutor.executeCommand(
+            "get", "pods",
+            "--field-selector=status.phase==Running",
+            "-n", "test-namespace",
+            "-o", "json"
+        )).thenReturn("{\"items\":[]}");
+        when(podParser.parseKubectlOutput("{\"items\":[]}")).thenReturn(pods);
+        
+        // Mock for getCurrentNamespace() call - exact arguments
+        when(kubectlExecutor.executeCommand(
+            "config", "view",
+            "--minify",
+            "-o", "jsonpath={.contexts[0].context.namespace}"
+        )).thenReturn("test-namespace");
+        
+        // When
+        String html = kubernetesService.generateHtmlPage();
+        
+        // Then
+        assertNotNull(html);
+        assertTrue(html.contains("my-app"), "HTML should contain pod name 'my-app'");
+        assertTrue(html.contains("1.0.0"), "HTML should contain version '1.0.0'");
+        assertTrue(html.contains("main"), "HTML should contain msBranch 'main'");
+        assertTrue(html.contains("config-main"), "HTML should contain configBranch 'config-main'");
+        assertTrue(html.contains("-XX:+UseG1GC"), "HTML should contain gcOptions");
+        assertTrue(html.contains("8080"), "HTML should contain port '8080'");
+        assertTrue(html.contains("500m"), "HTML should contain cpuRequest '500m'");
+        assertTrue(html.contains("512Mi"), "HTML should contain memoryRequest '512Mi'");
+        // Check date format - the HTML generation uses formatter "yyyy-MM-dd HH:mm:ss"
+        assertTrue(html.contains("2024-01-15") && html.contains("10:30"), "HTML should contain creation date");
+    }
+    
+    @Test
+    void testGenerateHtmlPage_WithNullPodFields_ShouldHandleGracefully() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        PodInfo pod = new PodInfo();
+        // All fields are null
+        
+        List<PodInfo> pods = Arrays.asList(pod);
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("{\"items\":[]}");
+        when(podParser.parseKubectlOutput(anyString())).thenReturn(pods);
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("test-namespace");
+        
+        // When
+        String html = kubernetesService.generateHtmlPage();
+        
+        // Then
+        assertNotNull(html);
+        assertTrue(html.contains("<tr>"));
+        assertTrue(html.contains("</tr>"));
+        // Should not throw NPE
+    }
+    
+    @Test
+    void testGenerateHtmlPage_ShouldContainUpdateTime() throws KubectlException {
+        // Given
+        when(kubernetesConfig.isEnabled()).thenReturn(true);
+        when(kubernetesConfig.getNamespace()).thenReturn("test-namespace");
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("{\"items\":[]}");
+        when(podParser.parseKubectlOutput(anyString())).thenReturn(new ArrayList<>());
+        
+        when(kubectlExecutor.executeCommand(anyString(), anyString(), anyString(), anyString(), anyString()))
+            .thenReturn("test-namespace");
+        
+        // When
+        String html = kubernetesService.generateHtmlPage();
+        
+        // Then
+        assertTrue(html.contains("update time:"));
+        assertTrue(html.contains("namespace:"));
+        assertTrue(html.contains("UTC"));
+    }
 }

@@ -242,5 +242,186 @@ class ServerMonitorServiceMockTest {
         verify(serverRepository).save(server);
     }
     
+    @Test
+    void testCheckServer_WithRedisType() {
+        Server server = new Server("Redis Test", "localhost:6379", ServerType.REDIS);
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        serverMonitorService.checkServer(server);
+        
+        assertNotNull(server.getStatus());
+        verify(serverRepository).save(server);
+    }
+    
+    @Test
+    void testCheckServer_VersionRefreshExceptionHandled() {
+        Server server = new Server("Versioned", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Old");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        when(serverVersionService.getServerVersion(server)).thenThrow(new RuntimeException("Version fetch failed"));
+        
+        serverMonitorService.checkServer(server);
+        
+        // Version should remain unchanged when exception occurs
+        assertEquals("Old", server.getVersion());
+        verify(serverVersionService).getServerVersion(server);
+    }
+    
+    @Test
+    void testCheckServer_VersionNotUpdatedWhenSame() {
+        Server server = new Server("Versioned", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Same");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        when(serverVersionService.getServerVersion(server)).thenReturn("Same");
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals("Same", server.getVersion());
+    }
+    
+    @Test
+    void testCheckServer_VersionNotUpdatedWhenNull() {
+        Server server = new Server("Versioned", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Old");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        when(serverVersionService.getServerVersion(server)).thenReturn(null);
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals("Old", server.getVersion());
+    }
+    
+    @Test
+    void testCheckServer_WithNullServerVersionService() {
+        ReflectionTestUtils.setField(serverMonitorService, "serverVersionService", null);
+        Server server = new Server("Test", "localhost:5432", ServerType.POSTGRES);
+        server.setVersion("Old");
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals("Old", server.getVersion());
+    }
+    
+    @Test
+    void testCheckAllServersAsync() {
+        List<Server> servers = Arrays.asList(postgresServer);
+        when(serverRepository.findAll()).thenReturn(servers);
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        serverMonitorService.checkAllServersAsync();
+        
+        verify(serverRepository).findAll();
+    }
+    
+    @Test
+    void testCheckServerAsync_ById() {
+        Long serverId = 1L;
+        when(serverRepository.findById(serverId)).thenReturn(java.util.Optional.of(postgresServer));
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        serverMonitorService.checkServerAsync(serverId);
+        
+        verify(serverRepository).findById(serverId);
+    }
+    
+    @Test
+    void testCheckServerAsync_ByIdNotFound() {
+        Long serverId = 999L;
+        when(serverRepository.findById(serverId)).thenReturn(java.util.Optional.empty());
+        
+        serverMonitorService.checkServerAsync(serverId);
+        
+        verify(serverRepository).findById(serverId);
+        verify(serverRepository, never()).save(any(Server.class));
+    }
+    
+    @Test
+    void testCheckServerAsync_ByServer() {
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        serverMonitorService.checkServerAsync(postgresServer);
+        
+        verify(serverRepository).save(postgresServer);
+    }
+    
+    @Test
+    void testCheckAllServersAsync_WithNullExecutor() {
+        ReflectionTestUtils.setField(serverMonitorService, "serverMonitorExecutor", null);
+        List<Server> servers = Arrays.asList(postgresServer);
+        when(serverRepository.findAll()).thenReturn(servers);
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Should run synchronously when executor is null
+        serverMonitorService.checkAllServersAsync();
+        
+        verify(serverRepository).findAll();
+    }
+    
+    @Test
+    void testCheckServerAsync_ExceptionInTask() {
+        // Use a real executor that catches exceptions
+        TaskExecutor realExecutor = Runnable::run;
+        ReflectionTestUtils.setField(serverMonitorService, "serverMonitorExecutor", realExecutor);
+        
+        doThrow(new RuntimeException("Simulated error")).when(serverMonitorService).determineServerStatus(any());
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Should not throw exception
+        serverMonitorService.checkServerAsync(postgresServer);
+        
+        // Server should be marked offline due to exception
+        assertEquals(ServerStatus.OFFLINE, postgresServer.getStatus());
+    }
+    
+    @Test
+    void testDetermineServerStatus_WithInvalidUrl() {
+        Server server = new Server("Test", "not a valid url", ServerType.OTHER);
+        
+        ServerStatus status = serverMonitorService.determineServerStatus(server);
+        
+        assertEquals(ServerStatus.OFFLINE, status);
+    }
+    
+    @Test
+    void testDetermineServerStatus_OtherWithoutProtocol() {
+        Server server = new Server("Test", "example.com", ServerType.OTHER);
+        when(webClientBuilder.baseUrl(anyString())).thenReturn(webClientBuilder);
+        when(webClientBuilder.defaultHeader(anyString(), anyString())).thenReturn(webClientBuilder);
+        when(webClientBuilder.build()).thenThrow(new RuntimeException("WebClient error"));
+        
+        ServerStatus status = serverMonitorService.determineServerStatus(server);
+        
+        assertEquals(ServerStatus.OFFLINE, status);
+    }
+    
+    @Test
+    void testCheckServer_StatusLoggingOnline() {
+        Server server = new Server("Test", "localhost:5432", ServerType.POSTGRES);
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.ONLINE).when(serverMonitorService).determineServerStatus(server);
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals(ServerStatus.ONLINE, server.getStatus());
+        verify(serverRepository).save(server);
+    }
+    
+    @Test
+    void testCheckServer_StatusLoggingOffline() {
+        Server server = new Server("Test", "localhost:5432", ServerType.POSTGRES);
+        when(serverRepository.save(any(Server.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doReturn(ServerStatus.OFFLINE).when(serverMonitorService).determineServerStatus(server);
+        
+        serverMonitorService.checkServer(server);
+        
+        assertEquals(ServerStatus.OFFLINE, server.getStatus());
+        verify(serverRepository).save(server);
+    }
+    
 }
 

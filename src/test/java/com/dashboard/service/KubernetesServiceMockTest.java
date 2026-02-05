@@ -561,4 +561,230 @@ class KubernetesServiceMockTest {
         assertNotNull(html);
         assertTrue(html.contains("<table"));
     }
+
+    @Test
+    void generateHtmlPage_ShouldHandlePodWithAllNullFields() throws KubectlException {
+        String jsonOutput = "{\"items\":[]}";
+        PodInfo pod = new PodInfo();
+        pod.setName(null);
+        pod.setVersion(null);
+        pod.setMsBranch(null);
+        pod.setConfigBranch(null);
+        pod.setGcOptions(null);
+        pod.setCreationDate(null);
+        pod.setPort(null);
+        pod.setCpuRequest(null);
+        pod.setMemoryRequest(null);
+
+        when(kubectlExecutor.executeCommand(any(String[].class))).thenReturn(jsonOutput);
+        when(podParser.parseKubectlOutput(jsonOutput)).thenReturn(List.of(pod));
+
+        String html = kubernetesService.generateHtmlPage();
+
+        assertNotNull(html);
+    }
+
+    @Test
+    void generateHtmlPage_ShouldHandlePodWithCreationDate() throws KubectlException {
+        String jsonOutput = "{\"items\":[]}";
+        PodInfo pod = new PodInfo();
+        pod.setName("app");
+        pod.setVersion("1.0");
+        pod.setMsBranch("main");
+        pod.setConfigBranch("develop");
+        pod.setGcOptions("-XX:+UseG1GC");
+        pod.setCreationDate(java.time.LocalDateTime.of(2025, 1, 15, 10, 30, 0));
+        pod.setPort("8080");
+        pod.setCpuRequest("100m");
+        pod.setMemoryRequest("256Mi");
+
+        when(kubectlExecutor.executeCommand(any(String[].class))).thenReturn(jsonOutput);
+        when(podParser.parseKubectlOutput(jsonOutput)).thenReturn(List.of(pod));
+
+        String html = kubernetesService.generateHtmlPage();
+
+        assertNotNull(html);
+        assertTrue(html.contains("2025-01-15 10:30:00"));
+    }
+
+    // getDatabaseClusterUrlFromSecrets - more branch tests
+    @Test
+    void getDatabaseClusterUrlFromSecrets_ShouldHandleSecretWithNoData() throws KubectlException {
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": null
+                }]
+            }
+        """;
+        // data is null in this JSON actually - let me use proper structure
+        String secretsJsonNoData = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"}
+                }]
+            }
+        """;
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(secretsJsonNoData);
+
+        assertNull(kubernetesService.getDatabaseClusterUrlFromSecrets("my-service"));
+    }
+
+    @Test
+    void getDatabaseClusterUrlFromSecrets_ShouldHandleSecretWithNonMatchingKeys() throws KubectlException {
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {
+                        "OTHER_KEY": "dGVzdA=="
+                    }
+                }]
+            }
+        """;
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(secretsJson);
+
+        assertNull(kubernetesService.getDatabaseClusterUrlFromSecrets("my-service"));
+    }
+
+    @Test
+    void getDatabaseClusterUrlFromSecrets_ShouldHandleMultipleMatchingSecrets() throws KubectlException {
+        String base64Value1 = java.util.Base64.getEncoder()
+                .encodeToString("jdbc:postgresql://host1:5432/db".getBytes());
+        String base64Value2 = java.util.Base64.getEncoder()
+                .encodeToString("jdbc:postgresql://host2:5432/db".getBytes());
+        String secretsJson = """
+            {
+                "items": [
+                    {
+                        "metadata": {"name": "my-service"},
+                        "data": {
+                            "DATABASE_CLUSTER_URL": "%s"
+                        }
+                    },
+                    {
+                        "metadata": {"name": "my-service-secret"},
+                        "data": {
+                            "DATABASE_CLUSTER_URL": "%s"
+                        }
+                    }
+                ]
+            }
+        """.formatted(base64Value1, base64Value2);
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(secretsJson);
+
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+
+        assertNotNull(result);
+        assertTrue(result.contains("jdbc:postgresql://host1:5432/db"));
+        assertTrue(result.contains("jdbc:postgresql://host2:5432/db"));
+    }
+
+    @Test
+    void getDatabaseClusterUrlFromSecrets_ShouldHandleInvalidBase64() throws KubectlException {
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {
+                        "DATABASE_CLUSTER_URL": "not-valid-base64!!!"
+                    }
+                }]
+            }
+        """;
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(secretsJson);
+
+        // Should handle the decode error gracefully
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        // May return null if all decode attempts fail
+    }
+
+    @Test
+    void getDatabaseClusterUrlFromSecrets_ShouldMatchCombinedKeyPattern() throws KubectlException {
+        String base64Value = java.util.Base64.getEncoder()
+                .encodeToString("jdbc:postgresql://host:5432/db".getBytes());
+        String secretsJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "my-service"},
+                    "data": {
+                        "MY_DATABASE_CLUSTER_URL_SETTING": "%s"
+                    }
+                }]
+            }
+        """.formatted(base64Value);
+        when(kubectlExecutor.executeCommand("get", "secrets", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(secretsJson);
+
+        String result = kubernetesService.getDatabaseClusterUrlFromSecrets("my-service");
+        assertNotNull(result);
+    }
+
+    @Test
+    void getNamespaceQuota_ShouldHandleNoStatusNode() throws KubectlException {
+        String quotaJson = """
+            {
+                "items": [{
+                    "metadata": {"name": "quota-1"}
+                }]
+            }
+        """;
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(quotaJson);
+
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        assertNotNull(quota);
+    }
+
+    @Test
+    void getNamespaceQuota_ShouldHandleStatusWithNoUsedOrHard() throws KubectlException {
+        String quotaJson = """
+            {
+                "items": [{
+                    "status": {}
+                }]
+            }
+        """;
+        when(kubectlExecutor.executeCommand("get", "quota", "-n", "test-namespace", "-o", "json"))
+                .thenReturn(quotaJson);
+
+        KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+        assertNotNull(quota);
+        assertNull(quota.cpuUsed);
+    }
+
+    @Test
+    void getKubernetesVersion_ShouldPreferServerVersion_WhenBothExist() throws KubectlException {
+        String json = "{\"serverVersion\":{\"gitVersion\":\"v1.29.0\"},\"clientVersion\":{\"gitVersion\":\"v1.28.0\"}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+
+        String version = kubernetesService.getKubernetesVersion();
+
+        assertEquals("v1.29.0", version);
+    }
+
+    @Test
+    void getKubernetesVersion_ShouldReturnUnknown_WhenClientVersionBlank() throws KubectlException {
+        String json = "{\"clientVersion\":{\"gitVersion\":\" \"}}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+
+        String version = kubernetesService.getKubernetesVersion();
+
+        assertEquals("Неизвестно", version);
+    }
+
+    @Test
+    void getKubernetesVersion_ShouldReturnClientVersion_WhenServerNodeNull() throws KubectlException {
+        String json = "{\"clientVersion\":{\"gitVersion\":\"v1.28.0\"}, \"serverVersion\":null}";
+        when(kubectlExecutor.executeCommand("version", "-o", "json")).thenReturn(json);
+
+        String version = kubernetesService.getKubernetesVersion();
+
+        assertEquals("v1.28.0", version);
+    }
 }

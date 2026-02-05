@@ -49,5 +49,11 @@ public interface PodRepository extends JpaRepository<PodInfo, Long> {
      */
     @Query("SELECT p FROM PodInfo p WHERE p.namespace = :namespace ORDER BY p.name, p.podName")
     List<PodInfo> findByNamespaceOrderByName(@Param("namespace") String namespace);
+    
+    /**
+     * Получает время последнего обновления подов
+     */
+    @Query("SELECT MAX(p.updatedAt) FROM PodInfo p")
+    Optional<LocalDateTime> findLastUpdatedAt();
 }
 

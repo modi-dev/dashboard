@@ -102,6 +102,12 @@ public class PodInfo {
     private String readyTime;
     
     /**
+     * URL кластера базы данных из секретов (переменная DATABASE_CLUSTER_URL)
+     */
+    @Column(name = "database_cluster_url", nullable = true, length = 512)
+    private String databaseClusterUrl;
+    
+    /**
      * Когда под был добавлен в БД
      */
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -290,6 +296,14 @@ public class PodInfo {
     public void setK8sQueriedAt(LocalDateTime k8sQueriedAt) {
         this.k8sQueriedAt = k8sQueriedAt;
     }
+    
+    public String getDatabaseClusterUrl() {
+        return databaseClusterUrl;
+    }
+    
+    public void setDatabaseClusterUrl(String databaseClusterUrl) {
+        this.databaseClusterUrl = databaseClusterUrl;
+    }
 
     @Override
     public String toString() {
@@ -308,6 +322,7 @@ public class PodInfo {
                 ", memoryRequest='" + memoryRequest + '\'' +
                 ", restarts=" + restarts +
                 ", readyTime='" + readyTime + '\'' +
+                ", databaseClusterUrl='" + databaseClusterUrl + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 ", k8sQueriedAt=" + k8sQueriedAt +

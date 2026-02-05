@@ -153,6 +153,243 @@ public class KubernetesService {
     }
     
     /**
+     * Получает информацию о quota для namespace через kubectl
+     * 
+     * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.
+     * 
+     * Использует команду: kubectl get quota -n <namespace> -o json
+     * 
+     * @return объект NamespaceQuota с информацией о CPU, Memory и Pods или null если не удалось получить
+     */
+    public NamespaceQuota getNamespaceQuota() {
+        try {
+            String namespace = kubernetesConfig.getNamespace();
+            String json = kubectlExecutor.executeCommand(
+                "get", "quota",
+                "-n", namespace,
+                "-o", "json"
+            );
+            
+            if (json == null || json.trim().isEmpty()) {
+                logger.debug("Quota не найдены для namespace: {}", namespace);
+                return null;
+            }
+            
+            JsonNode root = objectMapper.readTree(json);
+            NamespaceQuota quota = new NamespaceQuota();
+            
+            // Ищем первый ResourceQuota в списке items
+            JsonNode items = root.get("items");
+            if (items != null && items.isArray() && items.size() > 0) {
+                JsonNode firstQuota = items.get(0);
+                
+                // Извлекаем used и hard из status
+                JsonNode status = firstQuota.get("status");
+                if (status != null) {
+                    JsonNode used = status.get("used");
+                    JsonNode hard = status.get("hard");
+                    
+                    if (used != null) {
+                        JsonNode cpuUsed = used.get("requests.cpu");
+                        if (cpuUsed != null) {
+                            quota.cpuUsed = cpuUsed.asText();
+                        }
+                        
+                        JsonNode memoryUsed = used.get("requests.memory");
+                        if (memoryUsed != null) {
+                            quota.memoryUsed = memoryUsed.asText();
+                        }
+                        
+                        JsonNode podsUsed = used.get("pods");
+                        if (podsUsed != null) {
+                            quota.podsUsed = podsUsed.asText();
+                        }
+                        
+                        JsonNode configmapsUsed = used.get("configmaps");
+                        if (configmapsUsed != null) {
+                            quota.configmapsUsed = configmapsUsed.asText();
+                        }
+                        
+                        JsonNode secretsUsed = used.get("secrets");
+                        if (secretsUsed != null) {
+                            quota.secretsUsed = secretsUsed.asText();
+                        }
+                    }
+                    
+                    if (hard != null) {
+                        JsonNode cpuHard = hard.get("requests.cpu");
+                        if (cpuHard != null) {
+                            quota.cpuHard = cpuHard.asText();
+                        }
+                        
+                        JsonNode memoryHard = hard.get("requests.memory");
+                        if (memoryHard != null) {
+                            quota.memoryHard = memoryHard.asText();
+                        }
+                        
+                        JsonNode podsHard = hard.get("pods");
+                        if (podsHard != null) {
+                            quota.podsHard = podsHard.asText();
+                        }
+                        
+                        JsonNode configmapsHard = hard.get("configmaps");
+                        if (configmapsHard != null) {
+                            quota.configmapsHard = configmapsHard.asText();
+                        }
+                        
+                        JsonNode secretsHard = hard.get("secrets");
+                        if (secretsHard != null) {
+                            quota.secretsHard = secretsHard.asText();
+                        }
+                    }
+                }
+            }
+            
+            logger.debug("Quota получены для namespace {}: CPU={}/{}, Memory={}/{}, Pods={}/{}, ConfigMaps={}/{}, Secrets={}/{}",
+                        namespace, quota.cpuUsed, quota.cpuHard, quota.memoryUsed, quota.memoryHard,
+                        quota.podsUsed, quota.podsHard, quota.configmapsUsed, quota.configmapsHard,
+                        quota.secretsUsed, quota.secretsHard);
+            
+            return quota;
+            
+        } catch (KubectlException e) {
+            logger.warn("Не удалось получить quota для namespace: {}", e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.warn("Ошибка при получении quota: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Класс для хранения информации о quota namespace
+     */
+    public static class NamespaceQuota {
+        public String cpuUsed;
+        public String cpuHard;
+        public String memoryUsed;
+        public String memoryHard;
+        public String podsUsed;
+        public String podsHard;
+        public String configmapsUsed;
+        public String configmapsHard;
+        public String secretsUsed;
+        public String secretsHard;
+    }
+    
+    /**
+     * Получает значение переменной DATABASE_CLUSTER_URL из секретов для указанного сервиса
+     * 
+     * Ищет секреты, связанные с именем сервиса, и извлекает все значения переменных, содержащих DATABASE_CLUSTER_URL.
+     * Проверяет секреты с именами, содержащими имя сервиса.
+     * 
+     * Использует команду: kubectl get secrets -n <namespace> -o json
+     * 
+     * @param serviceName имя сервиса (из labels.app)
+     * @return все найденные значения DATABASE_CLUSTER_URL, разделенные переносом строки, или null если не найдено
+     */
+    public String getDatabaseClusterUrlFromSecrets(String serviceName) {
+        if (serviceName == null || serviceName.isEmpty()) {
+            logger.debug("Имя сервиса пустое, пропускаем поиск секретов");
+            return null;
+        }
+        
+        try {
+            String namespace = kubernetesConfig.getNamespace();
+            logger.debug("Поиск DATABASE_CLUSTER_URL в секретах для сервиса: {} в namespace: {}", serviceName, namespace);
+            
+            // Получаем все секреты в namespace
+            String json = kubectlExecutor.executeCommand(
+                "get", "secrets",
+                "-n", namespace,
+                "-o", "json"
+            );
+            
+            if (json == null || json.trim().isEmpty()) {
+                logger.debug("Секреты не найдены для namespace: {}", namespace);
+                return null;
+            }
+            
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode items = root.get("items");
+            
+            if (items == null || !items.isArray()) {
+                logger.debug("Не найден массив items в ответе kubectl get secrets");
+                return null;
+            }
+            
+            // Список для хранения всех найденных значений
+            java.util.List<String> foundValues = new java.util.ArrayList<>();
+            
+            // Ищем секреты, связанные с сервисом
+            // Обычно секреты имеют имена вида: <service-name>, <service-name>-secret, <service-name>-secrets и т.д.
+            for (JsonNode secret : items) {
+                JsonNode metadata = secret.get("metadata");
+                if (metadata == null) continue;
+                
+                String secretName = metadata.get("name").asText();
+                
+                // Проверяем, связан ли секрет с нашим сервисом
+                if (secretName.contains(serviceName) || serviceName.contains(secretName) ||
+                    secretName.equals(serviceName) || secretName.equals(serviceName + "-secret") ||
+                    secretName.equals(serviceName + "-secrets")) {
+                    
+                    logger.debug("Проверяем секрет: {}", secretName);
+                    
+                    JsonNode data = secret.get("data");
+                    if (data != null) {
+                        // Проверяем все ключи в секрете
+                        java.util.Iterator<String> fieldNames = data.fieldNames();
+                        while (fieldNames.hasNext()) {
+                            String key = fieldNames.next();
+                            String upperKey = key.toUpperCase();
+                            
+                            // Ищем ключи, содержащие DATABASE_CLUSTER_URL
+                            if (upperKey.contains("DATABASE_CLUSTER_URL") || 
+                                (upperKey.contains("DATABASE") && upperKey.contains("CLUSTER") && upperKey.contains("URL"))) {
+                                
+                                JsonNode valueNode = data.get(key);
+                                if (valueNode != null) {
+                                    try {
+                                        // Декодируем base64 значение
+                                        byte[] decodedBytes = java.util.Base64.getDecoder().decode(valueNode.asText());
+                                        String decodedValue = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
+                                        
+                                        // Добавляем значение в список, если его еще нет
+                                        if (!decodedValue.trim().isEmpty() && !foundValues.contains(decodedValue.trim())) {
+                                            foundValues.add(decodedValue.trim());
+                                            logger.info("Найдена переменная {} в секрете {}: {}", key, secretName, decodedValue);
+                                        }
+                                    } catch (Exception e) {
+                                        logger.debug("Ошибка декодирования значения из секрета {}: {}", secretName, e.getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (foundValues.isEmpty()) {
+                logger.debug("Переменная DATABASE_CLUSTER_URL не найдена в секретах для сервиса: {}", serviceName);
+                return null;
+            }
+            
+            // Объединяем все найденные значения через перенос строки
+            String result = String.join("\n", foundValues);
+            logger.info("Найдено {} значений DATABASE_CLUSTER_URL для сервиса {}: {}", foundValues.size(), serviceName, result);
+            return result;
+            
+        } catch (KubectlException e) {
+            logger.warn("Не удалось получить секреты для сервиса {}: {}", serviceName, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.warn("Ошибка при поиске DATABASE_CLUSTER_URL в секретах для сервиса {}: {}", serviceName, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
      * Получает версию Kubernetes кластера напрямую через kubectl
      * 
      * ВАЖНО: Этот метод используется только для синхронизации в БД через KubernetesClusterInfoSyncService.

@@ -25,5 +25,11 @@ public interface ServerRepository extends JpaRepository<Server, Long> {
     
     @Query("SELECT COUNT(s) FROM Server s WHERE s.status = 'OFFLINE'")
     long countOfflineServers();
+    
+    /**
+     * Получает время последнего обновления серверов
+     */
+    @Query("SELECT MAX(s.updatedAt) FROM Server s")
+    Optional<java.time.LocalDateTime> findLastUpdatedAt();
 }
 

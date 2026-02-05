@@ -7,42 +7,45 @@ let sidebarKeyListenerBound = false;
 const INSTRUCTION_STEPS = [
   {
     title: 'Главная страница',
-    description: 'Здесь можно общую информацию по серверам и подам, а также быстро перейти к нужным разделам.',
+    description: 'Здесь можно увидеть общую информацию о серверах и подах, а также быстро перейти к нужным разделам.',
     path: '/'
   },
   {
     title: 'Серверы',
-    description: 'На этой странице удобно работать с серверами: добавлять новые, удалять старые и экспортировать данные.',
+    description: 'На данной странице удобно работать с серверами: добавлять новые, удалять старые и экспортировать данные.',
     path: '/servers'
   },
   {
     title: 'Поды',
-    description: 'Здесь доступна группировка, фильтрация и обновление данных о подах.\
-    \nМожно настроить видимость и ширину колонок (данные настройки сохраняются в кэше браузера).',
+    description: 'На данной странице представлена подробная информация об утилизации ресурсов в NS K8s.\
+    \nВ таблице подов используется группировка, доступен фильтр по значению.\
+    \nМожно настроить видимость и ширину колонок (данные настройки сохраняются в кэше браузера).\
+    \nПри нажатии на имя сервиса, через Ctrl+Click, откроется его actuator в новой вкладке.',
     path: '/pods'
   },
   {
     title: 'Авторизация',
-    description: 'Удаление и добавление серверов доступны только авторизованным пользователям.\
+    description: 'Удаление и добавление серверов доступно только авторизованным пользователям.\
     \nЕсли у вас нет учетных данных, обратитесь к администратору стенда.',
     path: '/'
   },
   {
     title: 'Добавление сервера',
-    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопка «Добавить сервер» или синий кнопка + в правом нижнем углу).\
+    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопка «Добавить сервер» или синия кнопка + в правом нижнем углу).\
     \nПри добавлении укажите название, URL и тип сервера.\
-    \n⚠ Для типа «Другое» требуется дополнительно указать healthcheck, metrics endpoints и version regex.\
-    \nПоле «Version regex» помогает извлечь версию из ответа сервера.',
+    \n⚠ Для типа «Другое» требуется указать healthcheck, metrics endpoints и version regex.\
+    \n⚠Поле «Version regex» это регулярное выражение, которое необходимо для извлечения версии из метрик сервера.',
     path: '/servers'
   },
   {
     title: 'Удаление сервера',
-    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой с иконкой корзины.\nЗапись будет удалена из списка и из базы данных.',
+    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой корзины.\
+    \nЗапись будет удалена из списка серверов и базы данных.',
     path: '/servers'
   },
   {
-    title: 'При возникновении проблем',
-    description: 'При возникновении проблем, можно писать на почту onb-devops.',
+    title: 'Обратная связь',
+    description: 'При возникновении проблем или предложений, пишите на почту onb-devops.',
     path: '/'
   }
 ];
@@ -215,6 +218,142 @@ function deleteServer(serverId) {
     });
 }
 
+function formatLastUpdateTime(date) {
+  if (!date) {
+    return '-';
+  }
+  const now = new Date(date);
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function formatRelativeTime(dateString) {
+  if (!dateString) {
+    return '-';
+  }
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return '-';
+  }
+  
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) {
+    return 'только что';
+  } else if (diffMinutes < 60) {
+    const minutes = diffMinutes;
+    if (minutes === 1) {
+      return '1 минуту назад';
+    } else if (minutes >= 2 && minutes <= 4) {
+      return `${minutes} минуты назад`;
+    } else {
+      return `${minutes} минут назад`;
+    }
+  } else if (diffHours < 24) {
+    const hours = diffHours;
+    if (hours === 1) {
+      return '1 час назад';
+    } else if (hours >= 2 && hours <= 4) {
+      return `${hours} часа назад`;
+    } else {
+      return `${hours} часов назад`;
+    }
+  } else if (diffDays < 7) {
+    const days = diffDays;
+    if (days === 1) {
+      return 'вчера';
+    } else if (days >= 2 && days <= 4) {
+      return `${days} дня назад`;
+    } else {
+      return `${days} дней назад`;
+    }
+  } else {
+    // Если больше недели, показываем полную дату
+    return formatLastUpdateTime(date);
+  }
+}
+
+function updateServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('serversLastUpdateTime', now.toISOString());
+}
+
+function loadServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/servers/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success && data.data) {
+          if (data.data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading servers last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
+  }
+  
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.serversUpdateInterval) {
+    window.serversUpdateInterval = setInterval(updateTime, 60000);
+  }
+}
+
 function refreshServers(ev) {
   const btn = ev && ev.target ? ev.target.closest('button') : null;
   const originalContent = btn ? btn.innerHTML : null;
@@ -240,6 +379,7 @@ function refreshServers(ev) {
         return;
       }
       if (data.success) {
+        // Время обновления будет загружено из БД после перезагрузки страницы
         showNotification('Фоновая проверка серверов запущена. Обновим данные через пару секунд.', 'info');
         setTimeout(() => location.reload(), 3000);
       } else {
@@ -258,6 +398,76 @@ function refreshServers(ev) {
         btn.innerHTML = originalContent;
       }
     });
+}
+
+function updatePodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('podsLastUpdateTime', now.toISOString());
+}
+
+function loadPodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/pods/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success) {
+          if (data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading pods last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
+  }
+  
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.podsUpdateInterval) {
+    window.podsUpdateInterval = setInterval(updateTime, 60000);
+  }
 }
 
 function refreshPods(ev) {
@@ -289,6 +499,7 @@ function refreshPods(ev) {
         return;
       }
       if (data.success) {
+        // Время обновления будет загружено из БД после перезагрузки страницы
         showNotification('Информация о подах успешно обновлена!', 'success');
         setTimeout(() => location.reload(), 500);
       } else {
@@ -726,10 +937,31 @@ function togglePodGroup(button) {
 
     const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
     detailCells.forEach(cell => {
+      // Сохраняем оригинальный HTML
       cell.setAttribute('data-original-html', cell.innerHTML);
+      
+      // Сохраняем ширину столбца из header или первой видимой ячейки
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey && !table.hasAttribute(`data-saved-width-${columnKey}`)) {
+        // Пытаемся получить ширину из header
+        const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+        let savedWidth = null;
+        
+        if (headerCell && headerCell.offsetWidth > 0) {
+          savedWidth = headerCell.offsetWidth + 'px';
+        } else if (cell.offsetWidth > 0) {
+          savedWidth = cell.offsetWidth + 'px';
+        }
+        
+        if (savedWidth) {
+          table.setAttribute(`data-saved-width-${columnKey}`, savedWidth);
+        }
+      }
+      
       cell.innerHTML = '';
       cell.style.visibility = 'hidden';
-      cell.style.width = '0';
+      // Не меняем width, чтобы не влиять на ширину столбца
+      // Используем только padding и border для визуального скрытия
       cell.style.padding = '0';
       cell.style.border = 'none';
     });
@@ -748,11 +980,34 @@ function togglePodGroup(button) {
 
     const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
     detailCells.forEach(cell => {
-      cell.innerHTML = '-';
+      // Восстанавливаем оригинальный HTML
+      const originalHtml = cell.getAttribute('data-original-html');
+      if (originalHtml) {
+        cell.innerHTML = originalHtml;
+      } else {
+        cell.innerHTML = '-';
+      }
+      
+      // Восстанавливаем стили
       cell.style.visibility = '';
-      cell.style.width = '';
       cell.style.padding = '';
       cell.style.border = '';
+      
+      // Восстанавливаем ширину столбца, если она была сохранена
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey) {
+        const savedWidth = table.getAttribute(`data-saved-width-${columnKey}`);
+        if (savedWidth && table.classList.contains('pods-table-fixed')) {
+          // Применяем сохраненную ширину ко всем ячейкам этого столбца
+          const allColumnCells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+          allColumnCells.forEach(colCell => {
+            colCell.style.width = savedWidth;
+            colCell.style.minWidth = savedWidth;
+            colCell.style.maxWidth = savedWidth;
+          });
+        }
+        table.removeAttribute(`data-saved-width-${columnKey}`);
+      }
     });
 
     if (table) {
@@ -1049,6 +1304,133 @@ function initPodsColumnControls(table) {
   }
 }
 
+function generateServiceUrl(serviceName) {
+  if (!serviceName || serviceName === '-') {
+    return null;
+  }
+  
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  
+  // Разбиваем домен на части
+  const hostParts = currentHost.split('.');
+  
+  // Если домен имеет формат ms-dashboard.ift.onb.test.komp.ru
+  // Заменяем первую часть (ms-dashboard) на serviceName
+  if (hostParts.length > 1) {
+    hostParts[0] = serviceName;
+    const newHost = hostParts.join('.');
+    return `${currentProtocol}//${newHost}/actuator/health`;
+  }
+  
+  return null;
+}
+
+function initPodsNameClickHandlers() {
+  const table = document.getElementById('podsTable');
+  if (!table) {
+    return;
+  }
+  
+  // Функция для извлечения названия сервиса из ячейки
+  function extractServiceName(cell) {
+    if (!cell) {
+      return null;
+    }
+    
+    // Получаем strong элемент, который содержит название
+    const strongElement = cell.querySelector('strong');
+    
+    if (strongElement) {
+      // Клонируем элемент, чтобы не изменять оригинал
+      const clone = strongElement.cloneNode(true);
+      
+      // Удаляем все badge элементы из клона
+      const badges = clone.querySelectorAll('.badge');
+      badges.forEach(badge => badge.remove());
+      
+      // Получаем текст без badge
+      let serviceName = clone.textContent.trim();
+      
+      // Убираем все лишние пробелы и переносы строк
+      serviceName = serviceName.replace(/\s+/g, ' ').trim();
+      
+      if (!serviceName || serviceName === '-') {
+        return null;
+      }
+      
+      return serviceName;
+    }
+    
+    // Если нет strong, берем весь текст из ячейки
+    let serviceName = cell.textContent.trim();
+    
+    // Убираем badge с количеством подов в скобках, если есть (например, "my-service (3)" -> "my-service")
+    serviceName = serviceName.replace(/\s*\(\d+\)\s*$/, '').trim();
+    
+    // Убираем все лишние пробелы и переносы строк
+    serviceName = serviceName.replace(/\s+/g, ' ').trim();
+    
+    if (!serviceName || serviceName === '-') {
+      return null;
+    }
+    
+    return serviceName;
+  }
+  
+  // Обработчик клика на ячейки с названием
+  table.addEventListener('click', (event) => {
+    // Проверяем, что зажат Ctrl (или Cmd на Mac)
+    if (!(event.ctrlKey || event.metaKey)) {
+      return;
+    }
+    
+    // Ищем ячейку с названием
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (!cell) {
+      return;
+    }
+    
+    // Извлекаем название сервиса (работает и для группированных, и для обычных строк)
+    const serviceName = extractServiceName(cell);
+    if (!serviceName) {
+      return;
+    }
+    
+    // Генерируем URL
+    const url = generateServiceUrl(serviceName);
+    if (url) {
+      event.preventDefault();
+      event.stopPropagation();
+      window.open(url, '_blank');
+    }
+  });
+  
+  // Добавляем визуальную подсказку при наведении
+  table.addEventListener('mouseover', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      const serviceName = extractServiceName(cell);
+      
+      if (serviceName) {
+        cell.style.cursor = 'pointer';
+        const url = generateServiceUrl(serviceName);
+        if (url) {
+          cell.title = 'Ctrl+Click (или Cmd+Click) для открытия: ' + url;
+        }
+      }
+    }
+  });
+  
+  table.addEventListener('mouseout', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      // Не сбрасываем cursor, так как ячейка должна оставаться кликабельной
+      // cell.style.cursor = '';
+    }
+  });
+}
+
 function initPodsFeatures() {
   const table = document.getElementById('podsTable');
   if (!table) {
@@ -1058,6 +1440,7 @@ function initPodsFeatures() {
   groupPods(table);
   initPodsFilter(table);
   initPodsColumnControls(table);
+  initPodsNameClickHandlers();
 }
 
 function initInstructionModal() {
@@ -1120,6 +1503,278 @@ function openInstructions() {
   }
 }
 
+// Stands navigation ---------------------------------------------------------
+function initStandsLinks() {
+  // Маппинг полных названий и сокращений стендов
+  const standMapping = {
+    'ift': { full: 'ift', short: 'ift', patterns: ['ift'] },
+    'preprod': { full: 'preprod', short: 'pp', patterns: ['preprod', 'pp', 'pre-prod'] },
+    'lt': { full: 'lt', short: 'lt', patterns: ['lt'] },
+    'hotfix': { full: 'hotfix', short: 'hf', patterns: ['hotfix', 'hf'] },
+    'prod': { full: 'prod', short: 'prod', patterns: ['prod'] },
+    'pk2': { full: 'pk2', short: 'pk2', patterns: ['pk2'] },
+    'pk5': { full: 'pk5', short: 'pk5', patterns: ['pk5'] }
+  };
+  
+  const stands = Object.keys(standMapping);
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  const currentPath = window.location.pathname;
+  
+  // Определяем текущий стенд по хосту
+  let currentStand = null;
+  let currentStandPattern = null;
+  const hostLower = currentHost.toLowerCase();
+  
+  // Разбиваем домен на части (справа налево: TLD, домен 2-го уровня, и т.д.)
+  const hostParts = currentHost.split('.');
+  
+  // Ищем название стенда в хосте (поддерживаем сокращения)
+  // Проверяем все части домена
+  for (let i = 0; i < hostParts.length; i++) {
+    const part = hostParts[i].toLowerCase();
+    
+    for (const [standKey, standInfo] of Object.entries(standMapping)) {
+      // Пропускаем prod при поиске
+      if (standKey === 'prod') continue;
+      
+      for (const patternStr of standInfo.patterns) {
+        if (part === patternStr.toLowerCase()) {
+          currentStand = standKey;
+          currentStandPattern = patternStr;
+          break;
+        }
+      }
+      
+      if (currentStand) {
+        break;
+      }
+    }
+    
+    if (currentStand) {
+      break;
+    }
+  }
+  
+  // Если не нашли стенд, значит это prod
+  if (!currentStand) {
+    currentStand = 'prod';
+  }
+  
+  // Функция для генерации URL другого стенда
+  function generateStandUrl(targetStandKey) {
+    const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return `${currentProtocol}//${currentHost}${currentPath}`;
+    }
+    
+    // Работаем с массивом частей домена
+    let newHostParts = [...hostParts];
+    
+    // Если переходим на prod - удаляем стенд и test
+    if (targetStandKey === 'prod') {
+      // Удаляем название текущего стенда
+      if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+        const standIndex = newHostParts.findIndex(part => 
+          part.toLowerCase() === currentStandPattern.toLowerCase()
+        );
+        if (standIndex !== -1) {
+          newHostParts.splice(standIndex, 1);
+        }
+      } else if (currentStand !== 'prod') {
+        // Пробуем удалить любой найденный стенд
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            const standIndex = newHostParts.findIndex(part => 
+              part.toLowerCase() === patternStr.toLowerCase()
+            );
+            if (standIndex !== -1) {
+              newHostParts.splice(standIndex, 1);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Удаляем "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      if (testIndex !== -1) {
+        newHostParts.splice(testIndex, 1);
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+    }
+    
+    // Если переходим с prod на другой стенд (ift/pp/lt/hf)
+    if (currentStand === 'prod' || !currentStandPattern) {
+      // Нужно добавить "test" и название стенда
+      // Где stand - это ift/pp/lt/hf
+      
+      const standShort = targetStand.short;
+      
+      // Проверяем наличие "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      
+      // Проверяем наличие стенда
+      const standIndex = newHostParts.findIndex(part => {
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            if (part.toLowerCase() === patternStr.toLowerCase()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+      
+      // Если есть стенд, заменяем его
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = standShort;
+      } else {
+        // Если нет стенда, вставляем его после первого поддомена (обычно ms-dashboard)
+        // Вставляем на позицию 1 (после первого элемента)
+        newHostParts.splice(1, 0, standShort);
+      }
+      
+      // Если нет "test", вставляем его
+      if (testIndex === -1) {
+        // Ищем позицию: обычно после уровня "onb" (домен 3-го уровня)
+        // TLD обычно последний элемент, домен 2-го уровня - предпоследний
+        // Вставляем "test" перед предпоследним элементом (домен 2-го уровня)
+        if (newHostParts.length >= 2) {
+          const insertIndex = newHostParts.length - 2;
+          newHostParts.splice(insertIndex, 0, 'test');
+        } else {
+          // Если структура неожиданная, вставляем перед последним элементом
+          newHostParts.splice(newHostParts.length - 1, 0, 'test');
+        }
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+    }
+    
+    // Если переходим с одного не-prod стенда на другой не-prod стенд
+    // Просто заменяем название стенда
+    if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+      const standIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === currentStandPattern.toLowerCase()
+      );
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = targetStand.short;
+      }
+    }
+    
+    return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+  }
+  
+  // Функция для генерации URL OKO (Grafana k8s)
+  function generateOkoUrl(targetStandKey) {
+    const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return null;
+    }
+    
+    // Получаем домен 2-го уровня (предпоследний элемент) и домен 1-го уровня (TLD, последний элемент)
+    if (hostParts.length < 2) {
+      return null;
+    }
+    
+    const domainLevel2 = hostParts[hostParts.length - 2]; // Домен 2-го уровня
+    const domainLevel1 = hostParts[hostParts.length - 1]; // TLD (домен 1-го уровня)
+    
+    // Маппинг значений для var-cluster в зависимости от стенда
+    const clusterValueMapping = {
+      'ift': 'ik7-cole01',
+      'preprod': 'rk7-cole01',
+      'pp': 'rk7-cole01',
+      'lt': 'lk5-cole01',
+      'hotfix': 'hk7-cole01',
+      'hf': 'hk7-cole01',
+      'pk2': 'pk2-cole01',
+      'pk5': 'pk5-cole01'
+    };
+    
+    // Определяем значение для var-cluster
+    // Сначала пробуем по ключу стенда, затем по сокращению
+    let clusterValue = clusterValueMapping[targetStandKey] || 
+                       clusterValueMapping[targetStand.short] || 
+                       targetStand.short;
+    
+    // Формируем URL: https://oko.<домен 2-го уровня>.<домен 1-го уровня>/d/...?var-cluster=<значение>
+    const baseUrl = `https://oko.${domainLevel2}.${domainLevel1}`;
+    const dashboardPath = `/d/b68c7841-7f41-4b3c-8175-ble2e19e8a55/resursy-klastera-kubernetes`;
+    const queryParams = `orgId=1&var-cluster=${clusterValue}`;
+    
+    return `${baseUrl}${dashboardPath}?${queryParams}`;
+  }
+  
+  // Устанавливаем ссылки для каждого стенда
+  const linkIds = {
+    'ift': 'standLinkIft',
+    'preprod': 'standLinkPreprod',
+    'lt': 'standLinkLt',
+    'hotfix': 'standLinkHotfix',
+    'prod': 'standLinkProd'
+  };
+  
+  const standLabels = {
+    'ift': 'IFT',
+    'preprod': 'Preprod',
+    'lt': 'LT',
+    'hotfix': 'Hotfix',
+    'prod': 'Prod',
+    'pk2': 'PK2',
+    'pk5': 'PK5'
+  };
+  
+  // Устанавливаем ссылки на стенды
+  for (const [standKey, linkId] of Object.entries(linkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateStandUrl(standKey);
+      linkElement.href = url;
+      
+      // Если это текущий стенд, делаем ссылку неактивной и выделяем
+      if (currentStand === standKey) {
+        linkElement.classList.add('current-stand');
+        linkElement.classList.add('disabled');
+        linkElement.style.pointerEvents = 'none';
+        linkElement.innerHTML = `<i class="fas fa-check-circle me-2"></i><strong>${standLabels[standKey]}</strong> <span class="text-muted">(текущий)</span>`;
+      } else {
+        linkElement.classList.remove('current-stand');
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+  
+  // Устанавливаем ссылки на OKO
+  const okoLinkIds = {
+    'ift': 'okoLinkIft',
+    'preprod': 'okoLinkPreprod',
+    'lt': 'okoLinkLt',
+    'hotfix': 'okoLinkHotfix',
+    'pk2': 'okoLinkPK2',
+    'pk5': 'okoLinkPK5'
+  };
+  
+  for (const [standKey, linkId] of Object.entries(okoLinkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateOkoUrl(standKey);
+      if (url) {
+        linkElement.href = url;
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+}
+
 // Bootstrap everything ------------------------------------------------------
 onDocumentReady(() => {
   initTheme();
@@ -1127,6 +1782,9 @@ onDocumentReady(() => {
   initServersFilter();
   initPodsFeatures();
   initInstructionModal();
+  loadPodsLastUpdateTime();
+  loadServersLastUpdateTime();
+  initStandsLinks();
 
   const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
   const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
@@ -1147,6 +1805,233 @@ window.showNotification = showNotification;
 window.deleteServer = deleteServer;
 window.refreshServers = refreshServers;
 window.refreshPods = refreshPods;
+/**
+ * Создает SVG спидометр для визуализации quota
+ * @param {string} containerId - ID контейнера для спидометра
+ * @param {string} label - Название метрики
+ * @param {string} quotaValue - Значение в формате "used/hard" или null
+ */
+function createSpeedometer(containerId, label, quotaValue) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Парсим значение quota
+    let used = 0;
+    let hard = 1;
+    let percentage = 0;
+    let displayValue = quotaValue || '-';
+    
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        const usedStr = parts[0].trim();
+        const hardStr = parts[1].trim();
+        
+        // Пытаемся извлечь числовое значение (игнорируя единицы измерения)
+        // Для CPU: "2" или "2000m" -> 2 (где 1000m = 1 CPU)
+        // Для Memory: "4Gi" -> конвертируем в байты для расчета процента
+        const parseValue = (str) => {
+            if (!str) return 0;
+            const strLower = str.toLowerCase().trim();
+            
+            // Специальная обработка для CPU: миллиCPU (m в конце, но не mi)
+            // Например: "2000m" -> 2.0, "500m" -> 0.5
+            if (strLower.endsWith('m') && !strLower.includes('mi') && !strLower.includes('ma')) {
+                const numMatch = str.match(/^([\d.]+)m$/i);
+                if (numMatch) {
+                    return parseFloat(numMatch[1]) / 1000; // Конвертируем миллиCPU в CPU
+                }
+            }
+            
+            // Убираем единицы измерения и парсим число
+            const numMatch = str.match(/^([\d.]+)/);
+            if (numMatch) {
+                let value = parseFloat(numMatch[1]);
+                // Конвертируем единицы памяти в байты для расчета процента
+                if (strLower.includes('ki')) value *= 1024;
+                else if (strLower.includes('mi')) value *= 1024 * 1024;
+                else if (strLower.includes('gi')) value *= 1024 * 1024 * 1024;
+                else if (strLower.includes('ti')) value *= 1024 * 1024 * 1024 * 1024;
+                else if (strLower.includes('k') && !strLower.includes('ki')) value *= 1000;
+                else if (strLower.includes('g') && !strLower.includes('gi')) value *= 1000 * 1000 * 1000;
+                else if (strLower.includes('t') && !strLower.includes('ti')) value *= 1000 * 1000 * 1000 * 1000;
+                // Для CPU без единиц измерения (просто число) - оставляем как есть
+                return value;
+            }
+            return 0;
+        };
+        
+        used = parseValue(usedStr);
+        hard = parseValue(hardStr);
+        percentage = hard > 0 ? Math.min((used / hard) * 100, 100) : 0;
+    }
+    
+    // Определяем цвет и градиент в зависимости от процента использования
+    let color = '#28a745'; // зеленый
+    let gradientColor = '#34ce57';
+    
+    if (percentage >= 90) {
+        color = '#dc3545'; // красный
+        gradientColor = '#e4606d';
+    } else if (percentage >= 70) {
+        color = '#ffc107'; // желтый
+        gradientColor = '#ffcd39';
+    } else if (percentage >= 50) {
+        color = '#fd7e14'; // оранжевый
+        gradientColor = '#ff9a3c';
+    } else {
+        gradientColor = '#34ce57';
+    }
+    
+    // Создаем SVG спидометр
+    const size = 130;
+    const center = size / 2;
+    const radius = 50;
+    const strokeWidth = 10;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'speedometer-svg');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    
+    // Определяем тему
+    const htmlRoot = document.getElementById('htmlRoot') || document.documentElement;
+    const isDarkTheme = htmlRoot.classList.contains('theme-dark') || 
+                        document.body.classList.contains('theme-dark') ||
+                        document.documentElement.classList.contains('theme-dark');
+    const backgroundColor = isDarkTheme ? '#343a40' : '#e9ecef';
+    
+    // Создаем градиент для прогресс-бара
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const linearGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    linearGradient.setAttribute('id', `gradient-${containerId}`);
+    linearGradient.setAttribute('x1', '0%');
+    linearGradient.setAttribute('y1', '0%');
+    linearGradient.setAttribute('x2', '100%');
+    linearGradient.setAttribute('y2', '100%');
+    
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', color);
+    stop1.setAttribute('stop-opacity', '1');
+    
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '100%');
+    stop2.setAttribute('stop-color', gradientColor);
+    stop2.setAttribute('stop-opacity', '0.8');
+    
+    linearGradient.appendChild(stop1);
+    linearGradient.appendChild(stop2);
+    defs.appendChild(linearGradient);
+    svg.appendChild(defs);
+    
+    // Фоновая дуга (адаптивная к теме)
+    const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    backgroundCircle.setAttribute('cx', center);
+    backgroundCircle.setAttribute('cy', center);
+    backgroundCircle.setAttribute('r', radius);
+    backgroundCircle.setAttribute('fill', 'none');
+    backgroundCircle.setAttribute('stroke', backgroundColor);
+    backgroundCircle.setAttribute('stroke-width', strokeWidth);
+    backgroundCircle.setAttribute('stroke-dasharray', circumference);
+    backgroundCircle.setAttribute('stroke-dashoffset', 0);
+    backgroundCircle.setAttribute('opacity', '0.3');
+    svg.appendChild(backgroundCircle);
+    
+    // Активная дуга (цветная с градиентом)
+    const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    progressCircle.setAttribute('cx', center);
+    progressCircle.setAttribute('cy', center);
+    progressCircle.setAttribute('r', radius);
+    progressCircle.setAttribute('fill', 'none');
+    progressCircle.setAttribute('stroke', `url(#gradient-${containerId})`);
+    progressCircle.setAttribute('stroke-width', strokeWidth);
+    progressCircle.setAttribute('stroke-dasharray', circumference);
+    progressCircle.setAttribute('stroke-dashoffset', offset);
+    progressCircle.setAttribute('stroke-linecap', 'round');
+    progressCircle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    svg.appendChild(progressCircle);
+    
+    // Метка (перенесена наверх вместо иконки)
+    const labelElement = document.createElement('div');
+    labelElement.className = 'speedometer-label';
+    labelElement.textContent = label;
+    
+    // Контейнер для значения
+    const valueContainer = document.createElement('div');
+    valueContainer.className = 'speedometer-value';
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        valueContainer.innerHTML = `<span style="font-size: 0.9em;">${percentage.toFixed(0)}%</span><br><span style="font-size: 0.65em; opacity: 0.8;">${parts[0].trim()}/${parts[1].trim()}</span>`;
+    } else {
+        valueContainer.textContent = displayValue;
+    }
+    
+    // Контейнер для SVG
+    const svgContainer = document.createElement('div');
+    svgContainer.className = 'speedometer-container';
+    svgContainer.appendChild(svg);
+    svgContainer.appendChild(valueContainer);
+    
+    // Очищаем контейнер и добавляем элементы
+    container.innerHTML = '';
+    container.appendChild(labelElement);
+    container.appendChild(svgContainer);
+}
+
+/**
+ * Инициализирует все спидометры на странице
+ */
+function initSpeedometers() {
+    // Получаем значения quota из data-атрибутов или из глобальных переменных
+    const quotaCpu = document.body.getAttribute('data-quota-cpu') || 
+                     (typeof window.quotaCpu !== 'undefined' ? window.quotaCpu : null);
+    const quotaMemory = document.body.getAttribute('data-quota-memory') || 
+                        (typeof window.quotaMemory !== 'undefined' ? window.quotaMemory : null);
+    const quotaPods = document.body.getAttribute('data-quota-pods') || 
+                      (typeof window.quotaPods !== 'undefined' ? window.quotaPods : null);
+    const quotaConfigmaps = document.body.getAttribute('data-quota-configmaps') || 
+                            (typeof window.quotaConfigmaps !== 'undefined' ? window.quotaConfigmaps : null);
+    const quotaSecrets = document.body.getAttribute('data-quota-secrets') || 
+                         (typeof window.quotaSecrets !== 'undefined' ? window.quotaSecrets : null);
+    
+    // Создаем спидометры
+    if (document.getElementById('speedometer-cpu')) {
+        createSpeedometer('speedometer-cpu', 'CPU', quotaCpu);
+    }
+    if (document.getElementById('speedometer-memory')) {
+        createSpeedometer('speedometer-memory', 'Memory', quotaMemory);
+    }
+    if (document.getElementById('speedometer-pods')) {
+        createSpeedometer('speedometer-pods', 'Pods', quotaPods);
+    }
+    if (document.getElementById('speedometer-configmaps')) {
+        createSpeedometer('speedometer-configmaps', 'ConfigMaps', quotaConfigmaps);
+    }
+    if (document.getElementById('speedometer-secrets')) {
+        createSpeedometer('speedometer-secrets', 'Secrets', quotaSecrets);
+    }
+}
+
+// Инициализируем спидометры при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    initSpeedometers();
+    
+    // Обновляем спидометры при переключении темы
+    const originalToggleTheme = window.toggleTheme;
+    if (originalToggleTheme) {
+        window.toggleTheme = function() {
+            originalToggleTheme();
+            // Небольшая задержка, чтобы тема успела примениться
+            setTimeout(function() {
+                initSpeedometers();
+            }, 100);
+        };
+    }
+});
+
 window.toggleTheme = toggleTheme;
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
@@ -1154,3 +2039,5 @@ window.toggleHealthcheck = toggleHealthcheck;
 window.addServer = addServer;
 window.togglePodGroup = togglePodGroup;
 window.openInstructions = openInstructions;
+window.createSpeedometer = createSpeedometer;
+window.initSpeedometers = initSpeedometers;

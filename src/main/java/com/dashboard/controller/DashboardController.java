@@ -83,6 +83,7 @@ public class DashboardController {
             boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                      !auth.getName().equals("anonymousUser");
             model.addAttribute("isAuthenticated", isAuthenticated);
+            model.addAttribute("activePage", "dashboard");
             
             // Получаем список серверов
             // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,
@@ -108,6 +109,12 @@ public class DashboardController {
             // Версия Kubernetes и namespace из БД (синхронизируются в фоне)
             model.addAttribute("kubernetesVersion", clusterInfoSyncService.getKubernetesVersion());
             model.addAttribute("kubernetesNamespace", clusterInfoSyncService.getNamespace());
+            // Quota из БД (синхронизируются вместе с версией)
+            model.addAttribute("quotaCpu", clusterInfoSyncService.getQuotaCpu());
+            model.addAttribute("quotaMemory", clusterInfoSyncService.getQuotaMemory());
+            model.addAttribute("quotaPods", clusterInfoSyncService.getQuotaPods());
+            model.addAttribute("quotaConfigmaps", clusterInfoSyncService.getQuotaConfigmaps());
+            model.addAttribute("quotaSecrets", clusterInfoSyncService.getQuotaSecrets());
             
             logger.info("Главная страница загружена: {} серверов, {} подов", servers.size(), pods.size());
             
@@ -152,6 +159,7 @@ public class DashboardController {
         boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                  !auth.getName().equals("anonymousUser");
         model.addAttribute("isAuthenticated", isAuthenticated);
+        model.addAttribute("activePage", "servers");
         try {
             // Получаем список серверов
             // ВАЖНО: Версии обновляются в фоне через ServerMonitorService,

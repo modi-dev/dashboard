@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-/**
- * Сервис для синхронизации информации о Kubernetes кластере в БД
- * 
- * Обновляет версию Kubernetes и namespace в фоне
- */
+    /**
+     * Сервис для синхронизации информации о Kubernetes кластере в БД
+     * 
+     * Обновляет версию Kubernetes, namespace и quota в фоне
+     */
 @Service
 public class KubernetesClusterInfoSyncService {
     
@@ -34,7 +34,7 @@ public class KubernetesClusterInfoSyncService {
     /**
      * Синхронизирует информацию о кластере из Kubernetes в БД
      * 
-     * Получает версию Kubernetes через kubectl и сохраняет в БД
+     * Получает версию Kubernetes и quota через kubectl и сохраняет в БД
      * Namespace берется из конфигурации
      * 
      * @return true если синхронизация прошла успешно
@@ -71,14 +71,43 @@ public class KubernetesClusterInfoSyncService {
                 // Не прерываем синхронизацию, просто не обновляем версию
             }
             
+            // Получаем информацию о quota для namespace (одновременно с версией)
+            try {
+                KubernetesService.NamespaceQuota quota = kubernetesService.getNamespaceQuota();
+                if (quota != null) {
+                    clusterInfo.setQuotaCpuUsed(quota.cpuUsed);
+                    clusterInfo.setQuotaCpuHard(quota.cpuHard);
+                    clusterInfo.setQuotaMemoryUsed(quota.memoryUsed);
+                    clusterInfo.setQuotaMemoryHard(quota.memoryHard);
+                    clusterInfo.setQuotaPodsUsed(quota.podsUsed);
+                    clusterInfo.setQuotaPodsHard(quota.podsHard);
+                    clusterInfo.setQuotaConfigmapsUsed(quota.configmapsUsed);
+                    clusterInfo.setQuotaConfigmapsHard(quota.configmapsHard);
+                    clusterInfo.setQuotaSecretsUsed(quota.secretsUsed);
+                    clusterInfo.setQuotaSecretsHard(quota.secretsHard);
+                    logger.debug("Quota обновлены: CPU={}/{}, Memory={}/{}, Pods={}/{}, ConfigMaps={}/{}, Secrets={}/{}",
+                               quota.cpuUsed, quota.cpuHard, quota.memoryUsed, quota.memoryHard,
+                               quota.podsUsed, quota.podsHard, quota.configmapsUsed, quota.configmapsHard,
+                               quota.secretsUsed, quota.secretsHard);
+                } else {
+                    logger.debug("Не удалось получить quota, оставляем текущие значения");
+                }
+            } catch (Exception e) {
+                logger.warn("Ошибка при получении quota: {}", e.getMessage());
+                // Не прерываем синхронизацию, просто не обновляем quota
+            }
+            
             // Устанавливаем время последнего запроса к kubectl
             clusterInfo.setK8sQueriedAt(LocalDateTime.now());
             
             // Сохраняем в БД
             clusterInfoRepository.save(clusterInfo);
             
-            logger.info("Информация о Kubernetes кластере синхронизирована: namespace={}, version={}", 
-                       namespace, clusterInfo.getKubernetesVersion());
+            logger.info("Информация о Kubernetes кластере синхронизирована: namespace={}, version={}, quota={}/{}/{}/{}/{}/{}", 
+                       namespace, clusterInfo.getKubernetesVersion(),
+                       clusterInfo.getQuotaCpuUsed(), clusterInfo.getQuotaCpuHard(),
+                       clusterInfo.getQuotaMemoryUsed(), clusterInfo.getQuotaMemoryHard(),
+                       clusterInfo.getQuotaPodsUsed(), clusterInfo.getQuotaPodsHard());
             
             return true;
             
@@ -122,6 +151,71 @@ public class KubernetesClusterInfoSyncService {
         }
         // Fallback на конфигурацию
         return kubernetesConfig.getNamespace();
+    }
+    
+    /**
+     * Получает информацию о quota CPU из БД
+     * 
+     * @return строка в формате "used/hard" или null если не найдено
+     */
+    public String getQuotaCpu() {
+        KubernetesClusterInfo info = getClusterInfo();
+        if (info != null && info.getQuotaCpuUsed() != null && info.getQuotaCpuHard() != null) {
+            return info.getQuotaCpuUsed() + "/" + info.getQuotaCpuHard();
+        }
+        return null;
+    }
+    
+    /**
+     * Получает информацию о quota Memory из БД
+     * 
+     * @return строка в формате "used/hard" или null если не найдено
+     */
+    public String getQuotaMemory() {
+        KubernetesClusterInfo info = getClusterInfo();
+        if (info != null && info.getQuotaMemoryUsed() != null && info.getQuotaMemoryHard() != null) {
+            return info.getQuotaMemoryUsed() + "/" + info.getQuotaMemoryHard();
+        }
+        return null;
+    }
+    
+    /**
+     * Получает информацию о quota Pods из БД
+     * 
+     * @return строка в формате "used/hard" или null если не найдено
+     */
+    public String getQuotaPods() {
+        KubernetesClusterInfo info = getClusterInfo();
+        if (info != null && info.getQuotaPodsUsed() != null && info.getQuotaPodsHard() != null) {
+            return info.getQuotaPodsUsed() + "/" + info.getQuotaPodsHard();
+        }
+        return null;
+    }
+    
+    /**
+     * Получает информацию о quota ConfigMaps из БД
+     * 
+     * @return строка в формате "used/hard" или null если не найдено
+     */
+    public String getQuotaConfigmaps() {
+        KubernetesClusterInfo info = getClusterInfo();
+        if (info != null && info.getQuotaConfigmapsUsed() != null && info.getQuotaConfigmapsHard() != null) {
+            return info.getQuotaConfigmapsUsed() + "/" + info.getQuotaConfigmapsHard();
+        }
+        return null;
+    }
+    
+    /**
+     * Получает информацию о quota Secrets из БД
+     * 
+     * @return строка в формате "used/hard" или null если не найдено
+     */
+    public String getQuotaSecrets() {
+        KubernetesClusterInfo info = getClusterInfo();
+        if (info != null && info.getQuotaSecretsUsed() != null && info.getQuotaSecretsHard() != null) {
+            return info.getQuotaSecretsUsed() + "/" + info.getQuotaSecretsHard();
+        }
+        return null;
     }
 }
 

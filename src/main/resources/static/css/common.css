@@ -45,6 +45,80 @@
     transition: all 0.2s ease;
 }
 
+/* Speedometer Styles */
+.speedometer-container {
+    position: relative;
+    width: 100%;
+    max-width: 140px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.speedometer-svg {
+    width: 100%;
+    height: auto;
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.speedometer-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--bs-body-color, #212529);
+    z-index: 10;
+    transition: color 0.3s ease, transform 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+}
+
+.speedometer-label {
+    text-align: center;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--bs-body-color, #212529);
+    font-weight: 600;
+    transition: color 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.speedometer-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+.speedometer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.speedometer-card .card-body {
+    padding: 1.25rem;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 /* Table Responsiveness */
 .table-responsive {
     overflow-x: auto;
@@ -464,5 +538,176 @@ body.column-resize-active {
     display: block;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.pod-wrap-cell .wrap-code.database-cluster-url {
+    white-space: pre-line;
+}
+
+/* Pod name clickable cell */
+td[data-column-key="name"].pod-name-clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+td[data-column-key="name"].pod-name-clickable:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+td[data-column-key="name"].pod-name-clickable strong {
+    color: #0d6efd;
+    transition: color 0.2s ease;
+}
+
+td[data-column-key="name"].pod-name-clickable:hover strong {
+    color: #0a58ca;
+    text-decoration: underline;
+}
+
+.theme-dark td[data-column-key="name"].pod-name-clickable:hover {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.theme-dark td[data-column-key="name"].pod-name-clickable strong {
+    color: #60a5fa;
+}
+
+.theme-dark td[data-column-key="name"].pod-name-clickable:hover strong {
+    color: #93c5fd;
+}
+
+/* Stands Dropdown Menu */
+.navbar .dropdown-menu {
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .navbar .dropdown-menu {
+    background-color: #1c1f22;
+    border-color: #343a40;
+    color: #e9ecef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+}
+
+.theme-dark .navbar .dropdown-item {
+    color: #e9ecef;
+}
+
+.theme-dark .navbar .dropdown-item:hover,
+.theme-dark .navbar .dropdown-item:focus {
+    background-color: #343a40;
+    color: #fff;
+}
+
+/* Current Stand Indicator in Dropdown */
+.dropdown-item.current-stand {
+    background-color: #e7f3ff !important;
+    color: #0056b3 !important;
+    font-weight: 600;
+    border-left: 3px solid #0056b3;
+    cursor: default;
+    pointer-events: none;
+    padding-left: 0.75rem;
+}
+
+.dropdown-item.current-stand:hover,
+.dropdown-item.current-stand:focus {
+    background-color: #d0e7ff !important;
+    color: #004085 !important;
+}
+
+.dropdown-item.current-stand i {
+    color: #0056b3;
+}
+
+.dropdown-item.current-stand .text-muted {
+    color: #6c757d !important;
+    font-weight: normal;
+}
+
+.theme-dark .dropdown-item.current-stand {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+    color: #60a5fa !important;
+    border-left-color: #60a5fa;
+}
+
+.theme-dark .dropdown-item.current-stand:hover,
+.theme-dark .dropdown-item.current-stand:focus {
+    background-color: rgba(59, 130, 246, 0.35) !important;
+    color: #93c5fd !important;
+}
+
+.theme-dark .dropdown-item.current-stand i {
+    color: #60a5fa;
+}
+
+.theme-dark .dropdown-item.current-stand .text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Stands and OKO dropdown menu - two columns layout */
+.stands-oko-menu {
+    min-width: 360px;
+    padding: 0;
+}
+
+.stands-oko-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    width: 100%;
+}
+
+.stands-oko-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+}
+
+.stands-oko-column:first-child {
+    border-right: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .stands-oko-column:first-child {
+    border-right-color: rgba(148, 163, 184, 0.3);
+}
+
+.stands-oko-column .dropdown-header {
+    padding: 0.5rem 1rem;
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    border-bottom: none;
+}
+
+.theme-dark .stands-oko-column .dropdown-header {
+    color: #94a3b8;
+}
+
+.stands-oko-column .dropdown-item {
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    white-space: nowrap;
+    display: block;
+    width: 100%;
+    text-decoration: none;
+}
+
+.stands-oko-column .dropdown-item:hover,
+.stands-oko-column .dropdown-item:focus {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .stands-oko-column .dropdown-item:hover,
+.theme-dark .stands-oko-column .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 

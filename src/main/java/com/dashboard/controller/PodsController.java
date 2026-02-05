@@ -47,6 +47,7 @@ public class PodsController {
         boolean isAuthenticated = auth != null && auth.isAuthenticated() && 
                                  !auth.getName().equals("anonymousUser");
         model.addAttribute("isAuthenticated", isAuthenticated);
+        model.addAttribute("activePage", "pods");
         try {
             logger.info("Запрос HTML страницы с информацией о подах");
             
@@ -66,6 +67,12 @@ public class PodsController {
             // Версия Kubernetes и namespace из БД (синхронизируются в фоне)
             model.addAttribute("kubernetesVersion", clusterInfoSyncService.getKubernetesVersion());
             model.addAttribute("kubernetesNamespace", clusterInfoSyncService.getNamespace());
+            // Quota из БД (синхронизируются вместе с версией)
+            model.addAttribute("quotaCpu", clusterInfoSyncService.getQuotaCpu());
+            model.addAttribute("quotaMemory", clusterInfoSyncService.getQuotaMemory());
+            model.addAttribute("quotaPods", clusterInfoSyncService.getQuotaPods());
+            model.addAttribute("quotaConfigmaps", clusterInfoSyncService.getQuotaConfigmaps());
+            model.addAttribute("quotaSecrets", clusterInfoSyncService.getQuotaSecrets());
             return "pods";
         } catch (Exception e) {
             logger.error("Ошибка при получении HTML страницы с подами: {}", e.getMessage(), e);

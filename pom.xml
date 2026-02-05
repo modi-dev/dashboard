@@ -189,28 +189,7 @@
                                </configuration>
                            </execution>
                        </executions>
-                   </plugin>
-                   
-            <!-- Плагин для генерации отчетов о тестах -->
-            <!-- Отключено из-за проблем с зависимостями в корпоративном репозитории -->
-            <!-- Отчеты генерируются через maven-site-plugin и JaCoCo -->
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>3.2.5</version>
-                <executions>
-                    <execution>
-                        <id>generate-test-report</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report-only</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
-            
+                   </plugin>      
             <!-- Плагин для генерации сайта с отчетами -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -261,17 +240,6 @@
     <!-- Секция для настройки отчетов -->
     <reporting>
         <plugins>
-            <!-- Отчеты о тестах -->
-            <!-- Отключено из-за проблем с зависимостями в корпоративном репозитории -->
-            <!-- Отчеты доступны через maven-site-plugin и JaCoCo -->
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>3.2.5</version>
-            </plugin>
-            -->
-            
             <!-- Отчеты о покрытии кода JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>

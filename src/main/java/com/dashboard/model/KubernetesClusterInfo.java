@@ -50,6 +50,51 @@ public class KubernetesClusterInfo {
     @Column(name = "k8s_queried_at")
     private LocalDateTime k8sQueriedAt;
     
+    /**
+     * Использование CPU (used/hard) из quota
+     */
+    @Column(name = "quota_cpu_used", length = 255)
+    private String quotaCpuUsed;
+    
+    @Column(name = "quota_cpu_hard", length = 255)
+    private String quotaCpuHard;
+    
+    /**
+     * Использование Memory (used/hard) из quota
+     */
+    @Column(name = "quota_memory_used", length = 255)
+    private String quotaMemoryUsed;
+    
+    @Column(name = "quota_memory_hard", length = 255)
+    private String quotaMemoryHard;
+    
+    /**
+     * Использование Pods (used/hard) из quota
+     */
+    @Column(name = "quota_pods_used", length = 255)
+    private String quotaPodsUsed;
+    
+    @Column(name = "quota_pods_hard", length = 255)
+    private String quotaPodsHard;
+    
+    /**
+     * Использование ConfigMaps (used/hard) из quota
+     */
+    @Column(name = "quota_configmaps_used", length = 255)
+    private String quotaConfigmapsUsed;
+    
+    @Column(name = "quota_configmaps_hard", length = 255)
+    private String quotaConfigmapsHard;
+    
+    /**
+     * Использование Secrets (used/hard) из quota
+     */
+    @Column(name = "quota_secrets_used", length = 255)
+    private String quotaSecretsUsed;
+    
+    @Column(name = "quota_secrets_hard", length = 255)
+    private String quotaSecretsHard;
+    
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -109,6 +154,86 @@ public class KubernetesClusterInfo {
     
     public void setK8sQueriedAt(LocalDateTime k8sQueriedAt) {
         this.k8sQueriedAt = k8sQueriedAt;
+    }
+    
+    public String getQuotaCpuUsed() {
+        return quotaCpuUsed;
+    }
+    
+    public void setQuotaCpuUsed(String quotaCpuUsed) {
+        this.quotaCpuUsed = quotaCpuUsed;
+    }
+    
+    public String getQuotaCpuHard() {
+        return quotaCpuHard;
+    }
+    
+    public void setQuotaCpuHard(String quotaCpuHard) {
+        this.quotaCpuHard = quotaCpuHard;
+    }
+    
+    public String getQuotaMemoryUsed() {
+        return quotaMemoryUsed;
+    }
+    
+    public void setQuotaMemoryUsed(String quotaMemoryUsed) {
+        this.quotaMemoryUsed = quotaMemoryUsed;
+    }
+    
+    public String getQuotaMemoryHard() {
+        return quotaMemoryHard;
+    }
+    
+    public void setQuotaMemoryHard(String quotaMemoryHard) {
+        this.quotaMemoryHard = quotaMemoryHard;
+    }
+    
+    public String getQuotaPodsUsed() {
+        return quotaPodsUsed;
+    }
+    
+    public void setQuotaPodsUsed(String quotaPodsUsed) {
+        this.quotaPodsUsed = quotaPodsUsed;
+    }
+    
+    public String getQuotaPodsHard() {
+        return quotaPodsHard;
+    }
+    
+    public void setQuotaPodsHard(String quotaPodsHard) {
+        this.quotaPodsHard = quotaPodsHard;
+    }
+    
+    public String getQuotaConfigmapsUsed() {
+        return quotaConfigmapsUsed;
+    }
+    
+    public void setQuotaConfigmapsUsed(String quotaConfigmapsUsed) {
+        this.quotaConfigmapsUsed = quotaConfigmapsUsed;
+    }
+    
+    public String getQuotaConfigmapsHard() {
+        return quotaConfigmapsHard;
+    }
+    
+    public void setQuotaConfigmapsHard(String quotaConfigmapsHard) {
+        this.quotaConfigmapsHard = quotaConfigmapsHard;
+    }
+    
+    public String getQuotaSecretsUsed() {
+        return quotaSecretsUsed;
+    }
+    
+    public void setQuotaSecretsUsed(String quotaSecretsUsed) {
+        this.quotaSecretsUsed = quotaSecretsUsed;
+    }
+    
+    public String getQuotaSecretsHard() {
+        return quotaSecretsHard;
+    }
+    
+    public void setQuotaSecretsHard(String quotaSecretsHard) {
+        this.quotaSecretsHard = quotaSecretsHard;
     }
 }
 

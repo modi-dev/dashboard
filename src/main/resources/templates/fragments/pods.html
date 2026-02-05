@@ -1,18 +1,18 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion, kubernetesNamespace)">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods)">
     <div th:if="${#lists.isEmpty(pods)}" class="text-center text-muted py-4">
         <i class="fas fa-cube fa-3x mb-3"></i>
         <p>Нет доступных подов</p>
     </div>
     <div th:unless="${#lists.isEmpty(pods)}" class="pods-table-wrapper table-responsive p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="badge type-badge" th:text="'Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'} + ' | Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'}">Неизвестно</span>
+            <span class="badge type-badge" th:text="'Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'} + ' | Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'}">Неизвестно</span>
         </div>
         <table id="podsTable" class="table table-hover mb-0">
             <thead>
                 <tr>
                     <th style="width: 30px;"></th>
                     <th data-column-key="name"><span class="column-header-text">Название</span></th>
-                    <th class="pod-detail-col" data-column-key="podName"><span class="column-header-text">POD_NAME</span></th>
+                    <th class="pod-detail-col" data-column-key="podName"><span class="column-header-text">Под</span></th>
                     <th data-column-key="version"><span class="column-header-text">Версия</span></th>
                     <th data-column-key="msBranch"><span class="column-header-text">Ветка сервиса</span></th>
                     <th data-column-key="configBranch"><span class="column-header-text">Ветка SD</span></th>
@@ -29,13 +29,14 @@
                     </th>
                     <th data-column-key="cpu"><span class="column-header-text">CPU</span></th>
                     <th data-column-key="memory"><span class="column-header-text">RAM</span></th>
+                    <th data-column-key="databaseClusterUrl"><span class="column-header-text">БД</span></th>
                     <th class="pod-detail-col" data-column-key="creationDate"><span class="column-header-text">Дата создания</span></th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="pod : ${pods}" th:attr="data-pod-name=${pod.name},data-is-grouped=false">
                     <td></td>
-                    <td data-column-key="name">
+                    <td data-column-key="name" class="pod-name-clickable">
                         <strong th:text="${pod.name}">-</strong>
                     </td>
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="podName">
@@ -55,6 +56,9 @@
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="readyTime"><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
                     <td class="pod-wrap-cell" data-column-key="cpu" th:text="${pod.cpuRequest ?: '-'}">-</td>
                     <td class="pod-wrap-cell" data-column-key="memory" th:text="${pod.memoryRequest ?: '-'}">-</td>
+                    <td class="pod-wrap-cell" data-column-key="databaseClusterUrl">
+                        <code class="wrap-code database-cluster-url" th:text="${pod.databaseClusterUrl ?: '-'}">-</code>
+                    </td>
                     <td class="pod-detail-col pod-wrap-cell" data-column-key="creationDate" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
                 </tr>
             </tbody>
@@ -62,7 +66,7 @@
     </div>
 </div>
 
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace)">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods, quotaConfigmaps, quotaSecrets)">
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
@@ -86,7 +90,7 @@
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnPodName" data-column-key="podName" checked>
-                                <label class="form-check-label" for="toggleColumnPodName">POD_NAME</label>
+                                <label class="form-check-label" for="toggleColumnPodName">пода</label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnVersion" data-column-key="version" checked>
@@ -125,6 +129,10 @@
                                 <label class="form-check-label" for="toggleColumnMemory">RAM</label>
                             </div>
                             <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnDatabaseClusterUrl" data-column-key="databaseClusterUrl" checked>
+                                <label class="form-check-label" for="toggleColumnDatabaseClusterUrl">БД</label>
+                            </div>
+                            <div class="form-check">
                                 <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnCreationDate" data-column-key="creationDate" checked>
                                 <label class="form-check-label" for="toggleColumnCreationDate">Дата создания</label>
                             </div>
@@ -144,7 +152,12 @@
                 </a>
             </div>
         </div>
-        <div class="card-body p-0" th:replace="~{fragments/pods :: podsTable(${pods}, ${kubernetesVersion}, ${kubernetesNamespace})}"></div>
+        <div class="card-header border-top-0 pt-0 pb-2 px-3 d-flex justify-content-end">
+            <small class="text-muted" id="podsLastUpdate">
+                <i class="fas fa-clock me-1"></i>Последнее обновление: <span id="podsLastUpdateTime">-</span>
+            </small>
+        </div>
+        <div class="card-body p-0" th:replace="~{fragments/pods :: podsTable(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods})}"></div>
     </div>
 </div>
 

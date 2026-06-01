@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: ns-smep
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-ci.sfera.inno.local/smep-docker-snapshot
-main:
-  image: smep/ms-dashbord

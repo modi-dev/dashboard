@@ -1,0 +1,2043 @@
+const PODS_COLUMN_SETTINGS_KEY = 'podsTableColumnSettings';
+const INSTRUCTION_STEP_KEY = 'instructionTourStep';
+const INSTRUCTION_SHOULD_OPEN_KEY = 'instructionTourShouldOpen';
+const INSTRUCTION_DISMISSED_KEY = 'instructionTourDismissed';
+let sidebarKeyListenerBound = false;
+
+const INSTRUCTION_STEPS = [
+  {
+    title: 'Главная страница',
+    description: 'Здесь можно увидеть общую информацию о серверах и подах, а также быстро перейти к нужным разделам.',
+    path: '/'
+  },
+  {
+    title: 'Серверы',
+    description: 'На данной странице удобно работать с серверами: добавлять новые, удалять старые и экспортировать данные.',
+    path: '/servers'
+  },
+  {
+    title: 'Поды',
+    description: 'На данной странице представлена подробная информация об утилизации ресурсов в NS K8s.\
+    \nВ таблице подов используется группировка, доступен фильтр по значению.\
+    \nМожно настроить видимость и ширину колонок (данные настройки сохраняются в кэше браузера).\
+    \nПри нажатии на имя сервиса, через Ctrl+Click, откроется его actuator в новой вкладке.',
+    path: '/pods'
+  },
+  {
+    title: 'Авторизация',
+    description: 'Удаление и добавление серверов доступно только авторизованным пользователям.\
+    \nЕсли у вас нет учетных данных, обратитесь к администратору стенда.',
+    path: '/'
+  },
+  {
+    title: 'Добавление сервера',
+    description: 'Добавить сервер можно на главной странице или в разделе «Серверы» (кнопка «Добавить сервер» или синия кнопка + в правом нижнем углу).\
+    \nПри добавлении укажите название, URL и тип сервера.\
+    \n⚠ Для типа «Другое» требуется указать healthcheck, metrics endpoints и version regex.\
+    \n⚠Поле «Version regex» это регулярное выражение, которое необходимо для извлечения версии из метрик сервера.',
+    path: '/servers'
+  },
+  {
+    title: 'Удаление сервера',
+    description: 'Сервер можно удалить на главной странице или в разделе «Серверы» кнопкой корзины.\
+    \nЗапись будет удалена из списка серверов и базы данных.',
+    path: '/servers'
+  },
+  {
+    title: 'Обратная связь',
+    description: 'При возникновении проблем или предложений, пишите на почту onb-devops.',
+    path: '/'
+  }
+];
+
+let instructionModal;
+let instructionCurrentStep = 0;
+
+function normalizePath(path) {
+  if (!path) {
+    return '';
+  }
+  let normalized = path.trim();
+  if (!normalized) {
+    return '';
+  }
+  if (!normalized.startsWith('/')) {
+    normalized = `/${normalized}`;
+  }
+  normalized = normalized.replace(/\/+$/, '');
+  return normalized === '' ? '/' : normalized;
+}
+
+function loadInstructionProgress() {
+  const stored = parseInt(localStorage.getItem(INSTRUCTION_STEP_KEY) || '0', 10);
+  if (!Number.isNaN(stored) && stored >= 0 && stored < INSTRUCTION_STEPS.length) {
+    instructionCurrentStep = stored;
+  } else {
+    instructionCurrentStep = 0;
+    localStorage.setItem(INSTRUCTION_STEP_KEY, '0');
+  }
+}
+
+function showInstructionStep(targetIndex) {
+  const clamped = Math.max(0, Math.min(targetIndex, INSTRUCTION_STEPS.length - 1));
+  instructionCurrentStep = clamped;
+  localStorage.setItem(INSTRUCTION_STEP_KEY, String(clamped));
+
+  const step = INSTRUCTION_STEPS[clamped];
+  if (step && step.path) {
+    const targetPath = normalizePath(step.path);
+    const currentFullPath = normalizePath(window.location.pathname);
+    let matches = currentFullPath === targetPath;
+
+    if (!matches && targetPath && targetPath !== '/') {
+      const index = currentFullPath.lastIndexOf(targetPath);
+      if (index !== -1 && index + targetPath.length === currentFullPath.length) {
+        matches = index === 0 || currentFullPath.charAt(index - 1) === '/';
+      }
+    }
+
+    if (!matches) {
+      localStorage.setItem(INSTRUCTION_SHOULD_OPEN_KEY, 'true');
+      if (instructionModal) {
+        instructionModal.hide();
+      }
+      window.location.href = step.path;
+      return false;
+    }
+    localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
+  }
+
+  renderInstructionContent();
+  return true;
+}
+
+function renderInstructionContent() {
+  const modalElement = document.getElementById('instructionModal');
+  if (!modalElement) {
+    return;
+  }
+
+  const step = INSTRUCTION_STEPS[instructionCurrentStep];
+  if (!step) {
+    return;
+  }
+
+  const body = modalElement.querySelector('.modal-body');
+  const indicator = document.getElementById('instructionStepIndicator');
+  const prevBtn = document.getElementById('instructionPrevBtn');
+  const nextBtn = document.getElementById('instructionNextBtn');
+
+  if (body) {
+    body.innerHTML = `
+      <div class="instruction-step">
+          <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>${step.title}</h6>
+          <p class="mb-0">${step.description}</p>
+      </div>
+    `;
+  }
+
+  if (indicator) {
+    indicator.textContent = `Шаг ${instructionCurrentStep + 1} из ${INSTRUCTION_STEPS.length}`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = instructionCurrentStep === 0;
+  }
+
+  if (nextBtn) {
+    if (instructionCurrentStep === INSTRUCTION_STEPS.length - 1) {
+      nextBtn.innerHTML = 'Готово <i class="fas fa-check ms-1"></i>';
+    } else {
+      nextBtn.innerHTML = 'Далее <i class="fas fa-arrow-right ms-1"></i>';
+    }
+  }
+}
+
+function onDocumentReady(callback) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', callback, { once: true });
+  } else {
+    callback();
+  }
+}
+
+// Notifications -------------------------------------------------------------
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
+  notification.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+  notification.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 5000);
+}
+
+// Server actions ------------------------------------------------------------
+function deleteServer(serverId) {
+  if (!serverId) {
+    return;
+  }
+
+  if (!confirm('Вы уверены, что хотите удалить этот сервер?')) {
+    return;
+  }
+
+  fetch(`/api/servers/${serverId}`, {
+    method: 'DELETE',
+    credentials: 'same-origin'
+  })
+    .then(response => {
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return null;
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data) {
+        return;
+      }
+      if (data.success) {
+        showNotification('Сервер успешно удален!', 'success');
+        setTimeout(() => location.reload(), 200);
+      } else {
+        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Произошла ошибка при удалении сервера', 'error');
+    });
+}
+
+function formatLastUpdateTime(date) {
+  if (!date) {
+    return '-';
+  }
+  const now = new Date(date);
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function formatRelativeTime(dateString) {
+  if (!dateString) {
+    return '-';
+  }
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return '-';
+  }
+  
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) {
+    return 'только что';
+  } else if (diffMinutes < 60) {
+    const minutes = diffMinutes;
+    if (minutes === 1) {
+      return '1 минуту назад';
+    } else if (minutes >= 2 && minutes <= 4) {
+      return `${minutes} минуты назад`;
+    } else {
+      return `${minutes} минут назад`;
+    }
+  } else if (diffHours < 24) {
+    const hours = diffHours;
+    if (hours === 1) {
+      return '1 час назад';
+    } else if (hours >= 2 && hours <= 4) {
+      return `${hours} часа назад`;
+    } else {
+      return `${hours} часов назад`;
+    }
+  } else if (diffDays < 7) {
+    const days = diffDays;
+    if (days === 1) {
+      return 'вчера';
+    } else if (days >= 2 && days <= 4) {
+      return `${days} дня назад`;
+    } else {
+      return `${days} дней назад`;
+    }
+  } else {
+    // Если больше недели, показываем полную дату
+    return formatLastUpdateTime(date);
+  }
+}
+
+function updateServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('serversLastUpdateTime', now.toISOString());
+}
+
+function loadServersLastUpdateTime() {
+  const timeElement = document.getElementById('serversLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/servers/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success && data.data) {
+          if (data.data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading servers last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
+  }
+  
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.serversUpdateInterval) {
+    window.serversUpdateInterval = setInterval(updateTime, 60000);
+  }
+}
+
+function refreshServers(ev) {
+  const btn = ev && ev.target ? ev.target.closest('button') : null;
+  const originalContent = btn ? btn.innerHTML : null;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
+  }
+
+  fetch('/api/servers/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data) {
+        return;
+      }
+      if (data.success) {
+        // Время обновления будет загружено из БД после перезагрузки страницы
+        showNotification('Фоновая проверка серверов запущена. Обновим данные через пару секунд.', 'info');
+        setTimeout(() => location.reload(), 3000);
+      } else {
+        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Произошла ошибка при обновлении статуса серверов', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    });
+}
+
+function updatePodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  const now = new Date();
+  const formattedTime = formatLastUpdateTime(now);
+  timeElement.textContent = formattedTime;
+  
+  // Сохраняем время в localStorage
+  localStorage.setItem('podsLastUpdateTime', now.toISOString());
+}
+
+function loadPodsLastUpdateTime() {
+  const timeElement = document.getElementById('podsLastUpdateTime');
+  if (!timeElement) {
+    return;
+  }
+  
+  function updateTime() {
+    // Загружаем время из БД через API
+    fetch('/api/pods/last-updated', {
+      method: 'GET',
+      credentials: 'same-origin'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.success) {
+          if (data.lastUpdated) {
+            // Парсим дату из ISO строки (формат: "2024-01-15T14:30:45")
+            const dateString = data.lastUpdated;
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+              timeElement.textContent = formatRelativeTime(date.toISOString());
+              timeElement.setAttribute('title', formatLastUpdateTime(date));
+            } else {
+              timeElement.textContent = '-';
+              timeElement.removeAttribute('title');
+            }
+          } else {
+            timeElement.textContent = '-';
+            timeElement.removeAttribute('title');
+          }
+        } else {
+          timeElement.textContent = '-';
+          timeElement.removeAttribute('title');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading pods last update time:', error);
+        timeElement.textContent = '-';
+        timeElement.removeAttribute('title');
+      });
+  }
+  
+  // Обновляем сразу
+  updateTime();
+  
+  // Обновляем каждую минуту для актуальности относительного времени
+  if (!window.podsUpdateInterval) {
+    window.podsUpdateInterval = setInterval(updateTime, 60000);
+  }
+}
+
+function refreshPods(ev) {
+  const btn = ev && ev.target ? ev.target.closest('button') : null;
+  const originalContent = btn ? btn.innerHTML : null;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
+  }
+
+  fetch('/api/pods/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
+  })
+    .then(response => {
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data) {
+        return;
+      }
+      if (data.success) {
+        // Время обновления будет загружено из БД после перезагрузки страницы
+        showNotification('Информация о подах успешно обновлена!', 'success');
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Произошла ошибка при обновлении информации о подах', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    });
+}
+
+// Theme ---------------------------------------------------------------------
+function toggleTheme() {
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+  const isDark = htmlRoot.classList.contains('theme-dark');
+
+  if (isDark) {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+    localStorage.setItem('theme', 'light');
+  } else {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+    localStorage.setItem('theme', 'dark');
+  }
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  const htmlRoot = document.getElementById('htmlRoot');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeIconMobile = document.getElementById('themeIconMobile');
+
+  if (savedTheme === 'dark') {
+    htmlRoot.classList.add('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-moon');
+      themeIcon.classList.add('fa-sun');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-moon');
+      themeIconMobile.classList.add('fa-sun');
+    }
+  } else {
+    htmlRoot.classList.remove('theme-dark');
+    if (themeIcon) {
+      themeIcon.classList.remove('fa-sun');
+      themeIcon.classList.add('fa-moon');
+    }
+    if (themeIconMobile) {
+      themeIconMobile.classList.remove('fa-sun');
+      themeIconMobile.classList.add('fa-moon');
+    }
+  }
+}
+
+// Sidebar & add server ------------------------------------------------------
+function openSidebar() {
+  const sidebar = document.getElementById('addServerSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const mainContent = document.querySelector('.main-content');
+
+  if (sidebar) {
+    sidebar.classList.add('open');
+  }
+  if (overlay) {
+    overlay.classList.add('show');
+  }
+  if (mainContent) {
+    mainContent.classList.add('sidebar-open');
+  }
+
+  document.body.style.overflow = 'hidden';
+
+  if (sidebar) {
+    const firstInput = sidebar.querySelector('input, select, textarea');
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 0);
+    }
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('addServerSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const mainContent = document.querySelector('.main-content');
+  const form = document.getElementById('addServerForm');
+
+  if (sidebar) {
+    sidebar.classList.remove('open');
+  }
+  if (overlay) {
+    overlay.classList.remove('show');
+  }
+  if (mainContent) {
+    mainContent.classList.remove('sidebar-open');
+  }
+
+  document.body.style.overflow = 'auto';
+
+  if (form) {
+    form.reset();
+  }
+
+  toggleHealthcheck();
+}
+
+function toggleHealthcheck() {
+  const serverType = document.getElementById('serverType');
+  if (!serverType) {
+    return;
+  }
+
+  const type = serverType.value;
+  const showExtras = type === 'OTHER';
+
+  const healthcheckField = document.getElementById('healthcheckField');
+  const healthcheckInput = document.getElementById('serverHealthcheck');
+  const metricsEndpointField = document.getElementById('metricsEndpointField');
+  const versionRegexField = document.getElementById('versionRegexField');
+
+  if (healthcheckField) {
+    healthcheckField.style.display = showExtras ? 'block' : 'none';
+  }
+  if (healthcheckInput) {
+    healthcheckInput.required = showExtras;
+    if (!showExtras) {
+      healthcheckInput.value = '';
+    }
+  }
+  if (metricsEndpointField) {
+    metricsEndpointField.style.display = showExtras ? 'block' : 'none';
+  }
+  if (versionRegexField) {
+    versionRegexField.style.display = showExtras ? 'block' : 'none';
+  }
+}
+
+function addServer() {
+  const nameInput = document.getElementById('serverName');
+  const urlInput = document.getElementById('serverUrl');
+  const typeSelect = document.getElementById('serverType');
+
+  if (!nameInput || !urlInput || !typeSelect) {
+    return;
+  }
+
+  const serverData = {
+    name: nameInput.value,
+    url: urlInput.value,
+    type: typeSelect.value
+  };
+
+  if (serverData.type === 'OTHER') {
+    const healthcheckInput = document.getElementById('serverHealthcheck');
+    const metricsEndpointInput = document.getElementById('serverMetricsEndpoint');
+    const versionRegexInput = document.getElementById('serverVersionRegex');
+
+    if (healthcheckInput) {
+      serverData.healthcheck = healthcheckInput.value;
+    }
+    if (metricsEndpointInput) {
+      serverData.metricsEndpoint = metricsEndpointInput.value;
+    }
+    if (versionRegexInput) {
+      serverData.versionRegex = versionRegexInput.value;
+    }
+  }
+
+  fetch('/api/servers', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(serverData),
+    credentials: 'same-origin'
+  })
+    .then(response => {
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/login';
+        return null;
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data) {
+        return;
+      }
+      if (data.success) {
+        closeSidebar();
+        showNotification('Сервер успешно добавлен!', 'success');
+        setTimeout(() => location.reload(), 300);
+      } else {
+        showNotification('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Произошла ошибка при добавлении сервера', 'error');
+    });
+}
+
+function initSidebar() {
+  const addServerForm = document.getElementById('addServerForm');
+  if (addServerForm && addServerForm.dataset.bound !== 'true') {
+    addServerForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      addServer();
+    });
+    addServerForm.dataset.bound = 'true';
+  }
+
+  const serverType = document.getElementById('serverType');
+  if (serverType && serverType.dataset.bound !== 'true') {
+    serverType.addEventListener('change', toggleHealthcheck);
+    serverType.dataset.bound = 'true';
+  }
+
+  toggleHealthcheck();
+
+  if (!sidebarKeyListenerBound) {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeSidebar();
+      }
+    });
+    sidebarKeyListenerBound = true;
+  }
+}
+
+// Table filters -------------------------------------------------------------
+function initServersFilter() {
+  const filterInput = document.getElementById('serversFilter');
+  const table = document.getElementById('serversTable');
+
+  if (!filterInput || !table || filterInput.dataset.bound === 'true') {
+    return;
+  }
+
+  filterInput.addEventListener('input', () => {
+    const query = filterInput.value.trim().toLowerCase();
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  });
+
+  filterInput.dataset.bound = 'true';
+}
+
+function initPodsFilter(table) {
+  const filterInput = document.getElementById('podsFilter');
+
+  if (!filterInput || filterInput.dataset.bound === 'true') {
+    return;
+  }
+
+  filterInput.addEventListener('input', () => {
+    const query = filterInput.value.trim().toLowerCase();
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+      const isGroup = row.getAttribute('data-is-group') === 'true';
+      const isGroupItem = row.getAttribute('data-is-group-item') === 'true';
+      const text = row.innerText.toLowerCase();
+      const matches = text.includes(query);
+
+      if (isGroup) {
+        const groupName = row.getAttribute('data-group-name');
+        const groupItems = table.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+        let anyChildMatches = matches;
+
+        groupItems.forEach(item => {
+          if (item.innerText.toLowerCase().includes(query)) {
+            anyChildMatches = true;
+          }
+        });
+
+        if (anyChildMatches) {
+          row.style.display = '';
+          if (row.getAttribute('data-expanded') === 'true') {
+            groupItems.forEach(item => {
+              item.style.display = item.innerText.toLowerCase().includes(query) ? '' : 'none';
+            });
+          }
+        } else {
+          row.style.display = 'none';
+          groupItems.forEach(item => {
+            item.style.display = 'none';
+          });
+        }
+      } else if (isGroupItem) {
+        const groupName = row.getAttribute('data-group-name');
+        const groupRow = table.querySelector(`tr[data-group-name="${groupName}"][data-is-group="true"]`);
+        if (groupRow && groupRow.getAttribute('data-expanded') === 'true' && matches) {
+          row.style.display = '';
+        } else if (!matches) {
+          row.style.display = 'none';
+        }
+      } else {
+        row.style.display = matches ? '' : 'none';
+      }
+    });
+  });
+
+  filterInput.dataset.bound = 'true';
+}
+
+// Pods grouping & controls --------------------------------------------------
+function groupPods(table) {
+  if (table.dataset.grouped === 'true') {
+    return;
+  }
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) {
+    return;
+  }
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const groups = {};
+
+  rows.forEach(row => {
+    const podName = row.getAttribute('data-pod-name');
+    if (!groups[podName]) {
+      groups[podName] = [];
+    }
+    groups[podName].push(row);
+  });
+
+  tbody.innerHTML = '';
+
+  Object.keys(groups).sort().forEach(name => {
+    const groupRows = groups[name];
+
+    if (groupRows.length > 1) {
+      const firstRow = groupRows[0];
+      const groupedRow = firstRow.cloneNode(true);
+      groupedRow.setAttribute('data-group-name', name);
+      groupedRow.setAttribute('data-is-group', 'true');
+      groupedRow.setAttribute('data-expanded', 'false');
+
+      const firstCell = groupedRow.querySelector('td:first-child');
+      if (firstCell) {
+        firstCell.innerHTML = '<button class="btn btn-sm btn-link p-0" onclick="togglePodGroup(this)" style="min-width: 20px;"><i class="fas fa-chevron-right"></i></button>';
+      }
+
+      const detailCells = Array.from(groupedRow.querySelectorAll('.pod-detail-col'));
+      detailCells.forEach(cell => {
+        cell.setAttribute('data-original-html', cell.innerHTML);
+        cell.innerHTML = '';
+        cell.style.visibility = 'hidden';
+        cell.style.width = '0';
+        cell.style.padding = '0';
+        cell.style.border = 'none';
+      });
+
+      groupRows.forEach(row => {
+        row.setAttribute('data-group-name', name);
+        row.setAttribute('data-is-group-item', 'true');
+        row.style.display = 'none';
+        const cell = row.querySelector('td:first-child');
+        if (cell) {
+          cell.innerHTML = '';
+        }
+      });
+
+      const nameCell = groupedRow.querySelector('td:nth-child(2)');
+      if (nameCell) {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-primary ms-2';
+        badge.textContent = groupRows.length;
+        const strong = nameCell.querySelector('strong') || nameCell;
+        strong.appendChild(badge);
+      }
+
+      tbody.appendChild(groupedRow);
+      groupRows.forEach(row => tbody.appendChild(row));
+    } else {
+      const row = groupRows[0];
+      const firstCell = row.querySelector('td:first-child');
+      if (firstCell) {
+        firstCell.innerHTML = '';
+      }
+      tbody.appendChild(row);
+    }
+  });
+
+  table.dataset.grouped = 'true';
+}
+
+function togglePodGroup(button) {
+  const row = button.closest('tr');
+  if (!row) {
+    return;
+  }
+
+  const table = row.closest('table');
+  const groupName = row.getAttribute('data-group-name');
+  const isExpanded = row.getAttribute('data-expanded') === 'true';
+  const icon = button.querySelector('i');
+
+  if (isExpanded) {
+    if (icon) {
+      icon.className = 'fas fa-chevron-right';
+    }
+    row.setAttribute('data-expanded', 'false');
+
+    const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
+    detailCells.forEach(cell => {
+      // Сохраняем оригинальный HTML
+      cell.setAttribute('data-original-html', cell.innerHTML);
+      
+      // Сохраняем ширину столбца из header или первой видимой ячейки
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey && !table.hasAttribute(`data-saved-width-${columnKey}`)) {
+        // Пытаемся получить ширину из header
+        const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+        let savedWidth = null;
+        
+        if (headerCell && headerCell.offsetWidth > 0) {
+          savedWidth = headerCell.offsetWidth + 'px';
+        } else if (cell.offsetWidth > 0) {
+          savedWidth = cell.offsetWidth + 'px';
+        }
+        
+        if (savedWidth) {
+          table.setAttribute(`data-saved-width-${columnKey}`, savedWidth);
+        }
+      }
+      
+      cell.innerHTML = '';
+      cell.style.visibility = 'hidden';
+      // Не меняем width, чтобы не влиять на ширину столбца
+      // Используем только padding и border для визуального скрытия
+      cell.style.padding = '0';
+      cell.style.border = 'none';
+    });
+
+    if (table) {
+      const allRows = table.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+      allRows.forEach(r => {
+        r.style.display = 'none';
+      });
+    }
+  } else {
+    if (icon) {
+      icon.className = 'fas fa-chevron-down';
+    }
+    row.setAttribute('data-expanded', 'true');
+
+    const detailCells = Array.from(row.querySelectorAll('.pod-detail-col'));
+    detailCells.forEach(cell => {
+      // Восстанавливаем оригинальный HTML
+      const originalHtml = cell.getAttribute('data-original-html');
+      if (originalHtml) {
+        cell.innerHTML = originalHtml;
+      } else {
+        cell.innerHTML = '-';
+      }
+      
+      // Восстанавливаем стили
+      cell.style.visibility = '';
+      cell.style.padding = '';
+      cell.style.border = '';
+      
+      // Восстанавливаем ширину столбца, если она была сохранена
+      const columnKey = cell.getAttribute('data-column-key');
+      if (columnKey) {
+        const savedWidth = table.getAttribute(`data-saved-width-${columnKey}`);
+        if (savedWidth && table.classList.contains('pods-table-fixed')) {
+          // Применяем сохраненную ширину ко всем ячейкам этого столбца
+          const allColumnCells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+          allColumnCells.forEach(colCell => {
+            colCell.style.width = savedWidth;
+            colCell.style.minWidth = savedWidth;
+            colCell.style.maxWidth = savedWidth;
+          });
+        }
+        table.removeAttribute(`data-saved-width-${columnKey}`);
+      }
+    });
+
+    if (table) {
+      const allRows = table.querySelectorAll(`tr[data-group-name="${groupName}"][data-is-group-item="true"]`);
+      allRows.forEach(r => {
+        r.style.display = '';
+      });
+    }
+  }
+}
+
+function getPodsColumnSettings() {
+  const defaultSettings = { visibility: {}, widths: {} };
+  try {
+    const raw = localStorage.getItem(PODS_COLUMN_SETTINGS_KEY);
+    if (!raw) {
+      return defaultSettings;
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      visibility: parsed.visibility || {},
+      widths: parsed.widths || {}
+    };
+  } catch (error) {
+    console.warn('Не удалось загрузить настройки колонок подов:', error);
+    return defaultSettings;
+  }
+}
+
+function savePodsColumnSettings(settings) {
+  localStorage.setItem(PODS_COLUMN_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function getHeaderMinWidth(headerCell) {
+  if (!headerCell) {
+    return 0;
+  }
+
+  const stored = parseInt(headerCell.dataset.minWidth || '', 10);
+  if (!Number.isNaN(stored) && stored > 0) {
+    return stored;
+  }
+
+  const label = headerCell.querySelector('.column-header-text');
+  const labelRect = label ? label.getBoundingClientRect() : null;
+  const labelWidth = labelRect ? labelRect.width : (headerCell.scrollWidth || 0);
+  const styles = window.getComputedStyle(headerCell);
+  const paddingLeft = parseFloat(styles.paddingLeft || '0');
+  const paddingRight = parseFloat(styles.paddingRight || '0');
+  const gap = 2;
+  const measured = Math.ceil(labelWidth + paddingLeft + paddingRight + gap);
+  const normalized = Math.max(60, measured);
+
+  headerCell.dataset.minWidth = String(normalized);
+  return normalized;
+}
+
+function applyColumnVisibility(table, columnKey, visible) {
+  const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+
+  cells.forEach(cell => {
+    if (visible) {
+      cell.classList.remove('column-hidden');
+    } else {
+      cell.classList.add('column-hidden');
+    }
+  });
+}
+
+function applyColumnWidth(table, columnKey, width) {
+  if (width === undefined || width === null) {
+    return;
+  }
+
+  const numericWidth = typeof width === 'number' ? width : parseInt(width, 10);
+  if (Number.isNaN(numericWidth) || numericWidth <= 0) {
+    return;
+  }
+
+  const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+  const minWidth = Math.max(60, getHeaderMinWidth(headerCell));
+  const finalWidth = Math.max(numericWidth, minWidth);
+  const widthPx = `${finalWidth}px`;
+
+  const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+  if (cells.length === 0) {
+    return;
+  }
+
+  table.classList.add('pods-table-fixed');
+  cells.forEach(cell => {
+    cell.style.width = widthPx;
+    cell.style.minWidth = widthPx;
+    cell.style.maxWidth = widthPx;
+  });
+}
+
+function clearColumnWidth(table, columnKey) {
+  const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+  cells.forEach(cell => {
+    cell.style.width = '';
+    cell.style.minWidth = '';
+    cell.style.maxWidth = '';
+    delete cell.dataset.minWidth;
+  });
+
+  const headerCell = table.querySelector(`thead th[data-column-key="${columnKey}"]`);
+  if (headerCell) {
+    delete headerCell.dataset.minWidth;
+  }
+}
+
+function ensureTableWidthLock(table, settings) {
+  if (table.dataset.columnWidthsLocked === 'true') {
+    return;
+  }
+
+  const headerCells = Array.from(table.querySelectorAll('thead th[data-column-key]'));
+
+  headerCells.forEach(headerCell => {
+    const columnKey = headerCell.dataset.columnKey;
+    if (!columnKey) {
+      return;
+    }
+    if (headerCell.classList.contains('column-hidden')) {
+      return;
+    }
+
+    if (settings.widths && Object.prototype.hasOwnProperty.call(settings.widths, columnKey)) {
+      applyColumnWidth(table, columnKey, settings.widths[columnKey]);
+      return;
+    }
+
+    const rectWidth = headerCell.getBoundingClientRect().width || headerCell.offsetWidth;
+    if (!rectWidth) {
+      return;
+    }
+
+    const computedWidth = Math.round(rectWidth);
+    const normalized = Math.max(60, getHeaderMinWidth(headerCell));
+    const widthPx = `${Math.max(computedWidth, normalized)}px`;
+
+    const cells = table.querySelectorAll(`[data-column-key="${columnKey}"]`);
+    cells.forEach(cell => {
+      cell.style.width = widthPx;
+      cell.style.minWidth = widthPx;
+      cell.style.maxWidth = widthPx;
+    });
+  });
+
+  table.classList.add('pods-table-fixed');
+  table.dataset.columnWidthsLocked = 'true';
+}
+
+function attachColumnResizer(table, headerCell, columnKey, settings) {
+  if (!headerCell || !columnKey || headerCell.querySelector('.column-resizer')) {
+    return;
+  }
+
+  const resizer = document.createElement('span');
+  resizer.className = 'column-resizer';
+  headerCell.appendChild(resizer);
+
+  let startX = 0;
+  let startWidth = 0;
+  let lastWidth = 0;
+
+  const onMouseMove = (event) => {
+    const delta = event.clientX - startX;
+    let newWidth = startWidth + delta;
+    const headerMinWidth = Math.max(60, getHeaderMinWidth(headerCell));
+    if (newWidth < headerMinWidth) {
+      newWidth = headerMinWidth;
+    }
+    lastWidth = newWidth;
+    applyColumnWidth(table, columnKey, newWidth);
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.body.classList.remove('column-resize-active');
+    if (lastWidth > 0) {
+      settings.widths[columnKey] = Math.round(lastWidth);
+      savePodsColumnSettings(settings);
+    }
+  };
+
+  resizer.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    ensureTableWidthLock(table, settings);
+    startX = event.clientX;
+    startWidth = headerCell.offsetWidth;
+    lastWidth = startWidth;
+    document.body.classList.add('column-resize-active');
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+}
+
+function initPodsColumnControls(table) {
+  const headerCells = Array.from(table.querySelectorAll('thead th[data-column-key]'));
+  if (headerCells.length === 0) {
+    return;
+  }
+
+  const settings = getPodsColumnSettings();
+  const hasStoredWidths = Object.keys(settings.widths || {}).length > 0;
+  const hasStoredVisibility = Object.keys(settings.visibility || {}).length > 0;
+
+  if (!hasStoredWidths && !hasStoredVisibility) {
+    headerCells.forEach(headerCell => {
+      const columnKey = headerCell.dataset.columnKey;
+      if (!columnKey) {
+        return;
+      }
+      applyColumnVisibility(table, columnKey, true);
+      clearColumnWidth(table, columnKey);
+      const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+      }
+    });
+
+    table.classList.remove('pods-table-fixed');
+    delete table.dataset.columnWidthsLocked;
+
+    settings.visibility = {};
+    settings.widths = {};
+    savePodsColumnSettings(settings);
+  }
+
+  headerCells.forEach(headerCell => {
+    const columnKey = headerCell.dataset.columnKey;
+    if (!columnKey) {
+      return;
+    }
+
+    const isVisible = Object.prototype.hasOwnProperty.call(settings.visibility, columnKey)
+      ? settings.visibility[columnKey]
+      : true;
+    applyColumnVisibility(table, columnKey, isVisible);
+
+    if (hasStoredWidths) {
+      const storedWidth = settings.widths[columnKey];
+      if (storedWidth) {
+        applyColumnWidth(table, columnKey, storedWidth);
+      }
+    }
+
+    const checkbox = document.querySelector(`.column-toggle[data-column-key="${columnKey}"]`);
+    if (checkbox) {
+      checkbox.checked = isVisible;
+    }
+
+    attachColumnResizer(table, headerCell, columnKey, settings);
+  });
+
+  const toggles = document.querySelectorAll('.column-toggle[data-column-key]');
+  toggles.forEach(checkbox => {
+    if (checkbox.dataset.bound === 'true') {
+      return;
+    }
+    checkbox.addEventListener('change', function () {
+      const columnKey = this.dataset.columnKey;
+      const visible = this.checked;
+      applyColumnVisibility(table, columnKey, visible);
+      settings.visibility[columnKey] = visible;
+      savePodsColumnSettings(settings);
+    });
+    checkbox.dataset.bound = 'true';
+  });
+
+  const resetButton = document.getElementById('resetPodsColumns');
+  if (resetButton && resetButton.dataset.bound !== 'true') {
+    resetButton.addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('.column-toggle[data-column-key]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        const key = checkbox.dataset.columnKey;
+        applyColumnVisibility(table, key, true);
+        clearColumnWidth(table, key);
+      });
+
+      table.classList.remove('pods-table-fixed');
+      delete table.dataset.columnWidthsLocked;
+
+      settings.visibility = {};
+      settings.widths = {};
+      savePodsColumnSettings(settings);
+    });
+    resetButton.dataset.bound = 'true';
+  }
+}
+
+function generateServiceUrl(serviceName) {
+  if (!serviceName || serviceName === '-') {
+    return null;
+  }
+  
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  
+  // Разбиваем домен на части
+  const hostParts = currentHost.split('.');
+  
+  // Если домен имеет формат ms-dashboard.ift.onb.test.komp.ru
+  // Заменяем первую часть (ms-dashboard) на serviceName
+  if (hostParts.length > 1) {
+    hostParts[0] = serviceName;
+    const newHost = hostParts.join('.');
+    return `${currentProtocol}//${newHost}/actuator/health`;
+  }
+  
+  return null;
+}
+
+function initPodsNameClickHandlers() {
+  const table = document.getElementById('podsTable');
+  if (!table) {
+    return;
+  }
+  
+  // Функция для извлечения названия сервиса из ячейки
+  function extractServiceName(cell) {
+    if (!cell) {
+      return null;
+    }
+    
+    // Получаем strong элемент, который содержит название
+    const strongElement = cell.querySelector('strong');
+    
+    if (strongElement) {
+      // Клонируем элемент, чтобы не изменять оригинал
+      const clone = strongElement.cloneNode(true);
+      
+      // Удаляем все badge элементы из клона
+      const badges = clone.querySelectorAll('.badge');
+      badges.forEach(badge => badge.remove());
+      
+      // Получаем текст без badge
+      let serviceName = clone.textContent.trim();
+      
+      // Убираем все лишние пробелы и переносы строк
+      serviceName = serviceName.replace(/\s+/g, ' ').trim();
+      
+      if (!serviceName || serviceName === '-') {
+        return null;
+      }
+      
+      return serviceName;
+    }
+    
+    // Если нет strong, берем весь текст из ячейки
+    let serviceName = cell.textContent.trim();
+    
+    // Убираем badge с количеством подов в скобках, если есть (например, "my-service (3)" -> "my-service")
+    serviceName = serviceName.replace(/\s*\(\d+\)\s*$/, '').trim();
+    
+    // Убираем все лишние пробелы и переносы строк
+    serviceName = serviceName.replace(/\s+/g, ' ').trim();
+    
+    if (!serviceName || serviceName === '-') {
+      return null;
+    }
+    
+    return serviceName;
+  }
+  
+  // Обработчик клика на ячейки с названием
+  table.addEventListener('click', (event) => {
+    // Проверяем, что зажат Ctrl (или Cmd на Mac)
+    if (!(event.ctrlKey || event.metaKey)) {
+      return;
+    }
+    
+    // Ищем ячейку с названием
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (!cell) {
+      return;
+    }
+    
+    // Извлекаем название сервиса (работает и для группированных, и для обычных строк)
+    const serviceName = extractServiceName(cell);
+    if (!serviceName) {
+      return;
+    }
+    
+    // Генерируем URL
+    const url = generateServiceUrl(serviceName);
+    if (url) {
+      event.preventDefault();
+      event.stopPropagation();
+      window.open(url, '_blank');
+    }
+  });
+  
+  // Добавляем визуальную подсказку при наведении
+  table.addEventListener('mouseover', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      const serviceName = extractServiceName(cell);
+      
+      if (serviceName) {
+        cell.style.cursor = 'pointer';
+        const url = generateServiceUrl(serviceName);
+        if (url) {
+          cell.title = 'Ctrl+Click (или Cmd+Click) для открытия: ' + url;
+        }
+      }
+    }
+  });
+  
+  table.addEventListener('mouseout', (event) => {
+    const cell = event.target.closest('td[data-column-key="name"]');
+    if (cell) {
+      // Не сбрасываем cursor, так как ячейка должна оставаться кликабельной
+      // cell.style.cursor = '';
+    }
+  });
+}
+
+function initPodsFeatures() {
+  const table = document.getElementById('podsTable');
+  if (!table) {
+    return;
+  }
+
+  groupPods(table);
+  initPodsFilter(table);
+  initPodsColumnControls(table);
+  initPodsNameClickHandlers();
+}
+
+function initInstructionModal() {
+  if (instructionModal) {
+    return;
+  }
+
+  const modalElement = document.getElementById('instructionModal');
+  if (!modalElement) {
+    return;
+  }
+
+  instructionModal = new bootstrap.Modal(modalElement);
+  loadInstructionProgress();
+
+  const prevBtn = document.getElementById('instructionPrevBtn');
+  const nextBtn = document.getElementById('instructionNextBtn');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (instructionCurrentStep > 0) {
+        showInstructionStep(instructionCurrentStep - 1);
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (instructionCurrentStep < INSTRUCTION_STEPS.length - 1) {
+        showInstructionStep(instructionCurrentStep + 1);
+      } else {
+        instructionModal.hide();
+        localStorage.setItem('instructionTourCompleted', 'true');
+        localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
+        localStorage.removeItem(INSTRUCTION_DISMISSED_KEY);
+      }
+    });
+  }
+
+  modalElement.addEventListener('shown.bs.modal', () => {
+    loadInstructionProgress();
+    showInstructionStep(instructionCurrentStep);
+  });
+
+  modalElement.addEventListener('hidden.bs.modal', () => {
+    const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
+    if (!shouldForceOpen) {
+      localStorage.setItem(INSTRUCTION_DISMISSED_KEY, 'true');
+      localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
+    }
+  });
+}
+
+function openInstructions() {
+  initInstructionModal();
+  loadInstructionProgress();
+  const rendered = showInstructionStep(instructionCurrentStep);
+  if (rendered && instructionModal) {
+    instructionModal.show();
+  }
+}
+
+// Stands navigation ---------------------------------------------------------
+function initStandsLinks() {
+  // Маппинг полных названий и сокращений стендов
+  const standMapping = {
+    'ift': { full: 'ift', short: 'ift', patterns: ['ift'] },
+    'preprod': { full: 'preprod', short: 'pp', patterns: ['preprod', 'pp', 'pre-prod'] },
+    'lt': { full: 'lt', short: 'lt', patterns: ['lt'] },
+    'hotfix': { full: 'hotfix', short: 'hf', patterns: ['hotfix', 'hf'] },
+    'prod': { full: 'prod', short: 'prod', patterns: ['prod'] },
+    'pk2': { full: 'pk2', short: 'pk2', patterns: ['pk2'] },
+    'pk5': { full: 'pk5', short: 'pk5', patterns: ['pk5'] }
+  };
+  
+  const stands = Object.keys(standMapping);
+  const currentHost = window.location.host;
+  const currentProtocol = window.location.protocol;
+  const currentPath = window.location.pathname;
+  
+  // Определяем текущий стенд по хосту
+  let currentStand = null;
+  let currentStandPattern = null;
+  const hostLower = currentHost.toLowerCase();
+  
+  // Разбиваем домен на части (справа налево: TLD, домен 2-го уровня, и т.д.)
+  const hostParts = currentHost.split('.');
+  
+  // Ищем название стенда в хосте (поддерживаем сокращения)
+  // Проверяем все части домена
+  for (let i = 0; i < hostParts.length; i++) {
+    const part = hostParts[i].toLowerCase();
+    
+    for (const [standKey, standInfo] of Object.entries(standMapping)) {
+      // Пропускаем prod при поиске
+      if (standKey === 'prod') continue;
+      
+      for (const patternStr of standInfo.patterns) {
+        if (part === patternStr.toLowerCase()) {
+          currentStand = standKey;
+          currentStandPattern = patternStr;
+          break;
+        }
+      }
+      
+      if (currentStand) {
+        break;
+      }
+    }
+    
+    if (currentStand) {
+      break;
+    }
+  }
+  
+  // Если не нашли стенд, значит это prod
+  if (!currentStand) {
+    currentStand = 'prod';
+  }
+  
+  // Функция для генерации URL другого стенда
+  function generateStandUrl(targetStandKey) {
+    const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return `${currentProtocol}//${currentHost}${currentPath}`;
+    }
+    
+    // Работаем с массивом частей домена
+    let newHostParts = [...hostParts];
+    
+    // Если переходим на prod - удаляем стенд и test
+    if (targetStandKey === 'prod') {
+      // Удаляем название текущего стенда
+      if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+        const standIndex = newHostParts.findIndex(part => 
+          part.toLowerCase() === currentStandPattern.toLowerCase()
+        );
+        if (standIndex !== -1) {
+          newHostParts.splice(standIndex, 1);
+        }
+      } else if (currentStand !== 'prod') {
+        // Пробуем удалить любой найденный стенд
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            const standIndex = newHostParts.findIndex(part => 
+              part.toLowerCase() === patternStr.toLowerCase()
+            );
+            if (standIndex !== -1) {
+              newHostParts.splice(standIndex, 1);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Удаляем "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      if (testIndex !== -1) {
+        newHostParts.splice(testIndex, 1);
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+    }
+    
+    // Если переходим с prod на другой стенд (ift/pp/lt/hf)
+    if (currentStand === 'prod' || !currentStandPattern) {
+      // Нужно добавить "test" и название стенда
+      // Где stand - это ift/pp/lt/hf
+      
+      const standShort = targetStand.short;
+      
+      // Проверяем наличие "test"
+      const testIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === 'test'
+      );
+      
+      // Проверяем наличие стенда
+      const standIndex = newHostParts.findIndex(part => {
+        for (const [standKey, standInfo] of Object.entries(standMapping)) {
+          if (standKey === 'prod') continue;
+          for (const patternStr of standInfo.patterns) {
+            if (part.toLowerCase() === patternStr.toLowerCase()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+      
+      // Если есть стенд, заменяем его
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = standShort;
+      } else {
+        // Если нет стенда, вставляем его после первого поддомена (обычно ms-dashboard)
+        // Вставляем на позицию 1 (после первого элемента)
+        newHostParts.splice(1, 0, standShort);
+      }
+      
+      // Если нет "test", вставляем его
+      if (testIndex === -1) {
+        // Ищем позицию: обычно после уровня "onb" (домен 3-го уровня)
+        // TLD обычно последний элемент, домен 2-го уровня - предпоследний
+        // Вставляем "test" перед предпоследним элементом (домен 2-го уровня)
+        if (newHostParts.length >= 2) {
+          const insertIndex = newHostParts.length - 2;
+          newHostParts.splice(insertIndex, 0, 'test');
+        } else {
+          // Если структура неожиданная, вставляем перед последним элементом
+          newHostParts.splice(newHostParts.length - 1, 0, 'test');
+        }
+      }
+      
+      return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+    }
+    
+    // Если переходим с одного не-prod стенда на другой не-prod стенд
+    // Просто заменяем название стенда
+    if (currentStand && currentStand !== 'prod' && currentStandPattern) {
+      const standIndex = newHostParts.findIndex(part => 
+        part.toLowerCase() === currentStandPattern.toLowerCase()
+      );
+      if (standIndex !== -1) {
+        newHostParts[standIndex] = targetStand.short;
+      }
+    }
+    
+    return `${currentProtocol}//${newHostParts.join('.')}${currentPath}`;
+  }
+  
+  // Функция для генерации URL OKO (Grafana k8s)
+  function generateOkoUrl(targetStandKey) {
+    const targetStand = standMapping[targetStandKey];
+    if (!targetStand) {
+      return null;
+    }
+    
+    // Получаем домен 2-го уровня (предпоследний элемент) и домен 1-го уровня (TLD, последний элемент)
+    if (hostParts.length < 2) {
+      return null;
+    }
+    
+    const domainLevel2 = hostParts[hostParts.length - 2]; // Домен 2-го уровня
+    const domainLevel1 = hostParts[hostParts.length - 1]; // TLD (домен 1-го уровня)
+    
+    // Маппинг значений для var-cluster в зависимости от стенда
+    const clusterValueMapping = {
+      'ift': 'ik7-cole01',
+      'preprod': 'rk7-cole01',
+      'pp': 'rk7-cole01',
+      'lt': 'lk5-cole01',
+      'hotfix': 'hk7-cole01',
+      'hf': 'hk7-cole01',
+      'pk2': 'pk2-cole01',
+      'pk5': 'pk5-cole01'
+    };
+    
+    // Определяем значение для var-cluster
+    // Сначала пробуем по ключу стенда, затем по сокращению
+    let clusterValue = clusterValueMapping[targetStandKey] || 
+                       clusterValueMapping[targetStand.short] || 
+                       targetStand.short;
+    
+    // Формируем URL: https://oko.<домен 2-го уровня>.<домен 1-го уровня>/d/...?var-cluster=<значение>
+    const baseUrl = `https://oko.${domainLevel2}.${domainLevel1}`;
+    const dashboardPath = `/d/b68c7841-7f41-4b3c-8175-ble2e19e8a55/resursy-klastera-kubernetes`;
+    const queryParams = `orgId=1&var-cluster=${clusterValue}`;
+    
+    return `${baseUrl}${dashboardPath}?${queryParams}`;
+  }
+  
+  // Устанавливаем ссылки для каждого стенда
+  const linkIds = {
+    'ift': 'standLinkIft',
+    'preprod': 'standLinkPreprod',
+    'lt': 'standLinkLt',
+    'hotfix': 'standLinkHotfix',
+    'prod': 'standLinkProd'
+  };
+  
+  const standLabels = {
+    'ift': 'IFT',
+    'preprod': 'Preprod',
+    'lt': 'LT',
+    'hotfix': 'Hotfix',
+    'prod': 'Prod',
+    'pk2': 'PK2',
+    'pk5': 'PK5'
+  };
+  
+  // Устанавливаем ссылки на стенды
+  for (const [standKey, linkId] of Object.entries(linkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateStandUrl(standKey);
+      linkElement.href = url;
+      
+      // Если это текущий стенд, делаем ссылку неактивной и выделяем
+      if (currentStand === standKey) {
+        linkElement.classList.add('current-stand');
+        linkElement.classList.add('disabled');
+        linkElement.style.pointerEvents = 'none';
+        linkElement.innerHTML = `<i class="fas fa-check-circle me-2"></i><strong>${standLabels[standKey]}</strong> <span class="text-muted">(текущий)</span>`;
+      } else {
+        linkElement.classList.remove('current-stand');
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+  
+  // Устанавливаем ссылки на OKO
+  const okoLinkIds = {
+    'ift': 'okoLinkIft',
+    'preprod': 'okoLinkPreprod',
+    'lt': 'okoLinkLt',
+    'hotfix': 'okoLinkHotfix',
+    'pk2': 'okoLinkPK2',
+    'pk5': 'okoLinkPK5'
+  };
+  
+  for (const [standKey, linkId] of Object.entries(okoLinkIds)) {
+    const linkElement = document.getElementById(linkId);
+    if (linkElement) {
+      const url = generateOkoUrl(standKey);
+      if (url) {
+        linkElement.href = url;
+        linkElement.innerHTML = `<i class="fas fa-external-link-alt me-1"></i>${standLabels[standKey]}`;
+      }
+    }
+  }
+}
+
+// Bootstrap everything ------------------------------------------------------
+onDocumentReady(() => {
+  initTheme();
+  initSidebar();
+  initServersFilter();
+  initPodsFeatures();
+  initInstructionModal();
+  loadPodsLastUpdateTime();
+  loadServersLastUpdateTime();
+  initStandsLinks();
+
+  const tourCompleted = localStorage.getItem('instructionTourCompleted') === 'true';
+  const shouldForceOpen = localStorage.getItem(INSTRUCTION_SHOULD_OPEN_KEY) === 'true';
+  const tourDismissed = localStorage.getItem(INSTRUCTION_DISMISSED_KEY) === 'true';
+
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(triggerEl => new bootstrap.Tooltip(triggerEl));
+
+  if (shouldForceOpen || (!tourCompleted && !tourDismissed)) {
+    setTimeout(() => {
+      openInstructions();
+    }, shouldForceOpen ? 250 : 1200);
+  }
+});
+
+// Expose globals for inline handlers ---------------------------------------
+window.showNotification = showNotification;
+window.deleteServer = deleteServer;
+window.refreshServers = refreshServers;
+window.refreshPods = refreshPods;
+/**
+ * Создает SVG спидометр для визуализации quota
+ * @param {string} containerId - ID контейнера для спидометра
+ * @param {string} label - Название метрики
+ * @param {string} quotaValue - Значение в формате "used/hard" или null
+ */
+function createSpeedometer(containerId, label, quotaValue) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Парсим значение quota
+    let used = 0;
+    let hard = 1;
+    let percentage = 0;
+    let displayValue = quotaValue || '-';
+    
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        const usedStr = parts[0].trim();
+        const hardStr = parts[1].trim();
+        
+        // Пытаемся извлечь числовое значение (игнорируя единицы измерения)
+        // Для CPU: "2" или "2000m" -> 2 (где 1000m = 1 CPU)
+        // Для Memory: "4Gi" -> конвертируем в байты для расчета процента
+        const parseValue = (str) => {
+            if (!str) return 0;
+            const strLower = str.toLowerCase().trim();
+            
+            // Специальная обработка для CPU: миллиCPU (m в конце, но не mi)
+            // Например: "2000m" -> 2.0, "500m" -> 0.5
+            if (strLower.endsWith('m') && !strLower.includes('mi') && !strLower.includes('ma')) {
+                const numMatch = str.match(/^([\d.]+)m$/i);
+                if (numMatch) {
+                    return parseFloat(numMatch[1]) / 1000; // Конвертируем миллиCPU в CPU
+                }
+            }
+            
+            // Убираем единицы измерения и парсим число
+            const numMatch = str.match(/^([\d.]+)/);
+            if (numMatch) {
+                let value = parseFloat(numMatch[1]);
+                // Конвертируем единицы памяти в байты для расчета процента
+                if (strLower.includes('ki')) value *= 1024;
+                else if (strLower.includes('mi')) value *= 1024 * 1024;
+                else if (strLower.includes('gi')) value *= 1024 * 1024 * 1024;
+                else if (strLower.includes('ti')) value *= 1024 * 1024 * 1024 * 1024;
+                else if (strLower.includes('k') && !strLower.includes('ki')) value *= 1000;
+                else if (strLower.includes('g') && !strLower.includes('gi')) value *= 1000 * 1000 * 1000;
+                else if (strLower.includes('t') && !strLower.includes('ti')) value *= 1000 * 1000 * 1000 * 1000;
+                // Для CPU без единиц измерения (просто число) - оставляем как есть
+                return value;
+            }
+            return 0;
+        };
+        
+        used = parseValue(usedStr);
+        hard = parseValue(hardStr);
+        percentage = hard > 0 ? Math.min((used / hard) * 100, 100) : 0;
+    }
+    
+    // Определяем цвет и градиент в зависимости от процента использования
+    let color = '#28a745'; // зеленый
+    let gradientColor = '#34ce57';
+    
+    if (percentage >= 90) {
+        color = '#dc3545'; // красный
+        gradientColor = '#e4606d';
+    } else if (percentage >= 70) {
+        color = '#ffc107'; // желтый
+        gradientColor = '#ffcd39';
+    } else if (percentage >= 50) {
+        color = '#fd7e14'; // оранжевый
+        gradientColor = '#ff9a3c';
+    } else {
+        gradientColor = '#34ce57';
+    }
+    
+    // Создаем SVG спидометр
+    const size = 130;
+    const center = size / 2;
+    const radius = 50;
+    const strokeWidth = 10;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'speedometer-svg');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    
+    // Определяем тему
+    const htmlRoot = document.getElementById('htmlRoot') || document.documentElement;
+    const isDarkTheme = htmlRoot.classList.contains('theme-dark') || 
+                        document.body.classList.contains('theme-dark') ||
+                        document.documentElement.classList.contains('theme-dark');
+    const backgroundColor = isDarkTheme ? '#343a40' : '#e9ecef';
+    
+    // Создаем градиент для прогресс-бара
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const linearGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    linearGradient.setAttribute('id', `gradient-${containerId}`);
+    linearGradient.setAttribute('x1', '0%');
+    linearGradient.setAttribute('y1', '0%');
+    linearGradient.setAttribute('x2', '100%');
+    linearGradient.setAttribute('y2', '100%');
+    
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', color);
+    stop1.setAttribute('stop-opacity', '1');
+    
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '100%');
+    stop2.setAttribute('stop-color', gradientColor);
+    stop2.setAttribute('stop-opacity', '0.8');
+    
+    linearGradient.appendChild(stop1);
+    linearGradient.appendChild(stop2);
+    defs.appendChild(linearGradient);
+    svg.appendChild(defs);
+    
+    // Фоновая дуга (адаптивная к теме)
+    const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    backgroundCircle.setAttribute('cx', center);
+    backgroundCircle.setAttribute('cy', center);
+    backgroundCircle.setAttribute('r', radius);
+    backgroundCircle.setAttribute('fill', 'none');
+    backgroundCircle.setAttribute('stroke', backgroundColor);
+    backgroundCircle.setAttribute('stroke-width', strokeWidth);
+    backgroundCircle.setAttribute('stroke-dasharray', circumference);
+    backgroundCircle.setAttribute('stroke-dashoffset', 0);
+    backgroundCircle.setAttribute('opacity', '0.3');
+    svg.appendChild(backgroundCircle);
+    
+    // Активная дуга (цветная с градиентом)
+    const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    progressCircle.setAttribute('cx', center);
+    progressCircle.setAttribute('cy', center);
+    progressCircle.setAttribute('r', radius);
+    progressCircle.setAttribute('fill', 'none');
+    progressCircle.setAttribute('stroke', `url(#gradient-${containerId})`);
+    progressCircle.setAttribute('stroke-width', strokeWidth);
+    progressCircle.setAttribute('stroke-dasharray', circumference);
+    progressCircle.setAttribute('stroke-dashoffset', offset);
+    progressCircle.setAttribute('stroke-linecap', 'round');
+    progressCircle.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    svg.appendChild(progressCircle);
+    
+    // Метка (перенесена наверх вместо иконки)
+    const labelElement = document.createElement('div');
+    labelElement.className = 'speedometer-label';
+    labelElement.textContent = label;
+    
+    // Контейнер для значения
+    const valueContainer = document.createElement('div');
+    valueContainer.className = 'speedometer-value';
+    if (quotaValue && quotaValue.includes('/')) {
+        const parts = quotaValue.split('/');
+        valueContainer.innerHTML = `<span style="font-size: 0.9em;">${percentage.toFixed(0)}%</span><br><span style="font-size: 0.65em; opacity: 0.8;">${parts[0].trim()}/${parts[1].trim()}</span>`;
+    } else {
+        valueContainer.textContent = displayValue;
+    }
+    
+    // Контейнер для SVG
+    const svgContainer = document.createElement('div');
+    svgContainer.className = 'speedometer-container';
+    svgContainer.appendChild(svg);
+    svgContainer.appendChild(valueContainer);
+    
+    // Очищаем контейнер и добавляем элементы
+    container.innerHTML = '';
+    container.appendChild(labelElement);
+    container.appendChild(svgContainer);
+}
+
+/**
+ * Инициализирует все спидометры на странице
+ */
+function initSpeedometers() {
+    // Получаем значения quota из data-атрибутов или из глобальных переменных
+    const quotaCpu = document.body.getAttribute('data-quota-cpu') || 
+                     (typeof window.quotaCpu !== 'undefined' ? window.quotaCpu : null);
+    const quotaMemory = document.body.getAttribute('data-quota-memory') || 
+                        (typeof window.quotaMemory !== 'undefined' ? window.quotaMemory : null);
+    const quotaPods = document.body.getAttribute('data-quota-pods') || 
+                      (typeof window.quotaPods !== 'undefined' ? window.quotaPods : null);
+    const quotaConfigmaps = document.body.getAttribute('data-quota-configmaps') || 
+                            (typeof window.quotaConfigmaps !== 'undefined' ? window.quotaConfigmaps : null);
+    const quotaSecrets = document.body.getAttribute('data-quota-secrets') || 
+                         (typeof window.quotaSecrets !== 'undefined' ? window.quotaSecrets : null);
+    
+    // Создаем спидометры
+    if (document.getElementById('speedometer-cpu')) {
+        createSpeedometer('speedometer-cpu', 'CPU', quotaCpu);
+    }
+    if (document.getElementById('speedometer-memory')) {
+        createSpeedometer('speedometer-memory', 'Memory', quotaMemory);
+    }
+    if (document.getElementById('speedometer-pods')) {
+        createSpeedometer('speedometer-pods', 'Pods', quotaPods);
+    }
+    if (document.getElementById('speedometer-configmaps')) {
+        createSpeedometer('speedometer-configmaps', 'ConfigMaps', quotaConfigmaps);
+    }
+    if (document.getElementById('speedometer-secrets')) {
+        createSpeedometer('speedometer-secrets', 'Secrets', quotaSecrets);
+    }
+}
+
+// Инициализируем спидометры при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    initSpeedometers();
+    
+    // Обновляем спидометры при переключении темы
+    const originalToggleTheme = window.toggleTheme;
+    if (originalToggleTheme) {
+        window.toggleTheme = function() {
+            originalToggleTheme();
+            // Небольшая задержка, чтобы тема успела примениться
+            setTimeout(function() {
+                initSpeedometers();
+            }, 100);
+        };
+    }
+});
+
+window.toggleTheme = toggleTheme;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleHealthcheck = toggleHealthcheck;
+window.addServer = addServer;
+window.togglePodGroup = togglePodGroup;
+window.openInstructions = openInstructions;
+window.createSpeedometer = createSpeedometer;
+window.initSpeedometers = initSpeedometers;

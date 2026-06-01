@@ -1,0 +1,164 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsTable(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods)">
+    <div th:if="${#lists.isEmpty(pods)}" class="text-center text-muted py-4">
+        <i class="fas fa-cube fa-3x mb-3"></i>
+        <p>Нет доступных подов</p>
+    </div>
+    <div th:unless="${#lists.isEmpty(pods)}" class="pods-table-wrapper table-responsive p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="badge type-badge" th:text="'Версия Kubernetes: ' + ${kubernetesVersion ?: 'Неизвестно'} + ' | Namespace: ' + ${kubernetesNamespace ?: 'Неизвестно'}">Неизвестно</span>
+        </div>
+        <table id="podsTable" class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 30px;"></th>
+                    <th data-column-key="name"><span class="column-header-text">Название</span></th>
+                    <th class="pod-detail-col" data-column-key="podName"><span class="column-header-text">Под</span></th>
+                    <th data-column-key="version"><span class="column-header-text">Версия</span></th>
+                    <th data-column-key="msBranch"><span class="column-header-text">Ветка сервиса</span></th>
+                    <th data-column-key="configBranch"><span class="column-header-text">Ветка SD</span></th>
+                    <th data-column-key="gcOptions"><span class="column-header-text">GC Options</span></th>
+                    <th data-column-key="port"><span class="column-header-text">Порт</span></th>
+                    <th class="pod-detail-col" data-column-key="restarts"><span class="column-header-text">Рестарты</span></th>
+                    <th class="pod-detail-col" data-column-key="readyTime">
+                        <span class="column-header-text">
+                            Ready Time
+                            <i class="fas fa-question-circle ms-1 text-muted" data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Разница между временем создания пода и моментом успешного прохождения health-check."></i>
+                        </span>
+                    </th>
+                    <th data-column-key="cpu"><span class="column-header-text">CPU</span></th>
+                    <th data-column-key="memory"><span class="column-header-text">RAM</span></th>
+                    <th data-column-key="databaseClusterUrl"><span class="column-header-text">БД</span></th>
+                    <th class="pod-detail-col" data-column-key="creationDate"><span class="column-header-text">Дата создания</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="pod : ${pods}" th:attr="data-pod-name=${pod.name},data-is-grouped=false">
+                    <td></td>
+                    <td data-column-key="name" class="pod-name-clickable">
+                        <strong th:text="${pod.name}">-</strong>
+                    </td>
+                    <td class="pod-detail-col pod-wrap-cell" data-column-key="podName">
+                        <code class="wrap-code" th:text="${pod.podName ?: '-'}">-</code>
+                    </td>
+                    <td class="pod-wrap-cell" data-column-key="version"><span th:text="${pod.version}">-</span></td>
+                    <td class="pod-wrap-cell" data-column-key="msBranch" th:text="${pod.msBranch ?: '-'}">-</td>
+                    <td class="pod-wrap-cell" data-column-key="configBranch" th:text="${pod.configBranch ?: '-'}">-</td>
+                    <td class="pod-wrap-cell" data-column-key="gcOptions">
+                        <pre class="m-0" style="white-space: pre-wrap; font-size: 0.85em;" th:text="${pod.gcOptions ?: '-'}">-</pre>
+                    </td>
+                    <td class="pod-wrap-cell" data-column-key="port"><span th:text="${pod.port ?: '-'}">-</span></td>
+                    <td class="pod-detail-col pod-wrap-cell" data-column-key="restarts">
+                        <span th:class="${(pod.restarts != null and pod.restarts > 0) ? 'badge bg-danger' : 'badge bg-dark'}"
+                              th:text="${pod.restarts ?: 0}">0</span>
+                    </td>
+                    <td class="pod-detail-col pod-wrap-cell" data-column-key="readyTime"><span class="badge bg-success" th:text="${pod.readyTime ?: '-'}">-</span></td>
+                    <td class="pod-wrap-cell" data-column-key="cpu" th:text="${pod.cpuRequest ?: '-'}">-</td>
+                    <td class="pod-wrap-cell" data-column-key="memory" th:text="${pod.memoryRequest ?: '-'}">-</td>
+                    <td class="pod-wrap-cell" data-column-key="databaseClusterUrl">
+                        <code class="wrap-code database-cluster-url" th:text="${pod.databaseClusterUrl ?: '-'}">-</code>
+                    </td>
+                    <td class="pod-detail-col pod-wrap-cell" data-column-key="creationDate" th:text="${pod.creationDate != null ? #temporals.format(pod.creationDate, 'dd.MM.yyyy HH:mm:ss') : '-'}">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="podsCard(pods, kubernetesVersion, kubernetesNamespace, quotaCpu, quotaMemory, quotaPods, quotaConfigmaps, quotaSecrets)">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                <h5 class="mb-0"><i class="fas fa-cube me-2"></i>Поды</h5>
+                <div class="input-group input-group-sm" style="width: 240px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="podsFilter" class="form-control" placeholder="Фильтр..." aria-label="Фильтр по таблице">
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="dropdown column-visibility-dropdown" data-bs-auto-close="outside">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-columns me-1"></i>Колонки
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-3 column-visibility-menu" aria-labelledby="columnVisibilityDropdown">
+                        <h6 class="dropdown-header px-0">Отображение столбцов</h6>
+                        <div class="column-toggle-list">
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnName" data-column-key="name" checked>
+                                <label class="form-check-label" for="toggleColumnName">Название</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnPodName" data-column-key="podName" checked>
+                                <label class="form-check-label" for="toggleColumnPodName">пода</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnVersion" data-column-key="version" checked>
+                                <label class="form-check-label" for="toggleColumnVersion">Версия</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnMsBranch" data-column-key="msBranch" checked>
+                                <label class="form-check-label" for="toggleColumnMsBranch">Ветка сервиса</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnConfigBranch" data-column-key="configBranch" checked>
+                                <label class="form-check-label" for="toggleColumnConfigBranch">Ветка SD</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnGcOptions" data-column-key="gcOptions" checked>
+                                <label class="form-check-label" for="toggleColumnGcOptions">GC Options</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnPort" data-column-key="port" checked>
+                                <label class="form-check-label" for="toggleColumnPort">Порт</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnRestarts" data-column-key="restarts" checked>
+                                <label class="form-check-label" for="toggleColumnRestarts">Рестарты</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnReadyTime" data-column-key="readyTime" checked>
+                                <label class="form-check-label" for="toggleColumnReadyTime">Ready Time</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnCpu" data-column-key="cpu" checked>
+                                <label class="form-check-label" for="toggleColumnCpu">CPU</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnMemory" data-column-key="memory" checked>
+                                <label class="form-check-label" for="toggleColumnMemory">RAM</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnDatabaseClusterUrl" data-column-key="databaseClusterUrl" checked>
+                                <label class="form-check-label" for="toggleColumnDatabaseClusterUrl">БД</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" value="" id="toggleColumnCreationDate" data-column-key="creationDate" checked>
+                                <label class="form-check-label" for="toggleColumnCreationDate">Дата создания</label>
+                            </div>
+                        </div>
+                        <div class="d-grid mt-3">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" id="resetPodsColumns">
+                                <i class="fas fa-undo me-1"></i>Сбросить настройки
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="refreshPods(event)" class="btn btn-sm btn-outline-primary" title="Обновить информацию о подах">
+                    <i class="fas fa-sync-alt me-1"></i>Обновить
+                </button>
+                <a href="/api/pods/export/csv" class="btn btn-sm btn-outline-success" title="Экспорт в CSV">
+                    <i class="fas fa-file-csv me-1"></i>Экспорт CSV
+                </a>
+            </div>
+        </div>
+        <div class="card-header border-top-0 pt-0 pb-2 px-3 d-flex justify-content-end">
+            <small class="text-muted" id="podsLastUpdate">
+                <i class="fas fa-clock me-1"></i>Последнее обновление: <span id="podsLastUpdateTime">-</span>
+            </small>
+        </div>
+        <div class="card-body p-0" th:replace="~{fragments/pods :: podsTable(${pods}, ${kubernetesVersion}, ${kubernetesNamespace}, ${quotaCpu}, ${quotaMemory}, ${quotaPods})}"></div>
+    </div>
+</div>
+
+

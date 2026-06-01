@@ -1,0 +1,133 @@
+.theme-dark {
+  color-scheme: dark;
+}
+
+.theme-dark body {
+  background-color: #121416;
+  color: #e9ecef;
+}
+
+.theme-dark .card {
+  background-color: #1c1f22;
+  color: #e9ecef;
+  border-color: #2a2e32;
+}
+
+.theme-dark .card-header {
+  background-color: #343a40;
+  color: #fff;
+}
+
+.theme-dark .sidebar {
+  background: #212529;
+  color: #fff;
+}
+
+.theme-dark .sidebar-header {
+  background: #495057;
+}
+
+.theme-dark .table {
+  color: #dee2e6;
+}
+
+.theme-dark .table thead th {
+  color: #adb5bd;
+  border-color: #343a40;
+}
+
+.theme-dark .table tbody td {
+  border-color: #2a2e32;
+}
+
+.theme-dark .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.theme-dark .table-hover tbody tr:hover td {
+  color: #fff;
+}
+
+.theme-dark .form-control,
+.theme-dark .form-select {
+  background-color: #343a40;
+  color: #fff;
+  border-color: #495057;
+}
+
+.theme-dark .form-control::placeholder {
+  color: #adb5bd;
+}
+
+.theme-dark .form-label {
+  color: #fff;
+}
+
+.theme-dark .form-text {
+  color: #adb5bd;
+}
+
+.theme-dark .text-muted {
+  color: #adb5bd !important;
+}
+
+.theme-dark .footer {
+  background-color: #1c1f22 !important;
+  color: #adb5bd;
+}
+
+.theme-dark .footer a {
+  color: #adb5bd;
+}
+
+.theme-dark .navbar-dark {
+  background-color: #212529 !important;
+}
+
+.theme-dark .bg-light {
+  background-color: #1c1f22 !important;
+}
+
+/* Outline buttons keep their original Bootstrap colors */
+/* Removed .theme-dark .btn-outline-primary and .btn-outline-success styles */
+
+.theme-dark .alert {
+  background-color: #1c1f22;
+  color: #e9ecef;
+  border-color: #2a2e32;
+}
+
+.theme-dark .badge {
+  color: #fff;
+}
+
+/* Speedometer styles for dark theme */
+.theme-dark .speedometer-value {
+  color: #e9ecef;
+}
+
+.theme-dark .speedometer-label {
+  color: #e9ecef;
+}
+
+.theme-dark .speedometer-card {
+  background-color: #1c1f22;
+  border-color: #2a2e32;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .speedometer-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.theme-dark .speedometer-card .card-body {
+  background-color: #1c1f22;
+}
+
+
+.theme-dark .speedometer-svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+

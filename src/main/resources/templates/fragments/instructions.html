@@ -1,0 +1,37 @@
+<th:block th:fragment="instructionButtonMobile">
+    <button class="btn btn-link text-white d-lg-none me-2" onclick="openInstructions()" title="Инструкция" style="text-decoration: none; padding: 0.5rem;">
+        <i class="fas fa-info-circle"></i>
+    </button>
+</th:block>
+
+<th:block th:fragment="instructionButtonDesktop">
+    <li class="nav-item">
+        <button class="btn btn-outline-info btn-sm nav-link border-0 text-white" onclick="openInstructions()" title="Инструкция" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;">
+            <i class="fas fa-info-circle me-1"></i>Инструкция
+        </button>
+    </li>
+</th:block>
+
+<div th:fragment="instructionModal">
+    <div class="modal fade" id="instructionModal" tabindex="-1" aria-labelledby="instructionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="instructionModalLabel"><i class="fas me-2"></i>Добро пожаловать в Version Dashboard v<span th:text="${@environment.getProperty('app.version', '1.0.0')}">1.0.0</span>!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <div class="instruction-progress text-muted">
+                        <span id="instructionStepIndicator">Шаг 1 из 4</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="instructionPrevBtn"><i class="fas fa-arrow-left me-1"></i>Назад</button>
+                        <button type="button" class="btn btn-primary" id="instructionNextBtn">Далее<i class="fas fa-arrow-right ms-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,92 @@
+app:
+  version: ${APP_VERSION:1.0.0}
+
+server:
+  port: ${APP_PORT:3001}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:}
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: ms-dashboard
+  webflux:
+    base-path: /api
+  datasource:
+    url: ${DATABASE_CLUSTER_URL}/${DATABASE_NAME}?${DATABASE_CLUSTER_PARAMETERS}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: "SET TIME ZONE 'UTC'"
+      minimum-idle: 1
+      maximum-pool-size: 5
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO:update}
+    show-sql: ${DB_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${DB_FORMAT_SQL:false}
+
+logging:
+  level:
+    com:
+      dashboard: ${LOG_LEVEL_DASHBOARD:INFO}
+      dashboard.service.ServerMonitorService: ${LOG_LEVEL_MONITOR:DEBUG}
+      dashboard.service.KubernetesService: ${LOG_LEVEL_KUBERNETES:INFO}
+    org:
+      springframework:
+        web: ${LOG_LEVEL_WEB:INFO}
+      hibernate:
+        SQL: ${LOG_LEVEL_SQL:INFO}
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ${LOG_LEVEL_BINDER:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  charset:
+    console: UTF-8
+    file: UTF-8
+
+management:
+  server:
+    port: ${MANAGEMENT_PORT:3001}
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:always}
+
+kubernetes:
+  namespace: ${KUBERNETES_NAMESPACE:dev-tools}
+  kubectl:
+    path: ${KUBERNETES_KUBECTL_PATH:kubectl}
+  enabled: ${KUBERNETES_ENABLED:true}
+  command:
+    timeout: ${KUBERNETES_COMMAND_TIMEOUT:30}  # Timeout in seconds for kubectl commands (default: 30 seconds)
+  pods:
+    sync-interval: ${KUBERNETES_PODS_SYNC_INTERVAL:5}  # Interval in minutes for syncing pods from kubectl to DB (default: 5 minutes). Версия Kubernetes синхронизируется вместе с подами.
+
+# Настройки безопасности
+security:
+  enabled: ${SECURITY_ENABLED:true}  # Включить/выключить аутентификацию
+  username: ${SECURITY_USERNAME}  # Имя пользователя (по умолчанию: admin)
+  password: ${SECURITY_PASSWORD}  # Пароль (по умолчанию: admin, рекомендуется изменить через переменную окружения) 
+
+# Custom monitoring configuration (kept also in application.properties for env-only overrides)
+monitoring:
+  interval: ${MONITORING_INTERVAL:5}  # Interval in minutes (default: 5 minutes, converted to milliseconds for scheduling)
+  timeout: ${MONITORING_TIMEOUT:10}  # Timeout in seconds (default: 10 seconds, converted to milliseconds)
+  async-pool-size: ${MONITORING_ASYNC_POOL_SIZE:4} # Threads for async monitoring tasks

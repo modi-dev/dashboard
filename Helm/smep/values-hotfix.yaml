@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: hk7-cole01-smep-smep-hf
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-cd.sfera.test.vtb.ru:4000/smep-docker-uat-g
-main:
-  image: smep/ms-dashbord

@@ -1,7 +1,0 @@
-global:
-  # K8s namespace в который производится деплой
-  namespace: dk1-cole01-cole-cole-dev
-  # Репозиторий из которого загружаются образы
-  registry: docker.repo-ci.sfera.inno.local/cole-docker-snapshot
-main:
-  image: cole/ms-dashbord

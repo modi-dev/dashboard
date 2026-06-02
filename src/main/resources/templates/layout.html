@@ -25,7 +25,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" th:href="@{/}" href="/">
+            <a class="navbar-brand" th:href="@{/dashboard}" href="/dashboard">
                 <i class="fas fa-server me-2"></i>Version Dashboard
             </a>
             <div class="d-flex align-items-center">
@@ -39,17 +39,17 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/}" href="/" th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/dashboard}" href="/dashboard" th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
                             <i class="fas fa-tachometer-alt me-1"></i>Главная страница
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/servers}" href="/servers" th:classappend="${activePage == 'servers' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/dashboard/servers}" href="/dashboard/servers" th:classappend="${activePage == 'servers' ? 'active' : ''}">
                             <i class="fas fa-server me-1"></i>Серверы
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/pods}" href="/pods" th:classappend="${activePage == 'pods' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/dashboard/pods}" href="/dashboard/pods" th:classappend="${activePage == 'pods' ? 'active' : ''}">
                             <i class="fas fa-cube me-1"></i>Поды
                         </a>
                     </li>
@@ -61,12 +61,12 @@
                         </button>
                     </li>
                     <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
-                        <a class="nav-link" th:href="@{/login}" href="/login" title="Войти в систему">
+                        <a class="nav-link" th:href="@{/dashboard/login}" href="/dashboard/login" title="Войти в систему">
                             <i class="fas fa-sign-in-alt me-1"></i>Войти
                         </a>
                     </li>
                     <li class="nav-item" th:if="${isAuthenticated == true}">
-                        <form th:action="@{/logout}" method="post" class="d-inline">
+                        <form th:action="@{/dashboard/logout}" method="post" class="d-inline">
                             <button type="submit" class="btn btn-link nav-link border-0" style="background: transparent !important; color: #fff !important; padding: 0.5rem 1rem;" title="Выйти из системы">
                                 <i class="fas fa-sign-out-alt me-1"></i>Выйти
                             </button>
@@ -159,8 +159,8 @@
     <footer class="footer bg-light text-center py-3 mt-auto">
         <div class="container-fluid px-4">
             <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> | 
-                <a th:href="@{/actuator/health}" href="/actuator/health" target="_blank">Health</a> | 
-                <a th:href="@{/actuator/metrics}" href="/actuator/metrics" target="_blank">Metrics</a>
+                <a href="/actuator/health" target="_blank">Health</a> | 
+                <a href="/actuator/metrics" target="_blank">Metrics</a>
             </span>
         </div>
     </footer>

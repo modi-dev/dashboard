@@ -225,13 +225,13 @@ function deleteServer(serverId) {
     return;
   }
 
-  fetch(`api/servers/${serverId}`, {
+  fetch(`/dashboard/api/servers/${serverId}`, {
     method: 'DELETE',
     credentials: 'same-origin'
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = 'login';
+        window.location.href = '/dashboard/login';
         return null;
       }
       return response.json();
@@ -341,7 +341,7 @@ function loadServersLastUpdateTime() {
   
   function updateTime() {
     // Загружаем время из БД через API
-    fetch('api/servers/last-updated', {
+    fetch('/dashboard/api/servers/last-updated', {
       method: 'GET',
       credentials: 'same-origin'
     })
@@ -398,7 +398,7 @@ function refreshServers(ev) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
   }
 
-  fetch('api/servers/refresh', {
+  fetch('/dashboard/api/servers/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin'
@@ -457,7 +457,7 @@ function loadPodsLastUpdateTime() {
   
   function updateTime() {
     // Загружаем время из БД через API
-    fetch('api/pods/last-updated', {
+    fetch('/dashboard/api/pods/last-updated', {
       method: 'GET',
       credentials: 'same-origin'
     })
@@ -514,14 +514,14 @@ function refreshPods(ev) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
   }
 
-  fetch('api/pods/refresh', {
+  fetch('/dashboard/api/pods/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin'
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = 'login';
+        window.location.href = '/dashboard/login';
         return null;
       }
       if (!response.ok) {
@@ -729,7 +729,7 @@ function addServer() {
     }
   }
 
-  fetch('api/servers', {
+  fetch('/dashboard/api/servers', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -739,7 +739,7 @@ function addServer() {
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = 'login';
+        window.location.href = '/dashboard/login';
         return null;
       }
       return response.json();

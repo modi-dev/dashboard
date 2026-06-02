@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/servers")
+@RequestMapping("/dashboard/api/servers")
 @CrossOrigin(origins = "*")
 public class ServerController {
     

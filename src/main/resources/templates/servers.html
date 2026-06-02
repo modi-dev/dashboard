@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot" th:attr="data-context-path=@{/}">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot" data-context-path="/dashboard">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -140,8 +140,8 @@
     <footer class="footer bg-light text-center py-3 mt-auto">
         <div class="container-fluid px-4">
             <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> |
-                <a th:href="@{/actuator/health}" href="/actuator/health" target="_blank">Health</a> | 
-                <a th:href="@{/actuator/metrics}" href="/actuator/metrics" target="_blank">Metrics</a>
+                <a href="/actuator/health" target="_blank">Health</a> | 
+                <a href="/actuator/metrics" target="_blank">Metrics</a>
             </span>
         </div>
     </footer>

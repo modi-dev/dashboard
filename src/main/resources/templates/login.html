@@ -10,7 +10,7 @@
     <link th:href="@{/css/theme-dark.css}" href="/css/theme-dark.css" rel="stylesheet">
     <link th:href="@{/css/login.css}" href="/css/login.css" rel="stylesheet">
 </head>
-<body id="htmlRoot" th:attr="data-context-path=@{/}">
+<body id="htmlRoot" data-context-path="/dashboard">
     <div class="login-container">
         <div class="login-card">
             <div class="login-logo">
@@ -23,7 +23,7 @@
                 <span th:text="${errorMessage ?: 'Неверный логин или пароль'}">Неверный логин или пароль</span>
             </div>
             
-            <form th:action="@{/login}" method="post">
+            <form th:action="@{/dashboard/login}" method="post">
                 <div class="mb-3">
                     <label for="username" class="form-label">
                         <i class="fas fa-user me-2"></i>Имя пользователя

@@ -29,7 +29,7 @@ import java.util.Optional;
  * Интегрирует функциональность из version.sh скрипта
  */
 @Controller
-@RequestMapping("/api/pods")
+@RequestMapping("/dashboard/api/pods")
 @CrossOrigin(origins = "*")
 public class VersionController {
     
@@ -57,7 +57,7 @@ public class VersionController {
      * Получает информацию о всех запущенных подах в JSON формате
      * GET /api/pods/pods
      */
-    @GetMapping(value = "/api/pods/pods", produces = "application/json")
+    @GetMapping(value = "/pods", produces = "application/json")
     @ResponseBody
     public ResponseEntity<List<PodInfo>> getRunningPods() {
         try {

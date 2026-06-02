@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ import java.util.List;
  * Контроллер для страницы подов
  */
 @Controller
+@RequestMapping("/dashboard")
 public class PodsController {
     
     private static final Logger logger = LoggerFactory.getLogger(PodsController.class);

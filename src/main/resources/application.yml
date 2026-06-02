@@ -4,7 +4,7 @@ app:
 server:
   port: ${APP_PORT:3001}
   servlet:
-    context-path: ${SERVER_CONTEXT_PATH:/dashboard}
+    context-path: ${SERVER_CONTEXT_PATH:/}
     encoding:
       charset: UTF-8
       enabled: true
@@ -58,6 +58,7 @@ logging:
 management:
   server:
     port: ${MANAGEMENT_PORT:3001}
+    base-path: /
   endpoints:
     web:
       base-path: /actuator

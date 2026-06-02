@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import java.util.ArrayList;
  * Использует Thymeleaf для рендеринга HTML
  */
 @Controller
+@RequestMapping("/dashboard")
 public class DashboardController {
     
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
@@ -75,7 +77,7 @@ public class DashboardController {
      * Главная страница dashboard
      * GET /
      */
-    @GetMapping("/")
+    @GetMapping({"", "/"})
     public String index(Model model) {
         try {
             // Добавляем информацию об авторизации для Thymeleaf
@@ -142,15 +144,6 @@ public class DashboardController {
     /**
      * Страница dashboard (альтернативный маршрут)
      * GET /dashboard
-     */
-    @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        return index(model); // Перенаправляем на главную страницу
-    }
-    
-    /**
-     * Страница серверов
-     * GET /servers
      */
     @GetMapping("/servers")
     public String servers(Model model) {

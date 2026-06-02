@@ -1,15 +1,22 @@
 package com.dashboard.controller;
 
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
+@Controller
 public class HomeController {
+
+    @GetMapping("/")
+    public String redirectToDashboard() {
+        return "redirect:/dashboard";
+    }
     
-    @GetMapping("/api")
+    @GetMapping("/dashboard/api")
+    @ResponseBody
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Version Dashboard API");
@@ -17,7 +24,7 @@ public class HomeController {
         response.put("status", "running");
         
         Map<String, String> endpoints = new HashMap<>();
-        endpoints.put("servers", "/api/servers");
+        endpoints.put("servers", "/dashboard/api/servers");
         endpoints.put("health", "/actuator/health");
         endpoints.put("metrics", "/actuator/metrics");
         

@@ -57,62 +57,63 @@ public class SecurityConfig {
                 
                 // Публичные страницы - доступны всем
                 .requestMatchers(
-                    "/",
                     "/dashboard",
-                    "/servers",
-                    "/pods",
-                    "/api/pods/**",
+                    "/dashboard/",
+                    "/dashboard/servers",
+                    "/dashboard/pods",
+                    "/dashboard/api/pods/**",
                     "/actuator/**"
                 ).permitAll()
                 
                 // GET запросы к серверам доступны всем
-                .requestMatchers(HttpMethod.GET, "/api/servers/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/dashboard/api/servers/**").permitAll()
                 
                 // Обновление статуса серверов доступно всем (только чтение данных)
-                .requestMatchers(HttpMethod.POST, "/api/servers/refresh").permitAll()
+                .requestMatchers(HttpMethod.POST, "/dashboard/api/servers/refresh").permitAll()
                 
                 // Защищенные операции - требуют аутентификации (POST, PUT, DELETE)
                 // ВАЖНО: Специфичные паттерны должны быть ДО общих паттернов с **
-                .requestMatchers(HttpMethod.POST, "/api/servers").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/servers/*/check").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/servers/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/servers/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/dashboard/api/servers").authenticated()
+                .requestMatchers(HttpMethod.POST, "/dashboard/api/servers/*/check").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/dashboard/api/servers/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/dashboard/api/servers/**").authenticated()
                 
                 // Страница логина доступна всем
-                .requestMatchers("/login", "/login-error").permitAll()
+                .requestMatchers("/dashboard/login", "/dashboard/login-error").permitAll()
                 
                 // Все остальное требует аутентификации
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login")
+                .loginPage("/dashboard/login")
+                .loginProcessingUrl("/dashboard/login")
                 .defaultSuccessUrl("/dashboard", true)
-                .failureUrl("/login-error")
+                .failureUrl("/dashboard/login-error")
                 .permitAll()
             )
             .exceptionHandling(exceptions -> exceptions
                 // Для API запросов возвращаем 401 вместо редиректа на /login
                 .authenticationEntryPoint((request, response, authException) -> {
                     String requestPath = request.getRequestURI();
-                    if (requestPath.startsWith("/api/")) {
+                    if (requestPath.startsWith("/dashboard/api/")) {
                         response.setStatus(401);
                         response.setContentType("application/json");
                         response.getWriter().write("{\"success\":false,\"error\":\"Unauthorized\"}");
                     } else {
-                        response.sendRedirect("/login");
+                        response.sendRedirect("/dashboard/login");
                     }
                 })
             )
             .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
-                .logoutSuccessUrl("/")
+                .logoutRequestMatcher(new AntPathRequestMatcher("/dashboard/logout", "POST"))
+                .logoutSuccessUrl("/dashboard")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             )
             .csrf(csrf -> csrf
                 // Отключаем CSRF для API endpoints (можно включить позже)
-                .ignoringRequestMatchers("/api/**")
+                .ignoringRequestMatchers("/dashboard/api/**")
             );
         
         return http.build();

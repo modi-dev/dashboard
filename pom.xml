@@ -14,7 +14,7 @@
 
     <groupId>com.dashboard</groupId>
     <artifactId>ms-dashboard</artifactId>
-    <version>1.0.0</version>
+    <version>3.3.7</version>
     <name>Version Dashboard</name>
     <description>Server monitoring dashboard with Spring Boot</description>
 

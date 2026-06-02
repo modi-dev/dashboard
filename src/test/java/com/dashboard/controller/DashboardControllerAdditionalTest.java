@@ -73,7 +73,7 @@ class DashboardControllerAdditionalTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
 
-        mockMvc.perform(get("/"))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("totalServers", 1))
@@ -93,7 +93,7 @@ class DashboardControllerAdditionalTest {
 
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(List.of(server1, server2));
 
-        mockMvc.perform(get("/servers"))
+        mockMvc.perform(get("/dashboard/servers"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("servers"))
                 .andExpect(model().attribute("totalServers", 2))
@@ -105,7 +105,7 @@ class DashboardControllerAdditionalTest {
     void testServers_WithNullQuotas() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/servers"))
+        mockMvc.perform(get("/dashboard/servers"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("servers"))
                 .andExpect(model().attribute("totalServers", 0));
@@ -117,7 +117,7 @@ class DashboardControllerAdditionalTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
 
-        mockMvc.perform(get("/"))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"));
     }

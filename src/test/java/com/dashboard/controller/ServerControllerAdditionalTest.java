@@ -55,7 +55,7 @@ class ServerControllerAdditionalTest {
     void getAllServers_Exception() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("DB error"));
 
-        mockMvc.perform(get("/api/servers"))
+        mockMvc.perform(get("/dashboard/api/servers"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -67,7 +67,7 @@ class ServerControllerAdditionalTest {
         server.setStatus(ServerStatus.ONLINE);
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
 
-        mockMvc.perform(get("/api/servers/1"))
+        mockMvc.perform(get("/dashboard/api/servers/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("Test"));
@@ -77,7 +77,7 @@ class ServerControllerAdditionalTest {
     void getServerById_NotFound() throws Exception {
         when(serverRepository.findById(999L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/servers/999"))
+        mockMvc.perform(get("/dashboard/api/servers/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -86,7 +86,7 @@ class ServerControllerAdditionalTest {
     void getServerById_Exception() throws Exception {
         when(serverRepository.findById(1L)).thenThrow(new RuntimeException("DB error"));
 
-        mockMvc.perform(get("/api/servers/1"))
+        mockMvc.perform(get("/dashboard/api/servers/1"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -105,7 +105,7 @@ class ServerControllerAdditionalTest {
             {"name":"New Server","url":"http://new.com","type":"OTHER","healthcheck":"/health"}
         """;
 
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isCreated())
@@ -121,7 +121,7 @@ class ServerControllerAdditionalTest {
             {"name":"New Server","url":"http://new.com","type":"OTHER","healthcheck":"/health"}
         """;
 
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isConflict())
@@ -136,7 +136,7 @@ class ServerControllerAdditionalTest {
             {"name":"New Server","url":"http://new.com","type":"OTHER"}
         """;
 
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isBadRequest())
@@ -151,7 +151,7 @@ class ServerControllerAdditionalTest {
             {"name":"New Server","url":"http://new.com","type":"OTHER","healthcheck":"/health"}
         """;
 
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isBadRequest())
@@ -169,7 +169,7 @@ class ServerControllerAdditionalTest {
             {"name":"Updated","url":"http://updated.com","type":"REDIS"}
         """;
 
-        mockMvc.perform(put("/api/servers/1")
+        mockMvc.perform(put("/dashboard/api/servers/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -184,7 +184,7 @@ class ServerControllerAdditionalTest {
             {"name":"Updated","url":"http://updated.com","type":"REDIS"}
         """;
 
-        mockMvc.perform(put("/api/servers/999")
+        mockMvc.perform(put("/dashboard/api/servers/999")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isNotFound())
@@ -199,7 +199,7 @@ class ServerControllerAdditionalTest {
             {"name":"Updated","url":"http://updated.com","type":"REDIS"}
         """;
 
-        mockMvc.perform(put("/api/servers/1")
+        mockMvc.perform(put("/dashboard/api/servers/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isBadRequest())
@@ -210,7 +210,7 @@ class ServerControllerAdditionalTest {
     void deleteServer_Success() throws Exception {
         when(serverRepository.existsById(1L)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/servers/1"))
+        mockMvc.perform(delete("/dashboard/api/servers/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -221,7 +221,7 @@ class ServerControllerAdditionalTest {
     void deleteServer_NotFound() throws Exception {
         when(serverRepository.existsById(999L)).thenReturn(false);
 
-        mockMvc.perform(delete("/api/servers/999"))
+        mockMvc.perform(delete("/dashboard/api/servers/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -231,7 +231,7 @@ class ServerControllerAdditionalTest {
         when(serverRepository.existsById(1L)).thenReturn(true);
         doThrow(new RuntimeException("DB error")).when(serverRepository).deleteById(1L);
 
-        mockMvc.perform(delete("/api/servers/1"))
+        mockMvc.perform(delete("/dashboard/api/servers/1"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -242,7 +242,7 @@ class ServerControllerAdditionalTest {
         server.setId(1L);
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
 
-        mockMvc.perform(post("/api/servers/1/check"))
+        mockMvc.perform(post("/dashboard/api/servers/1/check"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -253,7 +253,7 @@ class ServerControllerAdditionalTest {
     void checkServer_NotFound() throws Exception {
         when(serverRepository.findById(999L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/api/servers/999/check"))
+        mockMvc.perform(post("/dashboard/api/servers/999/check"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -262,14 +262,14 @@ class ServerControllerAdditionalTest {
     void checkServer_Exception() throws Exception {
         when(serverRepository.findById(1L)).thenThrow(new RuntimeException("error"));
 
-        mockMvc.perform(post("/api/servers/1/check"))
+        mockMvc.perform(post("/dashboard/api/servers/1/check"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test
     void refreshServers_Success() throws Exception {
-        mockMvc.perform(post("/api/servers/refresh"))
+        mockMvc.perform(post("/dashboard/api/servers/refresh"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -280,7 +280,7 @@ class ServerControllerAdditionalTest {
     void refreshServers_Exception() throws Exception {
         doThrow(new RuntimeException("error")).when(serverMonitorService).checkAllServersAsync();
 
-        mockMvc.perform(post("/api/servers/refresh"))
+        mockMvc.perform(post("/dashboard/api/servers/refresh"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -290,7 +290,7 @@ class ServerControllerAdditionalTest {
         LocalDateTime now = LocalDateTime.of(2025, 6, 15, 12, 0, 0);
         when(serverRepository.findLastUpdatedAt()).thenReturn(Optional.of(now));
 
-        mockMvc.perform(get("/api/servers/last-updated"))
+        mockMvc.perform(get("/dashboard/api/servers/last-updated"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.lastUpdated").value("2025-06-15T12:00:00"));
@@ -300,7 +300,7 @@ class ServerControllerAdditionalTest {
     void getServersLastUpdated_WithNoData() throws Exception {
         when(serverRepository.findLastUpdatedAt()).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/servers/last-updated"))
+        mockMvc.perform(get("/dashboard/api/servers/last-updated"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
@@ -309,7 +309,7 @@ class ServerControllerAdditionalTest {
     void getServersLastUpdated_Exception() throws Exception {
         when(serverRepository.findLastUpdatedAt()).thenThrow(new RuntimeException("error"));
 
-        mockMvc.perform(get("/api/servers/last-updated"))
+        mockMvc.perform(get("/dashboard/api/servers/last-updated"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -320,7 +320,7 @@ class ServerControllerAdditionalTest {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(servers);
         when(csvExportService.exportServersToCsv(servers)).thenReturn("ID;Name\n1;Test");
 
-        mockMvc.perform(get("/api/servers/export/csv"))
+        mockMvc.perform(get("/dashboard/api/servers/export/csv"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/csv; charset=UTF-8"));
     }
@@ -329,7 +329,7 @@ class ServerControllerAdditionalTest {
     void exportServersToCsv_Exception() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("error"));
 
-        mockMvc.perform(get("/api/servers/export/csv"))
+        mockMvc.perform(get("/dashboard/api/servers/export/csv"))
                 .andExpect(status().isInternalServerError());
     }
 }

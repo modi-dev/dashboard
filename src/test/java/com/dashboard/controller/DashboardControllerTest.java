@@ -92,7 +92,7 @@ class DashboardControllerTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
 
-        mockMvc.perform(get("/"))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("servers", testServers))
@@ -119,7 +119,7 @@ class DashboardControllerTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
 
-        mockMvc.perform(get("/"))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("totalServers", 0))
@@ -133,7 +133,7 @@ class DashboardControllerTest {
     void testIndex_ExceptionHandling() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("Database error"));
 
-        mockMvc.perform(get("/"))
+        mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("servers", Collections.emptyList()))
@@ -161,7 +161,7 @@ class DashboardControllerTest {
     void testServers_Success() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(testServers);
 
-        mockMvc.perform(get("/servers"))
+        mockMvc.perform(get("/dashboard/servers"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("servers"))
                 .andExpect(model().attribute("servers", testServers))
@@ -176,7 +176,7 @@ class DashboardControllerTest {
     void testServers_ExceptionHandling() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("Database error"));
 
-        mockMvc.perform(get("/servers"))
+        mockMvc.perform(get("/dashboard/servers"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("servers"))
                 .andExpect(model().attribute("servers", Collections.emptyList()))

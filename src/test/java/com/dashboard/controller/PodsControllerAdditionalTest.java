@@ -60,7 +60,7 @@ class PodsControllerAdditionalTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
 
-        mockMvc.perform(get("/pods"))
+        mockMvc.perform(get("/dashboard/pods"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pods"))
                 .andExpect(model().attribute("totalPods", 0));
@@ -70,7 +70,7 @@ class PodsControllerAdditionalTest {
     void testPods_ExceptionInRepositoryCall() throws Exception {
         when(clusterInfoSyncService.getNamespace()).thenThrow(new RuntimeException("DB error"));
 
-        mockMvc.perform(get("/pods"))
+        mockMvc.perform(get("/dashboard/pods"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pods"))
                 .andExpect(model().attributeExists("error"));

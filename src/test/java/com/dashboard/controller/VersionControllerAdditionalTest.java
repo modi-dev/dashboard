@@ -58,7 +58,7 @@ class VersionControllerAdditionalTest {
         LocalDateTime lastUpdated = LocalDateTime.of(2025, 1, 15, 10, 30, 0);
         when(podRepository.findLastUpdatedAt()).thenReturn(Optional.of(lastUpdated));
 
-        mockMvc.perform(get("/api/pods/last-updated"))
+        mockMvc.perform(get("/dashboard/api/pods/last-updated"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.lastUpdated").value("2025-01-15T10:30:00"));
@@ -68,7 +68,7 @@ class VersionControllerAdditionalTest {
     void testGetPodsLastUpdated_WithNoData() throws Exception {
         when(podRepository.findLastUpdatedAt()).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/pods/last-updated"))
+        mockMvc.perform(get("/dashboard/api/pods/last-updated"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.lastUpdated").isEmpty());
@@ -78,7 +78,7 @@ class VersionControllerAdditionalTest {
     void testGetPodsLastUpdated_Exception() throws Exception {
         when(podRepository.findLastUpdatedAt()).thenThrow(new RuntimeException("DB error"));
 
-        mockMvc.perform(get("/api/pods/last-updated"))
+        mockMvc.perform(get("/dashboard/api/pods/last-updated"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").exists());
@@ -88,7 +88,7 @@ class VersionControllerAdditionalTest {
     void testGetPodsSummary_Exception() throws Exception {
         when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Error"));
 
-        mockMvc.perform(get("/api/pods/summary"))
+        mockMvc.perform(get("/dashboard/api/pods/summary"))
                 .andExpect(status().isInternalServerError());
     }
 
@@ -96,7 +96,7 @@ class VersionControllerAdditionalTest {
     void testGetPodByName_Exception() throws Exception {
         when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Error"));
 
-        mockMvc.perform(get("/api/pods/pods/test-pod"))
+        mockMvc.perform(get("/dashboard/api/pods/pods/test-pod"))
                 .andExpect(status().isInternalServerError());
     }
 
@@ -104,7 +104,7 @@ class VersionControllerAdditionalTest {
     void testGetConfig_Exception() throws Exception {
         when(kubernetesService.getKubernetesConfig()).thenThrow(new RuntimeException("Config error"));
 
-        mockMvc.perform(get("/api/pods/config"))
+        mockMvc.perform(get("/dashboard/api/pods/config"))
                 .andExpect(status().isInternalServerError());
     }
 }

@@ -76,7 +76,7 @@ class VersionControllerTest {
     void testGetRunningPods_Success() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/api/pods/pods"))
+        mockMvc.perform(get("/dashboard/api/pods/pods"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
@@ -90,7 +90,7 @@ class VersionControllerTest {
     void testGetRunningPods_Exception() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Kubernetes error"));
 
-        mockMvc.perform(get("/api/pods/api/pods/pods"))
+        mockMvc.perform(get("/dashboard/api/pods/pods"))
                 .andExpect(status().isInternalServerError());
 
         verify(podRepository).findByNamespaceOrderByName("default");
@@ -101,7 +101,7 @@ class VersionControllerTest {
         String htmlContent = "<html><body>Test HTML</body></html>";
         when(kubernetesService.generateHtmlPage()).thenReturn(htmlContent);
 
-        mockMvc.perform(get("/api/pods/html"))
+        mockMvc.perform(get("/dashboard/api/pods/html"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
                 .andExpect(content().string(htmlContent));
@@ -113,7 +113,7 @@ class VersionControllerTest {
     void testGetHtmlPage_Exception() throws Exception {
         when(kubernetesService.generateHtmlPage()).thenThrow(new RuntimeException("Generation error"));
 
-        mockMvc.perform(get("/api/pods/html"))
+        mockMvc.perform(get("/dashboard/api/pods/html"))
                 .andExpect(status().isInternalServerError());
 
         verify(kubernetesService).generateHtmlPage();
@@ -123,7 +123,7 @@ class VersionControllerTest {
     void testGetCurrentNamespace_Success() throws Exception {
         when(kubernetesService.getCurrentNamespace()).thenReturn("default");
 
-        mockMvc.perform(get("/api/pods/namespace"))
+        mockMvc.perform(get("/dashboard/api/pods/namespace"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("default"));
 
@@ -134,7 +134,7 @@ class VersionControllerTest {
     void testGetCurrentNamespace_Exception() throws Exception {
         when(kubernetesService.getCurrentNamespace()).thenThrow(new RuntimeException("Namespace error"));
 
-        mockMvc.perform(get("/api/pods/namespace"))
+        mockMvc.perform(get("/dashboard/api/pods/namespace"))
                 .andExpect(status().isInternalServerError());
 
         verify(kubernetesService).getCurrentNamespace();
@@ -144,7 +144,7 @@ class VersionControllerTest {
     void testGetPodsSummary_Success() throws Exception {
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/summary"))
+        mockMvc.perform(get("/dashboard/api/pods/summary"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
@@ -157,7 +157,7 @@ class VersionControllerTest {
     void testGetPodByName_Success() throws Exception {
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/pods/nginx"))
+        mockMvc.perform(get("/dashboard/api/pods/pods/nginx"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("nginx"));
@@ -169,7 +169,7 @@ class VersionControllerTest {
     void testGetPodByName_NotFound() throws Exception {
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/pods/nonexistent"))
+        mockMvc.perform(get("/dashboard/api/pods/pods/nonexistent"))
                 .andExpect(status().isNotFound());
 
         verify(kubernetesService).getRunningPods();
@@ -179,7 +179,7 @@ class VersionControllerTest {
     void testCheckKubernetesHealth_Success() throws Exception {
         when(kubernetesService.getCurrentNamespace()).thenReturn("default");
 
-        mockMvc.perform(get("/api/pods/health"))
+        mockMvc.perform(get("/dashboard/api/pods/health"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Kubernetes API доступен")));
 
@@ -190,7 +190,7 @@ class VersionControllerTest {
     void testCheckKubernetesHealth_Exception() throws Exception {
         when(kubernetesService.getCurrentNamespace()).thenThrow(new RuntimeException("Health check error"));
 
-        mockMvc.perform(get("/api/pods/health"))
+        mockMvc.perform(get("/dashboard/api/pods/health"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Kubernetes API недоступен")));
 
@@ -202,7 +202,7 @@ class VersionControllerTest {
         when(kubernetesService.getKubernetesConfig()).thenReturn(mockConfig);
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/test"))
+        mockMvc.perform(get("/dashboard/api/pods/test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.kubernetesEnabled").value(true))
@@ -217,7 +217,7 @@ class VersionControllerTest {
         when(kubernetesService.getKubernetesConfig()).thenReturn(mockConfig);
         when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Test error"));
 
-        mockMvc.perform(get("/api/pods/test"))
+        mockMvc.perform(get("/dashboard/api/pods/test"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value("error"));
 
@@ -229,7 +229,7 @@ class VersionControllerTest {
     void testGetKubernetesConfig_Success() throws Exception {
         when(kubernetesService.getKubernetesConfig()).thenReturn(mockConfig);
 
-        mockMvc.perform(get("/api/pods/config"))
+        mockMvc.perform(get("/dashboard/api/pods/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.namespace").value("default"))
@@ -243,7 +243,7 @@ class VersionControllerTest {
         when(kubernetesService.getKubernetesConfig()).thenReturn(mockConfig);
         when(kubernetesService.getRunningPods()).thenReturn(testPods);
 
-        mockMvc.perform(get("/api/pods/info"))
+        mockMvc.perform(get("/dashboard/api/pods/info"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ok"))
                 .andExpect(jsonPath("$.totalPods").value(2))
@@ -258,7 +258,7 @@ class VersionControllerTest {
         when(kubernetesService.getKubernetesConfig()).thenReturn(mockConfig);
         when(kubernetesService.getRunningPods()).thenThrow(new RuntimeException("Info error"));
 
-        mockMvc.perform(get("/api/pods/info"))
+        mockMvc.perform(get("/dashboard/api/pods/info"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value("error"));
 
@@ -270,7 +270,7 @@ class VersionControllerTest {
     void testRefreshPods_Success() throws Exception {
         when(podsSyncService.syncPods()).thenReturn(testPods.size());
 
-        mockMvc.perform(post("/api/pods/refresh"))
+        mockMvc.perform(post("/dashboard/api/pods/refresh"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.containsString("Информация о подах успешно обновлена")))
@@ -284,7 +284,7 @@ class VersionControllerTest {
     void testRefreshPods_Exception() throws Exception {
         when(podsSyncService.syncPods()).thenThrow(new RuntimeException("Refresh error"));
 
-        mockMvc.perform(post("/api/pods/refresh"))
+        mockMvc.perform(post("/dashboard/api/pods/refresh"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").exists());
@@ -298,7 +298,7 @@ class VersionControllerTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(csvExportService.exportPodsToCsv(testPods)).thenReturn(csvContent);
 
-        mockMvc.perform(get("/api/pods/export/csv"))
+        mockMvc.perform(get("/dashboard/api/pods/export/csv"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/csv; charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("filename=\"pods_")));
@@ -311,7 +311,7 @@ class VersionControllerTest {
     void testExportPodsToCsv_Exception() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Export error"));
 
-        mockMvc.perform(get("/api/pods/export/csv"))
+        mockMvc.perform(get("/dashboard/api/pods/export/csv"))
                 .andExpect(status().isInternalServerError());
 
         verify(podRepository).findByNamespaceOrderByName("default");

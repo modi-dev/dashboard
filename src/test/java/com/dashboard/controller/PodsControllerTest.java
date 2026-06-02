@@ -70,7 +70,7 @@ class PodsControllerTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(testPods);
         when(kubernetesService.countUniqueServices(testPods)).thenReturn(2L);
 
-        mockMvc.perform(get("/pods"))
+        mockMvc.perform(get("/dashboard/pods"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pods"))
                 .andExpect(model().attribute("pods", testPods))
@@ -97,7 +97,7 @@ class PodsControllerTest {
         when(podRepository.findByNamespaceOrderByName("default")).thenReturn(Collections.emptyList());
         when(kubernetesService.countUniqueServices(Collections.emptyList())).thenReturn(0L);
 
-        mockMvc.perform(get("/pods"))
+        mockMvc.perform(get("/dashboard/pods"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pods"))
                 .andExpect(model().attribute("totalPods", 0))
@@ -108,7 +108,7 @@ class PodsControllerTest {
     void testPods_ExceptionHandling() throws Exception {
         when(podRepository.findByNamespaceOrderByName("default")).thenThrow(new RuntimeException("Kubernetes error"));
 
-        mockMvc.perform(get("/pods"))
+        mockMvc.perform(get("/dashboard/pods"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("pods"))
                 .andExpect(model().attributeExists("error"));

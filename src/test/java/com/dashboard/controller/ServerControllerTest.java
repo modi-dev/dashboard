@@ -73,7 +73,7 @@ public class ServerControllerTest {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(Arrays.asList(server1, server2));
         when(serverVersionService.getServerVersion(any(Server.class))).thenReturn(null);
         
-        mockMvc.perform(get("/api/servers"))
+        mockMvc.perform(get("/dashboard/api/servers"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -92,7 +92,7 @@ public class ServerControllerTest {
         
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
         
-        mockMvc.perform(get("/api/servers/1"))
+        mockMvc.perform(get("/dashboard/api/servers/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -104,7 +104,7 @@ public class ServerControllerTest {
     public void testGetServerByIdNotFound() throws Exception {
         when(serverRepository.findById(999L)).thenReturn(Optional.empty());
         
-        mockMvc.perform(get("/api/servers/999"))
+        mockMvc.perform(get("/dashboard/api/servers/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(false))
@@ -125,7 +125,7 @@ public class ServerControllerTest {
         when(serverRepository.save(any(Server.class))).thenReturn(savedServer);
         doNothing().when(serverMonitorService).checkServerAsync(any(Server.class));
         
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isCreated())
@@ -145,7 +145,7 @@ public class ServerControllerTest {
         Server existingServer = new Server("Existing Server", "https://existing.com", ServerType.POSTGRES);
         when(serverRepository.findByUrl("https://existing.com")).thenReturn(Optional.of(existingServer));
         
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isConflict())
@@ -162,7 +162,7 @@ public class ServerControllerTest {
         serverDto.setType(ServerType.OTHER);
         // No healthcheck provided
         
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isBadRequest())
@@ -191,7 +191,7 @@ public class ServerControllerTest {
         when(serverRepository.save(any(Server.class))).thenReturn(savedServer);
         doNothing().when(serverMonitorService).checkServerAsync(any(Server.class));
         
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isCreated())
@@ -220,7 +220,7 @@ public class ServerControllerTest {
         when(serverRepository.findById(1L)).thenReturn(Optional.of(existingServer));
         when(serverRepository.save(any(Server.class))).thenReturn(updatedServer);
         
-        mockMvc.perform(put("/api/servers/1")
+        mockMvc.perform(put("/dashboard/api/servers/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isOk())
@@ -235,7 +235,7 @@ public class ServerControllerTest {
         when(serverRepository.existsById(1L)).thenReturn(true);
         doNothing().when(serverRepository).deleteById(1L);
         
-        mockMvc.perform(delete("/api/servers/1"))
+        mockMvc.perform(delete("/dashboard/api/servers/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -246,7 +246,7 @@ public class ServerControllerTest {
     public void testDeleteServerNotFound() throws Exception {
         when(serverRepository.existsById(999L)).thenReturn(false);
         
-        mockMvc.perform(delete("/api/servers/999"))
+        mockMvc.perform(delete("/dashboard/api/servers/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(false))
@@ -261,7 +261,7 @@ public class ServerControllerTest {
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
         doNothing().when(serverMonitorService).checkServerAsync(anyLong());
         
-        mockMvc.perform(post("/api/servers/1/check"))
+        mockMvc.perform(post("/dashboard/api/servers/1/check"))
                 .andExpect(status().isAccepted())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -279,7 +279,7 @@ public class ServerControllerTest {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenReturn(Arrays.asList(server));
         when(csvExportService.exportServersToCsv(any())).thenReturn(csvContent);
         
-        mockMvc.perform(get("/api/servers/export/csv"))
+        mockMvc.perform(get("/dashboard/api/servers/export/csv"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/csv; charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("filename=\"servers_")))
@@ -290,7 +290,7 @@ public class ServerControllerTest {
     public void testGetAllServersException() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("Database error"));
         
-        mockMvc.perform(get("/api/servers"))
+        mockMvc.perform(get("/dashboard/api/servers"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Internal server error"));
@@ -300,7 +300,7 @@ public class ServerControllerTest {
     public void testGetServerByIdException() throws Exception {
         when(serverRepository.findById(1L)).thenThrow(new RuntimeException("Database error"));
         
-        mockMvc.perform(get("/api/servers/1"))
+        mockMvc.perform(get("/dashboard/api/servers/1"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Internal server error"));
@@ -315,7 +315,7 @@ public class ServerControllerTest {
         
         when(serverRepository.findById(999L)).thenReturn(Optional.empty());
         
-        mockMvc.perform(put("/api/servers/999")
+        mockMvc.perform(put("/dashboard/api/servers/999")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isNotFound())
@@ -336,7 +336,7 @@ public class ServerControllerTest {
         when(serverRepository.findById(1L)).thenReturn(Optional.of(existingServer));
         when(serverRepository.save(any(Server.class))).thenThrow(new RuntimeException("Save error"));
         
-        mockMvc.perform(put("/api/servers/1")
+        mockMvc.perform(put("/dashboard/api/servers/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isBadRequest())
@@ -348,7 +348,7 @@ public class ServerControllerTest {
     public void testCheckServerNotFound() throws Exception {
         when(serverRepository.findById(999L)).thenReturn(Optional.empty());
         
-        mockMvc.perform(post("/api/servers/999/check"))
+        mockMvc.perform(post("/dashboard/api/servers/999/check"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Server not found"));
@@ -362,7 +362,7 @@ public class ServerControllerTest {
         when(serverRepository.findById(1L)).thenReturn(Optional.of(server));
         doThrow(new RuntimeException("Check error")).when(serverMonitorService).checkServerAsync(anyLong());
         
-        mockMvc.perform(post("/api/servers/1/check"))
+        mockMvc.perform(post("/dashboard/api/servers/1/check"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Internal server error"));
@@ -373,7 +373,7 @@ public class ServerControllerTest {
         when(serverRepository.existsById(1L)).thenReturn(true);
         doThrow(new RuntimeException("Delete error")).when(serverRepository).deleteById(1L);
         
-        mockMvc.perform(delete("/api/servers/1"))
+        mockMvc.perform(delete("/dashboard/api/servers/1"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Internal server error"));
@@ -389,7 +389,7 @@ public class ServerControllerTest {
         when(serverRepository.findByUrl("https://newserver.com")).thenReturn(Optional.empty());
         when(serverRepository.save(any(Server.class))).thenThrow(new RuntimeException("Save error"));
         
-        mockMvc.perform(post("/api/servers")
+        mockMvc.perform(post("/dashboard/api/servers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(serverDto)))
                 .andExpect(status().isBadRequest())
@@ -401,7 +401,7 @@ public class ServerControllerTest {
     public void testRefreshServers() throws Exception {
         doNothing().when(serverMonitorService).checkAllServersAsync();
         
-        mockMvc.perform(post("/api/servers/refresh"))
+        mockMvc.perform(post("/dashboard/api/servers/refresh"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Фоновая проверка статусов серверов запущена"));
@@ -413,7 +413,7 @@ public class ServerControllerTest {
     public void testRefreshServersException() throws Exception {
         doThrow(new RuntimeException("Refresh error")).when(serverMonitorService).checkAllServersAsync();
         
-        mockMvc.perform(post("/api/servers/refresh"))
+        mockMvc.perform(post("/dashboard/api/servers/refresh"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error").value("Ошибка при обновлении статуса серверов: Refresh error"));
@@ -423,7 +423,7 @@ public class ServerControllerTest {
     public void testExportServersToCsvException() throws Exception {
         when(serverRepository.findAllOrderByCreatedAtDesc()).thenThrow(new RuntimeException("Export error"));
         
-        mockMvc.perform(get("/api/servers/export/csv"))
+        mockMvc.perform(get("/dashboard/api/servers/export/csv"))
                 .andExpect(status().isInternalServerError())
                 // При ошибке Spring использует application/octet-stream по умолчанию для byte[]
                 .andExpect(content().contentTypeCompatibleWith("application/octet-stream"))

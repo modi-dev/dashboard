@@ -22,14 +22,14 @@ class LoginControllerTest {
 
     @Test
     void testLoginPage() throws Exception {
-        mockMvc.perform(get("/login"))
+        mockMvc.perform(get("/dashboard/login"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("login"));
     }
 
     @Test
     void testLoginErrorPage() throws Exception {
-        mockMvc.perform(get("/login-error"))
+        mockMvc.perform(get("/dashboard/login-error"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("login"))
                 .andExpect(model().attributeExists("error"))
@@ -40,7 +40,7 @@ class LoginControllerTest {
 
     @Test
     void testLoginErrorPageWithAttributes() throws Exception {
-        mockMvc.perform(get("/login-error"))
+        mockMvc.perform(get("/dashboard/login-error"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("login"))
                 .andExpect(model().attribute("error", true))

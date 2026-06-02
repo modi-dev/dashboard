@@ -137,7 +137,7 @@ export DATABASE_CLUSTER_PARAMETERS=  # Дополнительные параме
 
 # Сервер
 export APP_PORT=3001
-export SERVER_CONTEXT_PATH=  # Префикс пути (по умолчанию пусто)
+export SERVER_CONTEXT_PATH=/dashboard  # Префикс пути (по умолчанию /dashboard)
 
 # Actuator
 export MANAGEMENT_PORT=3001  # Порт для health endpoints

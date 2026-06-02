@@ -147,7 +147,7 @@
                 <button onclick="refreshPods(event)" class="btn btn-sm btn-outline-primary" title="Обновить информацию о подах">
                     <i class="fas fa-sync-alt me-1"></i>Обновить
                 </button>
-                <a href="/api/pods/export/csv" class="btn btn-sm btn-outline-success" title="Экспорт в CSV">
+                <a th:href="@{/api/pods/export/csv}" href="/api/pods/export/csv" class="btn btn-sm btn-outline-success" title="Экспорт в CSV">
                     <i class="fas fa-file-csv me-1"></i>Экспорт CSV
                 </a>
             </div>

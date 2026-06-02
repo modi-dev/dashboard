@@ -7,25 +7,25 @@
     
     <!-- Favicon Fragment -->
     <th:block th:fragment="favicon">
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="32x32" th:href="@{/favicon-32x32.png}" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" th:href="@{/favicon-16x16.png}" href="/favicon-16x16.png">
+        <link rel="apple-touch-icon" sizes="180x180" th:href="@{/apple-touch-icon.png}" href="/apple-touch-icon.png">
+        <link rel="shortcut icon" th:href="@{/favicon.ico}" href="/favicon.ico">
     </th:block>
     
     <!-- Include favicon fragment -->
     <th:block th:replace="~{layout :: favicon}"></th:block>
     
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/all.min.css" rel="stylesheet">
-    <link href="/css/theme-dark.css" rel="stylesheet">
-    <link href="/css/common.css" rel="stylesheet">
+    <link th:href="@{/css/bootstrap.min.css}" href="/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/all.min.css}" href="/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/css/theme-dark.css}" href="/css/theme-dark.css" rel="stylesheet">
+    <link th:href="@{/css/common.css}" href="/css/common.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand" th:href="@{/}" href="/">
                 <i class="fas fa-server me-2"></i>Version Dashboard
             </a>
             <div class="d-flex align-items-center">
@@ -39,17 +39,17 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/" th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/}" href="/" th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
                             <i class="fas fa-tachometer-alt me-1"></i>Главная страница
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/servers" th:classappend="${activePage == 'servers' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/servers}" href="/servers" th:classappend="${activePage == 'servers' ? 'active' : ''}">
                             <i class="fas fa-server me-1"></i>Серверы
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/pods" th:classappend="${activePage == 'pods' ? 'active' : ''}">
+                        <a class="nav-link" th:href="@{/pods}" href="/pods" th:classappend="${activePage == 'pods' ? 'active' : ''}">
                             <i class="fas fa-cube me-1"></i>Поды
                         </a>
                     </li>
@@ -61,7 +61,7 @@
                         </button>
                     </li>
                     <li class="nav-item" th:if="${isAuthenticated == false or isAuthenticated == null}">
-                        <a class="nav-link" href="/login" title="Войти в систему">
+                        <a class="nav-link" th:href="@{/login}" href="/login" title="Войти в систему">
                             <i class="fas fa-sign-in-alt me-1"></i>Войти
                         </a>
                     </li>
@@ -159,13 +159,13 @@
     <footer class="footer bg-light text-center py-3 mt-auto">
         <div class="container-fluid px-4">
             <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> | 
-                <a href="/actuator/health" target="_blank">Health</a> | 
-                <a href="/actuator/metrics" target="_blank">Metrics</a>
+                <a th:href="@{/actuator/health}" href="/actuator/health" target="_blank">Health</a> | 
+                <a th:href="@{/actuator/metrics}" href="/actuator/metrics" target="_blank">Metrics</a>
             </span>
         </div>
     </footer>
 
-    <script src="/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/app.js"></script>
+    <script th:src="@{/js/bootstrap.bundle.min.js}" src="/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/app.js}" src="/js/app.js"></script>
 </body>
 </html>

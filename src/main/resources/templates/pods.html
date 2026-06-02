@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" id="htmlRoot" th:attr="data-context-path=@{/}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,10 @@
     <!-- Favicon from layout fragment -->
     <th:block th:replace="~{layout :: favicon}"></th:block>
     
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/all.min.css" rel="stylesheet">
-    <link href="/css/theme-dark.css" rel="stylesheet">
-    <link href="/css/common.css" rel="stylesheet">
+    <link th:href="@{/css/bootstrap.min.css}" href="/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/all.min.css}" href="/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/css/theme-dark.css}" href="/css/theme-dark.css" rel="stylesheet">
+    <link th:href="@{/css/common.css}" href="/css/common.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
@@ -71,14 +71,14 @@
     <footer class="footer bg-light text-center py-3 mt-auto">
         <div class="container-fluid px-4">
             <span class="text-muted">Version Dashboard <span th:text="${@environment.getProperty('app.version', '1.0.0')}">v1.0.0</span> |
-                <a href="/actuator/health" target="_blank">Health</a> | 
-                <a href="/actuator/metrics" target="_blank">Metrics</a>
+                <a th:href="@{/actuator/health}" href="/actuator/health" target="_blank">Health</a> | 
+                <a th:href="@{/actuator/metrics}" href="/actuator/metrics" target="_blank">Metrics</a>
             </span>
         </div>
     </footer>
 
-    <script src="/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/app.js"></script>
+    <script th:src="@{/js/bootstrap.bundle.min.js}" src="/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/app.js}" src="/js/app.js"></script>
     <script th:inline="javascript">
         // Передаем значения quota в JavaScript
         window.quotaCpu = /*[[${quotaCpu}]]*/ null;

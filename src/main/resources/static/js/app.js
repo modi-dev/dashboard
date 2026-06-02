@@ -53,6 +53,37 @@ const INSTRUCTION_STEPS = [
 let instructionModal;
 let instructionCurrentStep = 0;
 
+function getAppBasePath() {
+  const htmlRoot = document.getElementById('htmlRoot');
+  if (!htmlRoot) {
+    return '';
+  }
+
+  const raw = htmlRoot.getAttribute('data-context-path') || '';
+  const normalized = normalizePath(raw);
+  return normalized === '/' ? '' : normalized;
+}
+
+function getCurrentAppRelativePath() {
+  const basePath = getAppBasePath();
+  const currentFullPath = normalizePath(window.location.pathname);
+
+  if (!basePath) {
+    return currentFullPath || '/';
+  }
+
+  if (currentFullPath === basePath) {
+    return '/';
+  }
+
+  if (currentFullPath.startsWith(`${basePath}/`)) {
+    const relative = currentFullPath.slice(basePath.length);
+    return normalizePath(relative) || '/';
+  }
+
+  return currentFullPath || '/';
+}
+
 function normalizePath(path) {
   if (!path) {
     return '';
@@ -86,13 +117,13 @@ function showInstructionStep(targetIndex) {
   const step = INSTRUCTION_STEPS[clamped];
   if (step && step.path) {
     const targetPath = normalizePath(step.path);
-    const currentFullPath = normalizePath(window.location.pathname);
-    let matches = currentFullPath === targetPath;
+    const currentRelativePath = getCurrentAppRelativePath();
+    let matches = currentRelativePath === targetPath;
 
     if (!matches && targetPath && targetPath !== '/') {
-      const index = currentFullPath.lastIndexOf(targetPath);
-      if (index !== -1 && index + targetPath.length === currentFullPath.length) {
-        matches = index === 0 || currentFullPath.charAt(index - 1) === '/';
+      const index = currentRelativePath.lastIndexOf(targetPath);
+      if (index !== -1 && index + targetPath.length === currentRelativePath.length) {
+        matches = index === 0 || currentRelativePath.charAt(index - 1) === '/';
       }
     }
 
@@ -101,7 +132,11 @@ function showInstructionStep(targetIndex) {
       if (instructionModal) {
         instructionModal.hide();
       }
-      window.location.href = step.path;
+      const basePath = getAppBasePath();
+      const targetUrl = targetPath === '/'
+        ? (basePath ? `${basePath}/` : '/')
+        : `${basePath}${targetPath}`;
+      window.location.href = targetUrl;
       return false;
     }
     localStorage.removeItem(INSTRUCTION_SHOULD_OPEN_KEY);
@@ -190,13 +225,13 @@ function deleteServer(serverId) {
     return;
   }
 
-  fetch(`/api/servers/${serverId}`, {
+  fetch(`api/servers/${serverId}`, {
     method: 'DELETE',
     credentials: 'same-origin'
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        window.location.href = 'login';
         return null;
       }
       return response.json();
@@ -306,7 +341,7 @@ function loadServersLastUpdateTime() {
   
   function updateTime() {
     // Загружаем время из БД через API
-    fetch('/api/servers/last-updated', {
+    fetch('api/servers/last-updated', {
       method: 'GET',
       credentials: 'same-origin'
     })
@@ -363,7 +398,7 @@ function refreshServers(ev) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
   }
 
-  fetch('/api/servers/refresh', {
+  fetch('api/servers/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin'
@@ -422,7 +457,7 @@ function loadPodsLastUpdateTime() {
   
   function updateTime() {
     // Загружаем время из БД через API
-    fetch('/api/pods/last-updated', {
+    fetch('api/pods/last-updated', {
       method: 'GET',
       credentials: 'same-origin'
     })
@@ -479,14 +514,14 @@ function refreshPods(ev) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Обновление...';
   }
 
-  fetch('/api/pods/refresh', {
+  fetch('api/pods/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin'
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        window.location.href = 'login';
         return null;
       }
       if (!response.ok) {
@@ -694,7 +729,7 @@ function addServer() {
     }
   }
 
-  fetch('/api/servers', {
+  fetch('api/servers', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -704,7 +739,7 @@ function addServer() {
   })
     .then(response => {
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/login';
+        window.location.href = 'login';
         return null;
       }
       return response.json();

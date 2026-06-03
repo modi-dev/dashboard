@@ -7,19 +7,19 @@
     
     <!-- Favicon Fragment -->
     <th:block th:fragment="favicon">
-        <link rel="icon" type="image/png" sizes="32x32" th:href="@{/favicon-32x32.png}" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" th:href="@{/favicon-16x16.png}" href="/favicon-16x16.png">
-        <link rel="apple-touch-icon" sizes="180x180" th:href="@{/apple-touch-icon.png}" href="/apple-touch-icon.png">
-        <link rel="shortcut icon" th:href="@{/favicon.ico}" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="32x32" th:href="@{/dashboard/favicon-32x32.png}" href="/dashboard/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" th:href="@{/dashboard/favicon-16x16.png}" href="/dashboard/favicon-16x16.png">
+        <link rel="apple-touch-icon" sizes="180x180" th:href="@{/dashboard/apple-touch-icon.png}" href="/dashboard/apple-touch-icon.png">
+        <link rel="shortcut icon" th:href="@{/dashboard/favicon.ico}" href="/dashboard/favicon.ico">
     </th:block>
     
     <!-- Include favicon fragment -->
     <th:block th:replace="~{layout :: favicon}"></th:block>
     
-    <link th:href="@{/css/bootstrap.min.css}" href="/css/bootstrap.min.css" rel="stylesheet">
-    <link th:href="@{/css/all.min.css}" href="/css/all.min.css" rel="stylesheet">
-    <link th:href="@{/css/theme-dark.css}" href="/css/theme-dark.css" rel="stylesheet">
-    <link th:href="@{/css/common.css}" href="/css/common.css" rel="stylesheet">
+    <link th:href="@{/dashboard/css/bootstrap.min.css}" href="/dashboard/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/dashboard/css/all.min.css}" href="/dashboard/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/dashboard/css/theme-dark.css}" href="/dashboard/css/theme-dark.css" rel="stylesheet">
+    <link th:href="@{/dashboard/css/common.css}" href="/dashboard/css/common.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation -->
@@ -165,7 +165,7 @@
         </div>
     </footer>
 
-    <script th:src="@{/js/bootstrap.bundle.min.js}" src="/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js}" src="/js/app.js"></script>
+    <script th:src="@{/dashboard/js/bootstrap.bundle.min.js}" src="/dashboard/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/dashboard/js/app.js}" src="/dashboard/js/app.js"></script>
 </body>
 </html>

@@ -47,12 +47,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Статические ресурсы доступны всем
                 .requestMatchers(
-                    "/css/**",
-                    "/js/**",
-                    "/webfonts/**",
-                    "/favicon.ico",
-                    "/favicon-*.png",
-                    "/apple-touch-icon.png"
+                    "/dashboard/css/**",
+                    "/dashboard/js/**",
+                    "/dashboard/webfonts/**",
+                    "/dashboard/favicon.ico",
+                    "/dashboard/favicon-*.png",
+                    "/dashboard/apple-touch-icon.png"
                 ).permitAll()
                 
                 // Публичные страницы - доступны всем

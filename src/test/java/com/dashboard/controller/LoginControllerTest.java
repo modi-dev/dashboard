@@ -28,6 +28,26 @@ class LoginControllerTest {
     }
 
     @Test
+    void testLoginPageWithSkipAttributesWhenSecurityDisabled() throws Exception {
+        mockMvc.perform(get("/dashboard/login"))
+                .andExpect(model().attribute("securityEnabled", false))
+                .andExpect(model().attribute("skipUrl", "/dashboard"));
+    }
+
+    @Test
+    void testLoginPageRespectsSafeRedirectParam() throws Exception {
+        mockMvc.perform(get("/dashboard/login").param("redirect", "/dashboard/servers"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("skipUrl", "/dashboard/servers"));
+    }
+
+    @Test
+    void testLoginPageIgnoresUnsafeRedirectParam() throws Exception {
+        mockMvc.perform(get("/dashboard/login").param("redirect", "https://evil.example"))
+                .andExpect(model().attribute("skipUrl", "/dashboard"));
+    }
+
+    @Test
     void testLoginErrorPage() throws Exception {
         mockMvc.perform(get("/dashboard/login-error"))
                 .andExpect(status().isOk())

@@ -71,6 +71,22 @@ body {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.btn-skip-login {
+    padding: 0.75rem;
+    font-weight: 500;
+}
+
+.theme-dark .btn-skip-login {
+    color: #adb5bd;
+    border-color: #495057;
+}
+
+.theme-dark .btn-skip-login:hover {
+    color: #e9ecef;
+    background-color: #2b3035;
+    border-color: #6c757d;
+}
+
 .form-control:focus {
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);

@@ -22,6 +22,7 @@ class KubernetesConfigTest {
         assertEquals("default", config.getNamespace());
         assertEquals("kubectl", config.getKubectlPath());
         assertFalse(config.isEnabled());
+        assertFalse(config.isSecretsDatabaseUrlEnabled());
     }
     
     @Test
@@ -44,12 +45,22 @@ class KubernetesConfigTest {
         config.setEnabled(false);
         assertFalse(config.isEnabled());
     }
+
+    @Test
+    void testSetSecretsDatabaseUrlEnabled() {
+        config.setSecretsDatabaseUrlEnabled(true);
+        assertTrue(config.isSecretsDatabaseUrlEnabled());
+
+        config.setSecretsDatabaseUrlEnabled(false);
+        assertFalse(config.isSecretsDatabaseUrlEnabled());
+    }
     
     @Test
     void testToString() {
         config.setNamespace("dev-tools");
         config.setKubectlPath("kubectl");
         config.setEnabled(true);
+        config.setSecretsDatabaseUrlEnabled(true);
         
         String result = config.toString();
         
@@ -58,6 +69,7 @@ class KubernetesConfigTest {
         assertTrue(result.contains("namespace='dev-tools'"));
         assertTrue(result.contains("kubectlPath='kubectl'"));
         assertTrue(result.contains("enabled=true"));
+        assertTrue(result.contains("secretsDatabaseUrlEnabled=true"));
     }
     
     @Test

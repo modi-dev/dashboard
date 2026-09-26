@@ -75,6 +75,8 @@ kubernetes:
   kubectl:
     path: ${KUBERNETES_KUBECTL_PATH:kubectl}
   enabled: ${KUBERNETES_ENABLED:true}
+  # Получение DATABASE_CLUSTER_URL
+  secrets-database-url-enabled: ${KUBERNETES_SECRETS_DATABASE_URL_ENABLED:false}
   command:
     timeout: ${KUBERNETES_COMMAND_TIMEOUT:30}  # Timeout in seconds for kubectl commands (default: 30 seconds)
   pods:

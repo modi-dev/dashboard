@@ -170,6 +170,7 @@ class KubernetesPodsSyncServiceAdditionalTest {
         pod.setName("my-service");
         pod.setPodName("my-service-abc");
 
+        when(kubernetesConfig.isSecretsDatabaseUrlEnabled()).thenReturn(true);
         when(kubernetesService.getRunningPods()).thenReturn(List.of(pod));
         when(kubernetesService.getDatabaseClusterUrlFromSecrets("my-service"))
                 .thenReturn("jdbc:postgresql://host:5432/db");
@@ -190,6 +191,7 @@ class KubernetesPodsSyncServiceAdditionalTest {
         pod.setName("my-service");
         pod.setPodName("my-service-abc");
 
+        when(kubernetesConfig.isSecretsDatabaseUrlEnabled()).thenReturn(true);
         when(kubernetesService.getRunningPods()).thenReturn(List.of(pod));
         when(kubernetesService.getDatabaseClusterUrlFromSecrets("my-service"))
                 .thenThrow(new RuntimeException("secrets error"));
@@ -202,6 +204,53 @@ class KubernetesPodsSyncServiceAdditionalTest {
 
         assertEquals(1, result);
         assertNull(pod.getDatabaseClusterUrl());
+    }
+
+    @Test
+    void syncPods_ShouldSkipSecretsLookup_WhenDisabled() {
+        PodInfo pod = new PodInfo();
+        pod.setName("my-service");
+        pod.setPodName("my-service-abc");
+
+        when(kubernetesConfig.isSecretsDatabaseUrlEnabled()).thenReturn(false);
+        when(kubernetesService.getRunningPods()).thenReturn(List.of(pod));
+        when(podRepository.findByNamespace("test-ns")).thenReturn(Collections.emptyList());
+        when(podRepository.findByPodNameAndNamespace("my-service-abc", "test-ns")).thenReturn(Optional.empty());
+        when(podRepository.save(any(PodInfo.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(clusterInfoSyncService.syncClusterInfo()).thenReturn(true);
+
+        int result = podsSyncService.syncPods();
+
+        assertEquals(1, result);
+        verify(kubernetesService, never()).getDatabaseClusterUrlFromSecrets(anyString());
+        assertNull(pod.getDatabaseClusterUrl());
+    }
+
+    @Test
+    void syncPods_ShouldPreserveExistingDatabaseClusterUrl_WhenSecretsDisabled() {
+        PodInfo existing = new PodInfo();
+        existing.setName("my-service");
+        existing.setPodName("my-service-abc");
+        existing.setDatabaseClusterUrl("jdbc:postgresql://kept:5432/db");
+        existing.setNamespace("test-ns");
+
+        PodInfo current = new PodInfo();
+        current.setName("my-service");
+        current.setPodName("my-service-abc");
+        current.setVersion("2.0.0");
+
+        when(kubernetesConfig.isSecretsDatabaseUrlEnabled()).thenReturn(false);
+        when(kubernetesService.getRunningPods()).thenReturn(List.of(current));
+        when(podRepository.findByNamespace("test-ns")).thenReturn(List.of(existing));
+        when(podRepository.findByPodNameAndNamespace("my-service-abc", "test-ns")).thenReturn(Optional.of(existing));
+        when(podRepository.save(any(PodInfo.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(clusterInfoSyncService.syncClusterInfo()).thenReturn(true);
+
+        podsSyncService.syncPods();
+
+        assertEquals("jdbc:postgresql://kept:5432/db", existing.getDatabaseClusterUrl());
+        assertEquals("2.0.0", existing.getVersion());
+        verify(kubernetesService, never()).getDatabaseClusterUrlFromSecrets(anyString());
     }
 
     @Test

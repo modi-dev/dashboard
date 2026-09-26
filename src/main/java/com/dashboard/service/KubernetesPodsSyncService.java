@@ -70,14 +70,17 @@ public class KubernetesPodsSyncService {
             List<PodInfo> currentPods = kubernetesService.getRunningPods();
             LocalDateTime queryTime = LocalDateTime.now();
             
-            // Устанавливаем namespace и время запроса для всех подов
-            // Также получаем DATABASE_CLUSTER_URL из секретов для каждого сервиса
+            // Устанавливаем namespace и время запроса для всех подов.
+            // DATABASE_CLUSTER_URL из secrets — только если явно включено (иначе N лишних kubectl на sync).
+            boolean enrichDbUrlFromSecrets = kubernetesConfig.isSecretsDatabaseUrlEnabled();
+            if (!enrichDbUrlFromSecrets) {
+                logger.debug("Чтение DATABASE_CLUSTER_URL из secrets отключено (kubernetes.secrets-database-url-enabled=false)");
+            }
             currentPods.forEach(pod -> {
                 pod.setNamespace(namespace);
                 pod.setK8sQueriedAt(queryTime);
                 
-                // Получаем DATABASE_CLUSTER_URL из секретов для сервиса
-                if (pod.getName() != null && !pod.getName().isEmpty()) {
+                if (enrichDbUrlFromSecrets && pod.getName() != null && !pod.getName().isEmpty()) {
                     try {
                         String databaseClusterUrl = kubernetesService.getDatabaseClusterUrlFromSecrets(pod.getName());
                         if (databaseClusterUrl != null && !databaseClusterUrl.isEmpty()) {
@@ -174,7 +177,10 @@ public class KubernetesPodsSyncService {
         existing.setMemoryRequest(current.getMemoryRequest());
         existing.setRestarts(current.getRestarts());
         existing.setReadyTime(current.getReadyTime());
-        existing.setDatabaseClusterUrl(current.getDatabaseClusterUrl());
+        // Не затираем сохранённый URL, если в этом sync secrets не читали
+        if (current.getDatabaseClusterUrl() != null) {
+            existing.setDatabaseClusterUrl(current.getDatabaseClusterUrl());
+        }
         existing.setNamespace(current.getNamespace());
         existing.setK8sQueriedAt(queryTime);
         // updatedAt будет установлен автоматически через @PreUpdate

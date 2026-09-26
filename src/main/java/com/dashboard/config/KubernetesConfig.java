@@ -25,6 +25,12 @@ public class KubernetesConfig {
     
     // Включена ли интеграция с Kubernetes (если false, функции с подами работать не будут)
     private boolean enabled = false;
+
+    /**
+     * Чтение DATABASE_CLUSTER_URL через {@code kubectl get secrets}.
+     * По умолчанию выключено: требует RBAC на secrets и даёт N лишних процессов kubectl на каждый sync.
+     */
+    private boolean secretsDatabaseUrlEnabled = false;
     
     // Getters и Setters - методы для получения и изменения значений полей
     public String getNamespace() {
@@ -50,6 +56,14 @@ public class KubernetesConfig {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
+    public boolean isSecretsDatabaseUrlEnabled() {
+        return secretsDatabaseUrlEnabled;
+    }
+
+    public void setSecretsDatabaseUrlEnabled(boolean secretsDatabaseUrlEnabled) {
+        this.secretsDatabaseUrlEnabled = secretsDatabaseUrlEnabled;
+    }
     
     /**
      * Метод для красивого вывода конфигурации в лог
@@ -60,6 +74,7 @@ public class KubernetesConfig {
                 "namespace='" + namespace + '\'' +
                 ", kubectlPath='" + kubectlPath + '\'' +
                 ", enabled=" + enabled +
+                ", secretsDatabaseUrlEnabled=" + secretsDatabaseUrlEnabled +
                 '}';
     }
 }
